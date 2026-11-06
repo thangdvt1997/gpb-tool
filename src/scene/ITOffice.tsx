@@ -45,7 +45,7 @@ import type { Duel } from '../duel/types';
 import { DuelLayer, useSelfId } from './social/DuelLayer';
 import { SocialLayer } from './social/SocialLayer';
 import { createSocialWorld } from './social/world';
-import { InteractTracker, targetsOf, useInteractSelect } from './interact';
+import { InteractionLayer, useInteractionSelect } from './interact';
 
 interface Props {
   zone: ZoneDef;
@@ -363,8 +363,7 @@ export function ITOffice({
   );
 
   // Tương tác: vật có action. Bấm vật ở gần và đang nhìn vào thì dùng ngay, ở xa thì tự đi tới rồi dùng.
-  const interactTargets = useMemo(() => targetsOf(zone.objects), [zone]);
-  const interactSelect = useInteractSelect(interactTargets, obstacles, entry.kind === 'done', onSelect);
+  const interactSelect = useInteractionSelect(obstacles, entry.kind === 'done', onSelect);
 
   const scene: SceneState = useMemo(
     () => ({
@@ -490,7 +489,7 @@ export function ITOffice({
           selfId={selfId ?? 'self'}
         />
       )}
-      <InteractTracker targets={interactTargets} enabled={entry.kind === 'done'} hovered={hovered} onUse={onSelect} />
+      <InteractionLayer objects={zone.objects} enabled={entry.kind === 'done'} hovered={hovered} onUse={onSelect} />
       <DuelLayer world={world} myId={selfId} duel={duel} />
       <AmbientAudio zone={audioZone} enabled={audioEnabled} />
     </SceneContext.Provider>

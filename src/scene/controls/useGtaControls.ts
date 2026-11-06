@@ -8,6 +8,7 @@ import {
   toggleFirstPerson,
   touchInput,
 } from './session';
+import { ARROW_KEYS, isAction, keyFor, RUN_ALIAS, trackedCodes } from './bindings';
 
 /**
  * Đầu vào di chuyển đã chuẩn hóa, tương đối với hướng camera. forward: +1 tiến (W, mũi tên lên), -1 lùi.
@@ -36,22 +37,8 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
-// E thuộc phần tương tác vật thể (InteractTracker), V và Esc do useSessionHotkeys xử lý.
-const TRACKED = new Set([
-  'KeyW',
-  'KeyS',
-  'KeyA',
-  'KeyD',
-  'ArrowUp',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
-  'ShiftLeft',
-  'ShiftRight',
-  'Space',
-]);
-/** Các phím mặc định cuộn trang: chặn khi đang điều khiển. */
-const SCROLL_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+// E thuộc phần tương tác vật thể (InteractionSystem/InteractTracker), V và Esc do useSessionHotkeys xử lý.
+// Phím di chuyển, chạy, nhảy đọc từ bindings (settings); mũi tên và Shift phải là phím phụ cố định.
 
 /**
  * Đọc W A S D, phím mũi tên, Shift, Space. Trạng thái nằm trong ref, không gây render.
@@ -75,12 +62,12 @@ export function useGtaControls(enabled: boolean = true): GtaControls {
     }
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (!TRACKED.has(e.code)) return;
+      if (!trackedCodes().has(e.code)) return;
       if (isTypingTarget(e.target)) return;
       if (getControls().paused) return;
       // Chặn cuộn trang và việc Space kích hoạt nút đang focus.
-      if (SCROLL_KEYS.has(e.code)) e.preventDefault();
-      if (e.code === 'Space' && !e.repeat) jumpRequested.current = true;
+      if (e.code === 'Space' || e.code.startsWith('Arrow') || isAction(e.code, 'jump')) e.preventDefault();
+      if (isAction(e.code, 'jump') && !e.repeat) jumpRequested.current = true;
       held.add(e.code);
     };
     const onKeyUp = (e: KeyboardEvent): void => {
@@ -117,10 +104,10 @@ export function useGtaControls(enabled: boolean = true): GtaControls {
       getMoveInput: (out: MoveInput = shared): MoveInput => {
         let f = 0;
         let s = 0;
-        if (held.has('KeyW') || held.has('ArrowUp')) f += 1;
-        if (held.has('KeyS') || held.has('ArrowDown')) f -= 1;
-        if (held.has('KeyD') || held.has('ArrowRight')) s += 1;
-        if (held.has('KeyA') || held.has('ArrowLeft')) s -= 1;
+        if (held.has(keyFor('moveForward')) || held.has(ARROW_KEYS.moveForward)) f += 1;
+        if (held.has(keyFor('moveBack')) || held.has(ARROW_KEYS.moveBack)) f -= 1;
+        if (held.has(keyFor('moveRight')) || held.has(ARROW_KEYS.moveRight)) s += 1;
+        if (held.has(keyFor('moveLeft')) || held.has(ARROW_KEYS.moveLeft)) s -= 1;
         f += touchInput.y;
         s += touchInput.x;
         // Phím chéo và joystick cộng phím: giữ độ dài tối đa 1 để đi chéo không nhanh hơn.
@@ -133,7 +120,7 @@ export function useGtaControls(enabled: boolean = true): GtaControls {
         out.strafe = s;
         return out;
       },
-      isRunning: (): boolean => held.has('ShiftLeft') || held.has('ShiftRight') || touchInput.run,
+      isRunning: (): boolean => held.has(keyFor('run')) || held.has(RUN_ALIAS) || touchInput.run,
       consumeJump: (): boolean => {
         const k = jumpRequested.current;
         jumpRequested.current = false;
@@ -158,7 +145,7 @@ export function useSessionHotkeys(enabled: boolean): void {
     if (!enabled) return undefined;
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.code === 'Escape') {
+      if (isAction(e.code, 'cancel')) {
         if (isTypingTarget(e.target)) return;
         if (getControls().paused) {
           setPaused(false);
@@ -170,7 +157,7 @@ export function useSessionHotkeys(enabled: boolean): void {
         e.preventDefault();
         return;
       }
-      if (e.code === 'KeyV' && !e.repeat) {
+      if (isAction(e.code, 'firstPerson') && !e.repeat) {
         if (isTypingTarget(e.target) || getControls().paused) return;
         toggleFirstPerson();
       }

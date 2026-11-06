@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { AmbientEngine } from '../../audio/engine';
+import { getSettings, subscribeSettings, updateSettings as updateCentralSettings, type Settings } from '../../settings';
 
 /**
  * Trạng thái phiên điều khiển dùng chung giữa cảnh 3D (trong Canvas) và lớp giao diện (ngoài Canvas):
@@ -32,43 +33,17 @@ export interface SeatSpot {
   yaw: number;
 }
 
-const STORAGE_KEY = 'gpb.controls.v1';
-const DEFAULT_SETTINGS: ControlSettings = { sensitivity: 1, volume: 0.5, helpHidden: false };
 export const SENSITIVITY_RANGE = { min: 0.2, max: 3 } as const;
 
-function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
+/**
+ * Cài đặt thật nằm ở src/settings (khóa gpb.settings.v2, tự migrate từ gpb.controls.v1 khi chưa có v2;
+ * khóa cũ không bị ghi hay xóa). ControlSettings chỉ là bản nhìn: helpHidden = !hintsEnabled.
+ */
+export function controlSettingsOf(s: Settings): ControlSettings {
+  return { sensitivity: s.mouse.sensitivity, volume: s.volume, helpHidden: !s.hintsEnabled };
 }
 
-function loadSettings(): ControlSettings {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    const v: unknown = JSON.parse(raw);
-    if (typeof v !== 'object' || v === null) return { ...DEFAULT_SETTINGS };
-    const o = v as Record<string, unknown>;
-    return {
-      sensitivity:
-        typeof o.sensitivity === 'number' && Number.isFinite(o.sensitivity)
-          ? clamp(o.sensitivity, SENSITIVITY_RANGE.min, SENSITIVITY_RANGE.max)
-          : DEFAULT_SETTINGS.sensitivity,
-      volume: typeof o.volume === 'number' && Number.isFinite(o.volume) ? clamp(o.volume, 0, 1) : DEFAULT_SETTINGS.volume,
-      helpHidden: typeof o.helpHidden === 'boolean' ? o.helpHidden : DEFAULT_SETTINGS.helpHidden,
-    };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
-}
-
-function saveSettings(s: ControlSettings): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {
-    /* chế độ riêng tư hoặc bị chặn lưu trữ: bỏ qua */
-  }
-}
-
-let snap: ControlSnapshot = { paused: false, firstPerson: false, seated: false, settings: loadSettings() };
+let snap: ControlSnapshot = { paused: false, firstPerson: false, seated: false, settings: controlSettingsOf(getSettings()) };
 const listeners = new Set<() => void>();
 
 function emit(next: ControlSnapshot): void {
@@ -113,13 +88,23 @@ export function setSeated(seated: boolean): void {
 }
 
 export function updateSettings(patch: Partial<ControlSettings>): void {
-  const next: ControlSettings = { ...snap.settings, ...patch };
-  next.sensitivity = clamp(next.sensitivity, SENSITIVITY_RANGE.min, SENSITIVITY_RANGE.max);
-  next.volume = clamp(next.volume, 0, 1);
-  saveSettings(next);
+  const cur = getSettings();
+  // Kết quả qua sanitize của kho trung tâm (kẹp khoảng); subscribeSettings bên dưới phát lại snapshot.
+  updateCentralSettings({
+    mouse: { ...cur.mouse, sensitivity: patch.sensitivity ?? cur.mouse.sensitivity },
+    volume: patch.volume ?? cur.volume,
+    hintsEnabled: patch.helpHidden === undefined ? cur.hintsEnabled : !patch.helpHidden,
+  });
+}
+
+function syncFromCentral(): void {
+  const next = controlSettingsOf(getSettings());
+  const cur = snap.settings;
+  if (next.sensitivity === cur.sensitivity && next.volume === cur.volume && next.helpHidden === cur.helpHidden) return;
   emit({ ...snap, settings: next });
   applyVolume();
 }
+subscribeSettings(syncFromCentral);
 
 // ---- Đầu vào cảm ứng (ghi từ lớp giao diện, đọc trong useFrame). Không gây render. ----
 

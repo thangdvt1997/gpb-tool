@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { ZoneObject } from '../../content/types';
-import { getControls, isTypingTarget, ROOM_BOUNDS } from '../controls';
+import { getControls, isTypingTarget, requestStand, ROOM_BOUNDS } from '../controls';
+import { isAction } from '../controls/bindings';
 import { playerPose } from '../controls/playerPose';
 import { requestWalk } from '../controls/walkRequest';
 import { isSolidObject, type Rect } from '../layout';
@@ -148,7 +149,14 @@ export function InteractionSystem({ enabled, hovered = null, occluders }: System
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
-      if (e.code === 'KeyE') {
+      if (isAction(e.code, 'interact')) {
+        // Đang ngồi: E để đứng dậy (như InteractTracker cũ).
+        if (!e.repeat && !eDown && getControls().seated && !getControls().paused) {
+          eDown = true;
+          requestStand();
+          e.preventDefault();
+          return;
+        }
         // Giữ phím: bỏ qua lặp tự động và mọi keydown cho tới khi nhả.
         if (e.repeat || eDown) {
           e.preventDefault();
@@ -166,7 +174,7 @@ export function InteractionSystem({ enabled, hovered = null, occluders }: System
         if (!e.repeat) chooseMenuIndex(Number(m[1]) - 1);
         return;
       }
-      if (e.code === 'Escape') {
+      if (isAction(e.code, 'cancel')) {
         // Esc đóng menu trước, không để lan sang Esc đóng panel / tạm dừng.
         e.preventDefault();
         e.stopPropagation();
@@ -174,7 +182,7 @@ export function InteractionSystem({ enabled, hovered = null, occluders }: System
       }
     };
     const onKeyUp = (e: KeyboardEvent): void => {
-      if (e.code === 'KeyE') eDown = false;
+      if (isAction(e.code, 'interact')) eDown = false;
     };
     const onVisibility = (): void => {
       if (document.visibilityState === 'hidden') release();

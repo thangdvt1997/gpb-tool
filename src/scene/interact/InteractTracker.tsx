@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { playerPose } from '../controls/playerPose';
 import { requestWalk } from '../controls/walkRequest';
+import { isAction } from '../controls/bindings';
 import { getControls, isTypingTarget, requestSit, requestStand, ROOM_BOUNDS } from '../controls';
 import type { Rect } from '../layout';
 import { approachOf, INTERACT_VERB, isReady, pickFocus, type InteractTarget } from './geometry';
@@ -66,7 +67,7 @@ export function InteractTracker({ targets, enabled, hovered, onUse }: TrackerPro
       return true;
     };
     const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.code !== 'KeyE' || e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!isAction(e.code, 'interact') || e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
       if (tryUse()) e.preventDefault();
     };

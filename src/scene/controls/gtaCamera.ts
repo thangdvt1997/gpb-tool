@@ -1,6 +1,8 @@
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { Camera, Object3D, PerspectiveCamera } from 'three';
+import { applyMouseDelta, getSettings } from '../../settings';
+import { isAction } from './bindings';
 import { getCharacterState } from '../interact/characterState';
 import type { Rect } from '../layout';
 import { isInsideOffice } from '../officeBounds';
@@ -451,9 +453,10 @@ export function attachCameraInput(
 
   const look = (dx: number, dy: number): void => {
     if (!modes.getPolicy().orbit) return;
-    const k = CAM.dragSensitivity * getSensitivity();
-    rig.yaw = wrapAngle(rig.yaw - dx * k);
-    rig.pitchGoal += dy * k;
+    const m = getSettings().mouse;
+    const d = applyMouseDelta(dx, dy, { sensitivity: getSensitivity(), invertX: m.invertX, invertY: m.invertY });
+    rig.yaw = wrapAngle(rig.yaw - d.dx * CAM.dragSensitivity);
+    rig.pitchGoal += d.dy * CAM.dragSensitivity;
     clampPitch(rig, modes.getMode());
   };
 
@@ -640,7 +643,7 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
     bindModeHooks(rig, cameraModes);
     const detach = attachCameraInput(gl.domElement, rig, () => getControls().settings.sensitivity);
     const onKey = (e: KeyboardEvent): void => {
-      if (e.code !== 'Escape' || e.isComposing || isTyping(e.target) || getControls().paused) return;
+      if (!isAction(e.code, 'cancel') || e.isComposing || isTyping(e.target) || getControls().paused) return;
       if (!cameraModes.canEscape()) return;
       e.preventDefault();
       e.stopImmediatePropagation();

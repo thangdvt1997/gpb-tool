@@ -13,3 +13,7 @@ export {
 export { InteractTracker, useInteractSelect } from './InteractTracker';
 export { InteractHelp, InteractPrompt } from './InteractPrompt';
 export { useInteractSnapshot } from './store';
+// Khung mới (thay InteractTracker, InteractPrompt, InteractHelp): xem docs/design/INTERACTIONS.md.
+export { InteractionLayer } from './InteractionLayer';
+export { useInteractionSelect, InteractionSystem } from './InteractionSystem';
+export { InteractionHud, InteractionHelp } from './InteractionHud';

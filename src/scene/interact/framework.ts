@@ -55,4 +55,6 @@ export {
 export { getInteractSettings, updateInteractSettings, useInteractSettings, type InteractSettings } from './settings';
 export { SELECT, INTERACT_DEFAULTS } from './selection';
 export { InteractionSystem, useInteractionSelect, useZoneInteractables, zoneInteractables } from './InteractionSystem';
+export { InteractionLayer } from './InteractionLayer';
+export { chairInteractables } from './chairs';
 export { InteractionHud, InteractionHelp } from './InteractionHud';
