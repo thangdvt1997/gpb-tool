@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Avatar } from '../avatar/Avatar';
+import type { CharacterLook } from '../fashion/types';
 import { DEFAULT_APPEARANCE, type Appearance } from '../avatar/appearance';
 import { isInternalEmote } from '../emotes/library';
 import { getEmoteState, notifyMovement, playInternalEmote } from '../emotes/player';
@@ -28,6 +29,10 @@ export interface PlayerProps {
   world?: SocialWorld;
   /** id người dùng trong world. */
   selfId?: string;
+  /** Ngoại hình fashion. Có thì dựng mô hình người MPFB theo look này. */
+  look?: CharacterLook | null;
+  /** true (mặc định): dùng mô hình người MPFB (look suy ra từ appearance nếu không có look). false: nhân vật hình học. */
+  mpfb?: boolean;
 }
 
 /** Đích đang đi tới: từ click sàn (facingYaw null, không onArrive) hoặc từ walkRequest. */
@@ -51,6 +56,8 @@ export function Player({
   enabled = true,
   world,
   selfId = 'self',
+  look,
+  mpfb = true,
 }: PlayerProps) {
   const group = useRef<THREE.Group>(null);
   const { firstPerson } = useControlSnapshot();
@@ -221,7 +228,7 @@ export function Player({
       </mesh>
       {/* Góc nhìn thứ nhất: ẩn thân nhân vật (camera đặt ở đầu). */}
       <group ref={group} position={[initial.x, 0, initial.z]} rotation={[0, initial.rotY, 0]} visible={!firstPerson}>
-        <Avatar appearance={appearance} animation="locomotion" emote />
+        <Avatar appearance={appearance} look={look} mpfb={mpfb} animation="locomotion" emote />
       </group>
     </>
   );

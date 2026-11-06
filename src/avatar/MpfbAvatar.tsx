@@ -198,19 +198,35 @@ function boneDirection(bone: THREE.Bone, out: THREE.Vector3): THREE.Vector3 {
   return out.set(0, 1, 0).applyQuaternion(bone.getWorldQuaternion(_q1)).normalize();
 }
 
-/** Sửa vật liệu dùng chung: thân MPFB xuất BLEND làm vỡ thứ tự vẽ. Gọi lặp lại không sao. */
-function fixMaterials(root: THREE.Object3D, morphMesh: THREE.Mesh | null): void {
+/** Ngưỡng alpha cho lông mày (MASK), theo ASSET_STANDARD mục 6. */
+export const EYEBROW_ALPHA_CUTOFF = 0.4;
+
+/** Phân loại vật liệu MPFB theo tên: lông mày cắt alpha (MASK), còn lại (thân, mắt) đặc (OPAQUE). */
+export function materialAlphaMode(name: string): 'MASK' | 'OPAQUE' {
+  return /eyebrow/i.test(name) ? 'MASK' : 'OPAQUE';
+}
+
+/**
+ * Sửa vật liệu dùng chung: GLB xuất BLEND làm vỡ thứ tự vẽ. Thân và mắt về OPAQUE, lông mày về MASK
+ * (alphaTest, ghi depth). Gọi lặp lại không sao.
+ */
+function fixMaterials(root: THREE.Object3D): void {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    if (mesh === morphMesh) {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for (const m of mats) {
-        m.transparent = false;
-        m.depthWrite = true;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const m of mats) {
+      m.transparent = false;
+      m.depthWrite = true;
+      if (materialAlphaMode(m.name) === 'MASK') {
+        m.alphaTest = EYEBROW_ALPHA_CUTOFF;
+      } else {
+        m.alphaTest = 0;
+        m.alphaToCoverage = false;
       }
+      m.needsUpdate = true;
     }
   });
 }
@@ -231,7 +247,7 @@ function buildRig(gltf: GLTF): MpfbRig {
   root.updateMatrixWorld(true);
 
   const body = findMorphMesh(root);
-  fixMaterials(root, body);
+  fixMaterials(root);
 
   // Đo chiều cao trên geometry nghỉ của mesh thân (mesh đặt tại gốc, không có transform riêng).
   let minY = 0;
