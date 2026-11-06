@@ -133,7 +133,7 @@ function bannedMessage(until: unknown): string {
   return 'Tài khoản đã bị khóa. Liên hệ quản trị viên nếu cần hỗ trợ.';
 }
 
-type Method = 'GET' | 'POST' | 'PUT';
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 async function request<T>(path: string, method: Method, body?: unknown): Promise<T> {
   let res: Response;
@@ -333,4 +333,84 @@ export async function logout(): Promise<void> {
 /** Đường dẫn bắt đầu OAuth; trình duyệt chuyển hướng tới đó bằng window.location.href. */
 export function oauthStartUrl(provider: Provider): string {
   return `/api/auth/oauth/${provider}/start`;
+}
+
+// ---------- Hồ sơ và nhân vật cá nhân (docs/design/PROFILE.md) ----------
+
+/** Hồ sơ của chính mình. `avatarRef`: null, 'character' hoặc 'preset:<id>'. `revision` 0 = chưa có dòng nào. */
+export interface MyProfile {
+  id: number;
+  name: string;
+  email: string;
+  department: string | null;
+  avatarRef: string | null;
+  revision: number;
+  updatedAt: number | null;
+}
+
+/** Nhân vật lưu trên máy chủ. `look` là CharacterLook v1 (server không kiểm catalog, client phải validate). */
+export interface CloudCharacter {
+  look: unknown | null;
+  revision: number;
+  updatedAt: number | null;
+  migrated: boolean;
+  /** Bản lưu bị hỏng trên server: look = null nhưng revision vẫn cần để ghi đè có chủ đích. */
+  corrupt: boolean;
+  /** Ngoại hình cũ (chỉ có khi chưa có bản cloud) để client tự chuyển đổi và cho xem trước. */
+  legacyAppearance: unknown | null;
+}
+
+function toProfile(raw: unknown): MyProfile {
+  const r = isRecord(raw) ? raw : {};
+  return {
+    id: typeof r.id === 'number' ? r.id : 0,
+    name: typeof r.name === 'string' ? r.name : '',
+    email: typeof r.email === 'string' ? r.email : '',
+    department: typeof r.department === 'string' ? r.department : null,
+    avatarRef: typeof r.avatarRef === 'string' ? r.avatarRef : null,
+    revision: numberOrNull(r.revision) ?? 0,
+    updatedAt: numberOrNull(r.updatedAt),
+  };
+}
+
+function toCloudCharacter(data: Record<string, unknown>): CloudCharacter {
+  return {
+    look: isRecord(data.character) ? data.character : null,
+    revision: numberOrNull(data.revision) ?? 0,
+    updatedAt: numberOrNull(data.updatedAt),
+    migrated: data.migrated === true,
+    corrupt: data.corrupt === true,
+    legacyAppearance: isRecord(data.legacyAppearance) ? data.legacyAppearance : null,
+  };
+}
+
+export async function getProfile(): Promise<MyProfile> {
+  const data = await request<{ ok: boolean; profile?: unknown }>('/api/auth/profile', 'GET');
+  return toProfile(data.profile);
+}
+
+/** Sửa tên và/hoặc avatarRef. `revision` là bản đang có; lệch thì ApiError 409 revision_conflict. */
+export async function putProfile(input: {
+  revision: number;
+  name?: string;
+  avatarRef?: string | null;
+}): Promise<MyProfile> {
+  const data = await request<{ ok: boolean; profile?: unknown }>('/api/auth/profile', 'PUT', input);
+  return toProfile(data.profile);
+}
+
+export async function getCloudCharacter(): Promise<CloudCharacter> {
+  const data = await request<Record<string, unknown>>('/api/auth/profile/character', 'GET');
+  return toCloudCharacter(data);
+}
+
+/** Lưu nhân vật. `revision` 0 chỉ thành công khi server chưa có bản nào (không tự ghi đè bản cloud). */
+export async function putCloudCharacter(revision: number, look: unknown): Promise<CloudCharacter> {
+  const data = await request<Record<string, unknown>>('/api/auth/profile/character', 'PUT', { revision, look });
+  return toCloudCharacter(data);
+}
+
+export async function deleteCloudCharacter(): Promise<boolean> {
+  const data = await request<{ ok: boolean; deleted?: boolean }>('/api/auth/profile/character', 'DELETE');
+  return data.deleted === true;
 }

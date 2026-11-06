@@ -88,7 +88,46 @@ const ANGRY_STANCE: readonly Keyframe[] = [
   { dur: 0.35, pose: { rootY: -0.05, rootRotY: 0.2, headRotZ: -0.1, armLX: -1.3, armRX: -1.3, armLZ: 0.5, armRZ: -0.5, legLX: -0.45, legRX: 0.45 }, ease: 'out' },
 ];
 
-/** Thư viện mười một emote. Dữ liệu tĩnh, dùng chung, không đổi lúc chạy. */
+/** Vẫy chào người khác: giơ tay phải cao hơn, nghiêng đầu nhẹ, vẫy hai nhịp. Căn hướng do module social lo. */
+const WAVE_AT: readonly Keyframe[] = [
+  { dur: 0.4, pose: { headRotZ: 0.06, armRX: -0.3, armRZ: -2.7 }, ease: 'smooth' },
+  { dur: 0.22, pose: { headRotZ: 0.1, armRX: -0.3, armRZ: -3.0 } },
+  { dur: 0.22, pose: { headRotZ: 0.03, armRX: -0.3, armRZ: -2.4 } },
+  { dur: 0.22, pose: { headRotZ: 0.1, armRX: -0.3, armRZ: -3.0 } },
+  { dur: 0.3, pose: { headRotZ: 0.04, armRX: -0.3, armRZ: -2.6 }, ease: 'smooth' },
+];
+
+/** Bắt tay: đưa tay phải ra trước ngang eo, nhấp lên xuống hai lần. */
+const HANDSHAKE: readonly Keyframe[] = [
+  { dur: 0.45, pose: { rootY: -0.01, headRotZ: 0.04, armRX: -1.25, armRZ: -0.25 }, ease: 'smooth' },
+  { dur: 0.18, pose: { armRX: -1.05, armRZ: -0.25 } },
+  { dur: 0.18, pose: { armRX: -1.4, armRZ: -0.25 } },
+  { dur: 0.18, pose: { armRX: -1.05, armRZ: -0.25 } },
+  { dur: 0.18, pose: { armRX: -1.4, armRZ: -0.25 } },
+  { dur: 0.3, pose: { armRX: -1.25, armRZ: -0.25 }, ease: 'smooth' },
+];
+
+/** Đập tay: giơ tay phải lên ngang đầu, chìa ra, đập một nhịp rồi thu về. */
+const HIGH_FIVE: readonly Keyframe[] = [
+  { dur: 0.35, pose: { headRotZ: 0.05, armRX: -0.5, armRZ: -2.3 }, ease: 'smooth' },
+  { dur: 0.12, pose: { rootY: 0.02, headRotZ: 0.08, armRX: -0.9, armRZ: -2.5 }, ease: 'out' },
+  { dur: 0.3, pose: { armRX: -0.5, armRZ: -2.3 }, ease: 'smooth' },
+];
+
+/** Cúi chào: gập người (hạ rootY, nghiêng đầu), hai tay áp trước thân, giữ ngắn rồi đứng thẳng. */
+const BOW: readonly Keyframe[] = [
+  { dur: 0.5, pose: { rootY: -0.07, headRotZ: 0.22, armLX: -0.5, armRX: -0.5, armLZ: 0.15, armRZ: -0.15, legLX: -0.05, legRX: 0.05 }, ease: 'smooth' },
+  { dur: 0.5, pose: { rootY: -0.07, headRotZ: 0.22, armLX: -0.5, armRX: -0.5, armLZ: 0.15, armRZ: -0.15, legLX: -0.05, legRX: 0.05 } },
+];
+
+/** Chỉ tay: duỗi thẳng tay phải ra trước, giữ trong chốc lát. */
+const POINT_AT: readonly Keyframe[] = [
+  { dur: 0.35, pose: { headRotZ: 0.04, armRX: -1.55, armRZ: -0.1 }, ease: 'out' },
+  { dur: 0.8, pose: { headRotZ: 0.04, armRX: -1.55, armRZ: -0.1 } },
+  { dur: 0.1, pose: { headRotZ: 0.04, armRX: -1.5, armRZ: -0.1 } },
+];
+
+/** Thư viện mười sáu emote. Dữ liệu tĩnh, dùng chung, không đổi lúc chạy. */
 export const EMOTES: Readonly<Record<EmoteId, EmoteDef>> = {
   dance_1: { id: 'dance_1', label: 'Nhảy 1', hotkey: '1', mode: 'loop', frames: DANCE_1, reducedFrame: 0 },
   dance_2: { id: 'dance_2', label: 'Nhảy 2', hotkey: '2', mode: 'loop', frames: DANCE_2, reducedFrame: 0 },
@@ -101,6 +140,11 @@ export const EMOTES: Readonly<Record<EmoteId, EmoteDef>> = {
   hit: { id: 'hit', label: 'Dính đòn', hotkey: '', internal: true, mode: 'once', frames: HIT, reducedFrame: 0 },
   down: { id: 'down', label: 'Ngã xuống', hotkey: '', internal: true, mode: 'hold', frames: DOWN, reducedFrame: 0 },
   angry_stance: { id: 'angry_stance', label: 'Thủ thế giận', hotkey: '', internal: true, mode: 'hold', frames: ANGRY_STANCE, reducedFrame: 0 },
+  wave_at: { id: 'wave_at', label: 'Vẫy chào', hotkey: '', internal: true, mode: 'once', frames: WAVE_AT, reducedFrame: 0 },
+  handshake: { id: 'handshake', label: 'Bắt tay', hotkey: '', internal: true, mode: 'once', frames: HANDSHAKE, reducedFrame: 0 },
+  high_five: { id: 'high_five', label: 'Đập tay', hotkey: '', internal: true, mode: 'once', frames: HIGH_FIVE, reducedFrame: 0 },
+  bow: { id: 'bow', label: 'Cúi chào', hotkey: '', internal: true, mode: 'once', frames: BOW, reducedFrame: 0 },
+  point_at: { id: 'point_at', label: 'Chỉ tay', hotkey: '', internal: true, mode: 'once', frames: POINT_AT, reducedFrame: 0 },
 };
 
 /** Thứ tự hiển thị và thứ tự phím 1 đến 6. Chỉ gồm emote người dùng, không có emote nội bộ. */

@@ -4,7 +4,10 @@ export type UserEmoteId = 'dance_1' | 'dance_2' | 'kata' | 'punch_combo' | 'stan
 /** Năm emote nội bộ: scene phát cho NPC và đối thủ, người dùng không tự chọn được. */
 export type InternalEmoteId = 'apologize' | 'startle' | 'hit' | 'down' | 'angry_stance';
 
-export type EmoteId = UserEmoteId | InternalEmoteId;
+/** Năm emote xã hội có mục tiêu (TASK 15). Cũng là nội bộ: phát qua module social, không có phím riêng. */
+export type SocialEmoteId = 'wave_at' | 'handshake' | 'high_five' | 'bow' | 'point_at';
+
+export type EmoteId = UserEmoteId | InternalEmoteId | SocialEmoteId;
 
 /**
  * Tư thế một thời điểm. Cùng quy ước và cùng tên trường với AvatarPose trong

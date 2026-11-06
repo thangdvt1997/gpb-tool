@@ -1,0 +1,11 @@
+/* Hồ sơ cá nhân: chỉ bố cục; màu và nút lấy từ src/ui/ui-system.css. */
+.profile-panel { display: grid; gap: 12px; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+.profile-form, .profile-character { display: grid; gap: 10px; }
+.profile-readonly { display: block; padding: 6px 0; }
+.profile-avatar { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
+.profile-summary { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; }
+.profile-summary dd { margin: 0; }
+.profile-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.profile-confirm { display: grid; gap: 8px; padding: 8px; border: 1px solid currentColor; }
+.profile-error, .profile-field-error { color: #b42318; margin: 0; }
+.profile-ok { color: #067647; margin: 0; }

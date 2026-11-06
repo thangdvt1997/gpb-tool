@@ -2,3 +2,4 @@
 // Chạy riêng từng file vẫn được: node --test test/*.test.js
 import './character.test.js';
 import './profanity.test.js';
+import './http.test.js';

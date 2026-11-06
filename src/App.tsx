@@ -2,7 +2,9 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud } from './scene/interact';
-import { HelpLayer, HelpReplayButton } from './help';
+import { HelpCenter, HelpLayer, HelpReplayButton } from './help';
+import { ProfilePanel } from './profile';
+import { SocialBar } from './emotes/social';
 import { Minimap } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
@@ -249,8 +251,19 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const getQuickContext = useQuickHost();
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
   const world = useWorld({ enabled: WORLD_ON });
+  // Người khác cho hành động xã hội (TASK 15): vị trí nội suy từ world; không có world thì rỗng.
+  const remote = world.remote;
+  const getPeers = useCallback(
+    () =>
+      remote.ids().flatMap((id) => {
+        const p = remote.sampleNow(id, Date.now());
+        return p ? [{ id, x: p.x, z: p.z }] : [];
+      }),
+    [remote],
+  );
   // Chất lượng đồ họa (TASK 13) + đo khung (TASK 08): PerfProbe đẩy mẫu vào bộ tự thích nghi.
   const quality = useQuality();
   const dprCap = clampDpr(typeof window === 'undefined' ? 1 : window.devicePixelRatio, quality.config.dprCap);
@@ -481,7 +494,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>
           <InteractionHelp />
           <InteractionHud />
-          <HelpLayer />
+          <HelpLayer role={user.role} />
+          <HelpCenter role={user.role} />
           <HelpReplayButton />
           <LiveRegion />
           <QuickWheel getContext={getQuickContext} enabled={!duelOpen && !emoteOpen} />
@@ -550,6 +564,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-expanded={libraryOpen} onClick={() => setLibraryOpen((v) => !v)}>
               Thư viện
             </button>
+            <button type="button" className="btn btn-ghost" aria-expanded={profileOpen} onClick={() => setProfileOpen((v) => !v)}>
+              Hồ sơ
+            </button>
             <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)}>
               Cài đặt
             </button>
@@ -560,6 +577,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
             )}
           </aside>
+          {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
+          <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (

@@ -1,6 +1,6 @@
 # Hồ sơ người dùng và nhân vật cá nhân (TASK 22)
 
-Trạng thái: backend đã viết trong `services/auth`, test thuần cho validate/migrate đã chạy. **Chưa kiểm chứng HTTP thật** (cần deploy lên VPS, xem mục 8). Client (`src/**`) chưa gọi các route này.
+Trạng thái: backend trong `services/auth`; test thuần (validate/migrate) và **test HTTP thật cục bộ** (`test/http.test.js`) đã chạy. Client có hàm gọi API (`src/auth/api.ts`) và `src/profile/ProfilePanel.tsx`; panel **chưa được mount** vào App. Chưa kiểm chứng trên VPS/trình duyệt thật (mục 8).
 
 ## 1. Tái sử dụng auth hiện có
 
@@ -155,3 +155,13 @@ sqlite3 /data/app.db '.schema user_characters' '.schema user_profiles'
 - Kiểm tra nhân vật ở server chỉ ở mức cấu trúc (mục 5).
 - Bộ phối chưa lưu trên server; client chưa gọi API mới; luồng preview merge dữ liệu khách chưa có giao diện.
 - Không có route xóa toàn bộ tài khoản; xóa tài khoản qua DB/CLI sẽ xóa theo hồ sơ và nhân vật.
+
+## 9. Kiểm thử HTTP cục bộ và giao diện (bổ sung)
+
+`cd services/auth && node --test test/` (35 test, gồm `test/http.test.js`). File HTTP chạy `index.js` như tiến trình con trên `127.0.0.1` cổng ngẫu nhiên, `DATA_DIR` là thư mục tmp (xóa sau test), `MAIL_MODE=log`, không có SMTP/secret. User và phiên được chèn thẳng vào DB (token ngẫu nhiên, DB lưu SHA-256 như `createSession`); test dùng `node:sqlite` (Node >= 22.5) vì `better-sqlite3` 11.7 abort lúc thoát tiến trình trên Node 24.
+
+Đã kiểm: 401 khi thiếu/giả/hết hạn/đăng xuất/phiên tạm/tài khoản khóa; GET/PUT hồ sơ (revision, 403, 422, 415, 400, 429, 409); PUT nhân vật hợp lệ, 409 không ghi đè, 422 (thiếu trường, URL, `__proto__`), 403 `userId`, 413 (body > 72 KB, kể cả khi chưa đăng nhập); ownership giữa A và B (route theo id trả 404, query `userId` bị bỏ qua, dữ liệu B nguyên vẹn trong DB); danh bạ không lộ email; log không chứa token.
+
+Ghi nhận hiện trạng (không phải lỗi mới): server **không có** middleware CSRF/Origin. Bảo vệ dựa vào cookie `SameSite=Lax` và việc PUT chỉ nhận `application/json` (form chéo trang nhận 415). Origin lạ không được chấp nhận hay từ chối riêng; không có header CORS. Ghi nhận một lần 409 cũng tính vào giới hạn 2 giây (throttle ghi nhận trước khi kiểm revision).
+
+`ProfilePanel` (`src/profile/`): sửa tên, chọn ảnh đại diện (`none` hoặc `character`), xem tóm tắt nhân vật cloud, đồng bộ nhân vật hiện tại (hỏi xác nhận trước khi ghi đè bản cloud khác), nạp bản cloud (qua `validate()` của `rules.ts`), xóa bản cloud, xử lý 401/409/413/422/429. API chưa có trường giới thiệu, trạng thái hay quyền riêng tư nên panel không làm các mục này. Bộ phối (outfit presets) vẫn chỉ ở cục bộ.

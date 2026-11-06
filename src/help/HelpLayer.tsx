@@ -3,38 +3,23 @@ import { playerPose, useControlSnapshot } from '../scene/controls';
 import { useInteractSnapshot } from '../scene/interact';
 import { subscribeObjectStates, useInteractionSnapshot } from '../scene/interact/framework';
 import { closeTour, hasSeenHint, markHintSeen, openTour, setStep, useHelp, type HintKind } from './helpState';
-import { HINTS, STEPS, hintKindOf, type StepCheck, type TourStep } from './steps';
+import { useSettings } from '../settings';
+import { keyNamesFrom } from './keys';
+import { useGamepadConnected, useTouch } from './useEnv';
+import { HINTS, hintKindOf, visibleSteps, type StepCheck, type StepCtx, type TourStep } from './steps';
 import './help.css';
 
-const TOUCH_QUERY = '(pointer: coarse)';
 /** Quãng đi (m) tính là "đã di chuyển". */
 const MOVED_DISTANCE = 1.5;
 /** Thời gian hiện một gợi ý ngữ cảnh (ms). */
 const HINT_MS = 7000;
 
-function detectTouch(): boolean {
-  try {
-    if (window.matchMedia(TOUCH_QUERY).matches) return true;
-    return navigator.maxTouchPoints > 0 && !window.matchMedia('(any-pointer: fine)').matches;
-  } catch {
-    return false;
-  }
-}
-
-function useTouch(): boolean {
-  const [touch, setTouch] = useState(detectTouch);
-  useEffect(() => {
-    let mq: MediaQueryList;
-    try {
-      mq = window.matchMedia(TOUCH_QUERY);
-    } catch {
-      return undefined;
-    }
-    const on = (): void => setTouch(detectTouch());
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return touch;
+/** Ngữ cảnh cho nội dung: phím lấy từ cài đặt hiện tại nên đổi phím là chữ đổi theo. */
+function useCtx(role?: string): StepCtx {
+  const { settings } = useSettings();
+  const touch = useTouch();
+  const gamepad = useGamepadConnected();
+  return { touch, keys: keyNamesFrom(settings.bindings, settings.controlMode), role, gamepad };
 }
 
 /**
@@ -70,9 +55,9 @@ function useStepDone(check: StepCheck | undefined, stepKey: string): boolean {
   return done;
 }
 
-function Tour({ touch }: { touch: boolean }) {
-  const { step } = useHelp();
-  const steps: readonly TourStep[] = touch ? STEPS.filter((s) => !s.keyboardOnly) : STEPS;
+function Tour({ ctx }: { ctx: StepCtx }) {
+  const { step, onlyNewSince } = useHelp();
+  const steps: readonly TourStep[] = visibleSteps(ctx, onlyNewSince);
   const index = Math.min(step, steps.length - 1);
   const current = steps[index] as TourStep;
   const last = index === steps.length - 1;
@@ -105,7 +90,7 @@ function Tour({ touch }: { touch: boolean }) {
       <h2 id="help-tour-title" className="help-title">
         {current.title}
       </h2>
-      <p className="help-body">{current.body(touch)}</p>
+      <p className="help-body">{current.body(ctx)}</p>
       <p className="help-done" role="status">
         {current.check && done ? current.doneLabel : ''}
       </p>
@@ -138,7 +123,7 @@ function Tour({ touch }: { touch: boolean }) {
  * Nguồn là vật đang được chọn của hệ tương tác (khung mới và khung cũ, cái nào đang chạy thì có
  * dữ liệu). Mỗi loại chỉ hiện một lần, lưu localStorage. Không hiện khi đang xem các bước.
  */
-function ContextHint({ touch, suppressed }: { touch: boolean; suppressed: boolean }) {
+function ContextHint({ ctx, suppressed }: { ctx: StepCtx; suppressed: boolean }) {
   const oldFocus = useInteractSnapshot().focus;
   const newFocus = useInteractionSnapshot().focus;
   const kind: HintKind | null = newFocus
@@ -158,19 +143,19 @@ function ContextHint({ touch, suppressed }: { touch: boolean; suppressed: boolea
 
   return (
     <div className="help-hint-slot" role="status">
-      {shown !== null && !suppressed && <p className="help-hint ui-panel ui-panel-float">{HINTS[shown](touch)}</p>}
+      {shown !== null && !suppressed && <p className="help-hint ui-panel ui-panel-float">{HINTS[shown](ctx)}</p>}
     </div>
   );
 }
 
-/** Mount một lần, ngoài Canvas. Tự mở lần đầu, sau đó chỉ gợi ý ngữ cảnh. */
-export function HelpLayer() {
+/** Mount một lần, ngoài Canvas. Tự mở lần đầu (hoặc chỉ bước mới sau khi nâng version), sau đó chỉ gợi ý ngữ cảnh. */
+export function HelpLayer({ role }: { role?: string }) {
   const { open } = useHelp();
-  const touch = useTouch();
+  const ctx = useCtx(role);
   return (
     <>
-      {open && <Tour touch={touch} />}
-      <ContextHint touch={touch} suppressed={open} />
+      {open && <Tour ctx={ctx} />}
+      <ContextHint ctx={ctx} suppressed={open} />
     </>
   );
 }

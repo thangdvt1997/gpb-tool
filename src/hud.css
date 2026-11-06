@@ -51,3 +51,25 @@
   color: #fff;
   z-index: 20;
 }
+
+/* Hành động xã hội (TASK 15). */
+.social-bar {
+  position: absolute;
+  bottom: 56px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: min(420px, 60vw);
+  z-index: 4;
+}
+.social-prompt {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+}
+@media (max-width: 760px) {
+  .social-bar { bottom: 120px; }
+}

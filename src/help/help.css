@@ -70,28 +70,106 @@
   outline-offset: 2px;
 }
 
-/* Điện thoại: thẻ gọn ở đỉnh, chừa đáy cho nút tương tác và joystick. */
-@media (max-width: 479px) {
-  .help-tour {
+/* Trang trợ giúp tra cứu. */
+.help-center {
+  position: absolute;
+  top: calc(64px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 40;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100% - 120px);
+  overflow-y: auto;
+}
+
+.help-center-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-s2);
+}
+
+.help-search-label {
+  display: block;
+  margin: var(--ui-s2) 0 var(--ui-s1);
+  font-size: var(--ui-fs-sm);
+}
+
+.help-search {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: var(--ui-s2) var(--ui-s3);
+  font: inherit;
+}
+
+.help-topics {
+  list-style: none;
+  margin: 0 0 var(--ui-s2);
+  padding: 0;
+}
+
+.help-topic-title {
+  margin: var(--ui-s2) 0 var(--ui-s1);
+  font-size: var(--ui-fs-md, 1rem);
+  font-weight: 600;
+}
+
+.help-center :focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * Điện thoại (rộng tối đa 760 px, hoặc con trỏ thô trên màn hình hẹp): thẻ ở đỉnh, cao tối đa 34%
+ * để chừa nửa dưới cho joystick (trái) và nút nhảy/chạy/tương tác (phải). Chữ >= 16 px,
+ * nút >= 44 px. Nút Xem lại hướng dẫn dời xuống giữa đáy, nằm giữa joystick và cụm nút.
+ */
+@media (max-width: 760px) and (pointer: coarse), (max-width: 479px) {
+  .help-tour,
+  .help-center {
     top: calc(56px + env(safe-area-inset-top, 0px));
     left: max(8px, env(safe-area-inset-left, 0px));
     right: max(8px, env(safe-area-inset-right, 0px));
+    transform: none;
     width: auto;
-    max-height: 38vh;
+    max-height: 34vh;
     padding: var(--ui-s3);
+    font-size: 16px;
+    line-height: 1.45;
   }
 
-  .help-count {
+  .help-center {
+    max-height: 60vh;
+  }
+
+  .help-tour .ui-btn,
+  .help-center .ui-btn,
+  .help-replay {
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 16px;
+  }
+
+  .help-search {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .help-tour .help-count {
     display: none;
   }
 
   .help-hint-slot {
     top: calc(56px + env(safe-area-inset-top, 0px));
+    font-size: 16px;
   }
 
   .help-replay {
-    right: max(8px, env(safe-area-inset-right, 0px));
-    font-size: var(--ui-fs-sm);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     padding-inline: var(--ui-s3);
   }
 }

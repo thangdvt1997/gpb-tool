@@ -1,0 +1,75 @@
+import { useEffect, useMemo } from 'react';
+import { announce } from '../../a11y';
+import { playInternalEmote } from '../player';
+import { playerPose } from '../../scene/controls/playerPose';
+import { requestWalk } from '../../scene/controls/walkRequest';
+import { getControls } from '../../scene/controls/session';
+import { SOCIAL_ACTIONS, type Peer, type SocialDenyReason } from './logic';
+import { SocialSession } from './session';
+import { SocialPrompt } from './SocialPrompt';
+import { createLocalBus, type SocialTransport } from './transport';
+
+/** Câu báo khi không thực hiện được (đọc qua aria-live). */
+export const DENY_TEXT: Partial<Record<SocialDenyReason, string>> = {
+  no_target: 'Không có ai ở gần trong tầm nhìn.',
+  busy: 'Đang chờ trả lời một lời mời khác.',
+  cooldown: 'Chờ một chút rồi thử lại.',
+  sitting: 'Đứng dậy trước đã.',
+  airborne: 'Đang nhảy.',
+  moving: 'Dừng lại trước đã.',
+  in_match: 'Đang trong trận.',
+  too_far: 'Người đó ở quá xa.',
+  editor_open: 'Đóng trình sắp xếp trước đã.',
+  interacting: 'Đang dùng vật.',
+};
+
+export interface SocialBarProps {
+  selfId: string;
+  /** Người khác đang thấy được (vị trí thế giới). Không có world thì rỗng. */
+  getPeers: () => readonly Peer[];
+  nameOf?: (id: string) => string;
+  transport?: SocialTransport;
+}
+
+/**
+ * Thanh hành động xã hội (TASK 15) và hộp lời mời đến. Không chứa múa võ/tập quyền (chờ quyết định).
+ * Transport mặc định là bus cục bộ; khi có world thì truyền transport mạng (docs/design/EMOTES_SOCIAL.md).
+ */
+export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProps) {
+  const session = useMemo(() => {
+    const t = transport ?? createLocalBus().endpoint(selfId);
+    return new SocialSession({
+      transport: t,
+      now: () => performance.now(),
+      getPosition: (id) => (id === selfId ? { x: playerPose.x, z: playerPose.z } : getPeers().find((p) => p.id === id)),
+      play: (id) => playInternalEmote(id),
+      face: (yaw) => requestWalk({ x: playerPose.x, z: playerPose.z, facingYaw: yaw }),
+    });
+  }, [selfId, transport, getPeers]);
+  useEffect(() => () => session.dispose(), [session]);
+
+  const start = (id: (typeof SOCIAL_ACTIONS)[number]['id']) => {
+    const ctl = getControls();
+    const r = session.start(
+      id,
+      { speed: 0, airborne: false, sitting: ctl.seated, editorOpen: false, interacting: false, inMatch: false },
+      { x: playerPose.x, z: playerPose.z, yaw: playerPose.yaw },
+      getPeers(),
+    );
+    if (!r.ok) announce(DENY_TEXT[r.reason] ?? 'Không thực hiện được.', 'polite');
+    else if (r.mode === 'invited') announce('Đã gửi lời mời, chờ trả lời.', 'polite');
+  };
+
+  return (
+    <>
+      <div className="social-bar" role="group" aria-label="Hành động với người khác">
+        {SOCIAL_ACTIONS.map((a) => (
+          <button key={a.id} type="button" className="btn btn-ghost small" onClick={() => start(a.id)}>
+            {a.label}
+          </button>
+        ))}
+      </div>
+      <SocialPrompt session={session} nameOf={nameOf} />
+    </>
+  );
+}
