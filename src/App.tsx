@@ -489,6 +489,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               onSelect={(id) => {
                 // Chế độ sắp xếp (TASK 17): bấm vào vật để nhấc lên, vật theo con trỏ tới lần thả.
                 if (editor.state.active) {
+                  // Cú bấm vừa thả vật (pointerup của mặt phẳng kéo chạy trước onClick, state ở đây vẫn là đang kéo):
+                  // không nhấc lại, nếu không vật luôn dưới con trỏ sẽ không bao giờ thả được.
+                  if (editor.state.drag) return;
                   if (id !== null) {
                     editor.dispatch({ type: 'select', id });
                     editor.dispatch({ type: 'dragStart' });
@@ -636,7 +639,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           )}
           {tattooOpen && <TattooStudio model={mpfbModelFor(look.bodyStyle, look.body.frame)} onClose={() => setTattooOpen(false)} />}
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
-          <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} />
+          {/* Đang sắp xếp nội thất: panel trình biên tập chiếm góc phải dưới, ẩn thanh hành động xã hội để không chồng. */}
+          <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (

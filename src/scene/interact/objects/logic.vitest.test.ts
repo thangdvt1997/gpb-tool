@@ -8,7 +8,7 @@ import { planDrawerToggle, drawerOffset, drawerInteractables, drawerId } from '.
 import { isLightGroupOn, toggleLightGroup, switchInteractable, lightGroupId } from './lightSwitch';
 import { tvPower, tvChannel, tvVolume, VOLUME_MAX, TV_CHANNELS } from './tv';
 import { curtainStep, curtainDaylight, MIN_DAYLIGHT, curtainInteractable, getCurtainDaylight } from './curtain';
-import { validatePlacement, snapToSurface, placementSpot, itemInteractable, surfaceInteractable, getHeldItem, clearItemRegistry } from './smallItem';
+import { validatePlacement, snapToSurface, placementSpot, itemInteractable, surfaceInteractable, getHeldItem, clearItemRegistry, SURFACE_PRIORITY_HOLDING, SURFACE_PRIORITY_IDLE } from './smallItem';
 import { printerSubmit, printerTick, printerClearJam, QUEUE_MAX, PRINTER_INITIAL, printerOf, printerInteractable, registerPrinterTicker } from './printer';
 import { waterTakeCup, waterPour, waterTake, waterTick, waterOf, WATER_INITIAL, waterInteractable, registerWaterTicker, POUR_SECONDS } from './waterCooler';
 import { onInteractEvent, onInteractEventType, clearInteractListeners, emitInteractEvent, type InteractEvent } from './interactEvents';
@@ -398,6 +398,14 @@ describe('tích hợp registry', () => {
     expect(ids('ch')).toEqual(['occupied']);
     setObjectState('ch', { occupant: 'me' });
   });
+  it('ghế: ghi tên mình nhưng chưa ngồi (yêu cầu ngồi thất bại) thì vẫn ngồi lại được', () => {
+    const sit = vi.fn();
+    registerInteractable(chairInteractable({ id: 'ch3', seat: { x: 0, z: 0, yaw: 0 }, footprint: fp, hooks: { sit, stand: vi.fn(), isFree: () => true } }));
+    setObjectState('ch3', { occupant: 'me' });
+    expect(ids('ch3')).toContain('sit');
+    run('ch3', 'sit');
+    expect(sit).toHaveBeenCalledOnce();
+  });
   it('ghế: đứng dậy bị từ chối khi không có chỗ trống', () => {
     const stand = vi.fn();
     const d = chairInteractable({ id: 'ch2', seat: { x: 0, z: 0, yaw: 0 }, footprint: fp, hooks: { sit: vi.fn(), stand, isFree: () => false } });
@@ -408,6 +416,18 @@ describe('tích hợp registry', () => {
     expect(stand).not.toHaveBeenCalled();
     expect(getObjectState('ch2').occupant).toBe('me');
     expect(events[events.length - 1].type).toBe('chair.denied');
+  });
+  it('mặt đặt: ưu tiên cao khi đang cầm đồ, thấp khi tay không', () => {
+    const home = { x: 0.5, y: 0.75, z: 0.5 };
+    registerInteractable(itemInteractable({ id: 'mug', label: 'Cốc', home, footprint: fp }));
+    const surf = { id: 's2', minX: 0, maxX: 2, minZ: 0, maxZ: 2, y: 0.75 };
+    const d = surfaceInteractable({ id: 'shelf', label: 'Tủ', surface: surf, footprint: fp, getPlayer: () => ({ x: 1, z: 0.5, yaw: 0 }), itemInfo: () => ({ r: 0.05, home }) });
+    expect(d.priority).toBe(SURFACE_PRIORITY_IDLE);
+    run('mug', 'pickup');
+    expect(d.priority).toBe(SURFACE_PRIORITY_HOLDING);
+    registerInteractable(d);
+    run('shelf', 'return');
+    expect(d.priority).toBe(SURFACE_PRIORITY_IDLE);
   });
   it('đồ nhỏ: một vật trên tay, đặt hợp lệ lưu vị trí, trả về chỗ cũ', () => {
     const home = { x: 0.5, y: 0.75, z: 0.5 };

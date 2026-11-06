@@ -119,8 +119,8 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
       const r = results[i];
       if (r.index.length === 0) return;
       const zones = vertexZones(cls, p.spec, data.normals);
-      const key = shellGeometryKey(baseGeo.uuid, `${p.garmentId}|${p.variant.fit}|${p.variant.tucked ? 1 : 0}`, r.index, r.offset);
-      const geo = geometryPool.acquire(key, () => deriveGeometry(baseGeo, r.index, { offset: r.offset, zone: zones }));
+      const key = shellGeometryKey(baseGeo.uuid, `${p.garmentId}|${p.variant.fit}|${p.variant.tucked ? 1 : 0}`, r.index, r.offset, r.cut);
+      const geo = geometryPool.acquire(key, () => deriveGeometry(baseGeo, r.index, { offset: r.offset, zone: zones, cut: r.cut }));
       acquired.push(key);
       const material = createShellMaterial(rank);
       const mesh = new THREE.SkinnedMesh(geo, material);

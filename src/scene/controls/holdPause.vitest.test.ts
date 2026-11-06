@@ -28,4 +28,16 @@ describe('holdPause', () => {
     w();
     expect(getControls().paused).toBe(false);
   });
+  it('menuPaused chỉ bật với menu Esc, không với phòng thay đồ', () => {
+    const w = holdPause('wardrobe');
+    expect(getControls().paused).toBe(true);
+    expect(getControls().menuPaused).toBe(false);
+    setPaused(true);
+    expect(getControls().menuPaused).toBe(true);
+    setPaused(false);
+    expect(getControls().menuPaused).toBe(false);
+    expect(getControls().paused).toBe(true);
+    w();
+    expect(getControls().paused).toBe(false);
+  });
 });

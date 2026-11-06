@@ -83,7 +83,11 @@ export function chairActions(id: string, seat: SeatPose, hooks: ChairHooks, sitA
     {
       id: 'sit',
       label: sitAction?.label ?? 'Ngồi xuống',
-      when: (c) => chairOf(c.state).occupant === '' && c.character !== 'seated',
+      when: (c) => {
+        // Chỗ ghi tên mình nhưng mình không ngồi (yêu cầu ngồi không thực hiện được): vẫn cho ngồi lại.
+        const o = chairOf(c.state).occupant;
+        return (o === '' || o === who) && c.character !== 'seated';
+      },
       run: (c) => {
         const p = chairSit(cs(), who);
         if (!p) return ev('chair.denied');

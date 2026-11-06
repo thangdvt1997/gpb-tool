@@ -16,13 +16,22 @@ export interface CoverageVariant {
 const OVERSIZED_HEM_EXTRA = 0.05;
 const OVERSIZED_SLEEVE_EXTRA = 0.08;
 
+/** Biên độ kẹp của lề cắt (m, cỡ 1,8 m): đỉnh xa biên không cần giá trị chính xác, chỉ cần đúng dấu. */
+export const CUT_CAP = 0.05;
+
 /**
- * Mặt nạ đỉnh được che (Uint8Array 0/1). Không bao giờ che đầu, bàn tay, 'other'. Cổ chỉ được che phần có u <= neckU (cổ áo/cổ lọ).
+ * Lề cắt liên tục theo từng đỉnh (m, theo cỡ mesh): dương là nằm trong vùng món che, âm là ngoài, 0 đúng tại biên
+ * (gấu áo, đầu tay áo, cổ áo, cạp, gấu quần). Đo theo khoảng cách dọc trục liên quan (độ cao cho thân, trục xương cho chi)
+ * nên đường đẳng trị 0 là đường cắt thẳng/cong nhẹ, không phụ thuộc lưới tam giác. Kẹp trong [-CUT_CAP, CUT_CAP] (nhân theo cỡ mesh).
+ * Vùng không bao giờ được che (đầu, bàn tay, other) có lề -CUT_CAP.
  */
-export function coverVertices(cls: Classification, spec: ShellClass, variant: CoverageVariant): Uint8Array {
-  const out = new Uint8Array(cls.vertexCount);
+export function coverMargin(cls: Classification, spec: ShellClass, variant: CoverageVariant): Float32Array {
+  const out = new Float32Array(cls.vertexCount);
+  const cap = CUT_CAP * (cls.bodyHeight / REFERENCE_HEIGHT);
+  out.fill(-cap);
   if (!spec.part) return out;
-  const { region, t, u } = cls;
+  const { region, t, tLen, u } = cls;
+  const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
   const oversized = variant.fit === 'oversized';
   const hemBase = variant.tucked ? spec.hemTuckedU : spec.hemU;
   const hem = oversized && !variant.tucked ? hemBase - OVERSIZED_HEM_EXTRA : hemBase;
@@ -34,40 +43,94 @@ export function coverVertices(cls: Classification, spec: ShellClass, variant: Co
 
   const hasTop = spec.part === 'top' || spec.part === 'full';
   const hasBottom = spec.part === 'bottom' || spec.part === 'full';
+  const eps = 1e-6;
+  const fin = (x: number) => (x === Infinity ? cap : x);
 
   for (let v = 0; v < cls.vertexCount; v++) {
     const r = region[v];
     const tv = t[v];
+    const len = tLen[v];
     const uv = u[v];
-    let on = false;
+    let m = -cap;
     switch (spec.part) {
       case 'socks':
       case 'shoes':
-        on = r === Region.foot || (r === Region.calf && tv >= spec.calfFrom);
+        if (r === Region.foot) m = cap;
+        else if (r === Region.calf) m = (tv - spec.calfFrom) * len;
         break;
       default:
         if (r === Region.torso) {
-          on = hasTop ? uv <= spec.neckU : uv <= spec.waistU;
+          m = hasTop ? (spec.neckU - uv) * span : (spec.waistU - uv) * span;
+          if (spec.part === 'top') m = Math.min(m, (uv - hem) * span);
         } else if (r === Region.neck) {
-          on = hasTop && uv <= spec.neckU;
+          if (hasTop) m = (spec.neckU - uv) * span;
         } else if (r === Region.pelvis) {
-          if (spec.part === 'top') on = uv >= hem;
-          else if (spec.part === 'bottom') on = uv <= spec.waistU;
-          else on = true;
+          if (spec.part === 'top') m = (uv - hem) * span;
+          else if (spec.part === 'bottom') m = (spec.waistU - uv) * span;
+          else m = cap;
         } else if (r === Region.thigh) {
-          if (spec.part === 'top') on = uv >= hem;
-          else on = hasBottom && spec.thigh > 0 && tv <= thighEnd;
+          if (spec.part === 'top') m = (uv - hem) * span;
+          else if (hasBottom && spec.thigh > 0) m = fin(thighEnd - tv) * (thighEnd === Infinity ? 1 : len);
+          else m = -cap;
         } else if (r === Region.calf) {
-          on = hasBottom && spec.calf > 0 && tv <= spec.calf;
+          if (hasBottom && spec.calf > 0) m = (spec.calf - tv) * len;
+          else if (hasBottom && spec.thigh > 0) m = Math.min((Math.min(thighEnd, 1) - 1 - tv) * len, -eps);
         } else if (r === Region.upperArm) {
-          on = hasTop && sUp > 0 && tv <= sUp;
+          if (hasTop && sUp > 0) m = sUp === Infinity ? cap : (sUp - tv) * len;
         } else if (r === Region.foreArm) {
-          on = hasTop && sFo > 0 && tv <= sFo;
+          if (hasTop && sFo > 0) m = (sFo - tv) * len;
+          else if (hasTop && sUp > 0) m = Math.min((Math.min(sUp, 1) - 1 - tv) * len, -eps);
         }
     }
-    out[v] = on ? 1 : 0;
+    out[v] = Math.max(-cap, Math.min(cap, m));
   }
   return out;
+}
+
+/**
+ * Mặt nạ đỉnh được che (Uint8Array 0/1) = lề cắt >= 0. Không bao giờ che đầu, bàn tay, 'other'. Cổ chỉ được che phần có u <= neckU (cổ áo/cổ lọ).
+ */
+export function coverVertices(cls: Classification, spec: ShellClass, variant: CoverageVariant): Uint8Array {
+  const margin = coverMargin(cls, spec, variant);
+  const out = new Uint8Array(cls.vertexCount);
+  for (let v = 0; v < out.length; v++) out[v] = margin[v] >= 0 ? 1 : 0;
+  return out;
+}
+
+/**
+ * Tam giác của vỏ: có ít nhất một đỉnh được che. Tam giác nằm vắt qua biên được giữ để shader cắt đúng đường đẳng trị
+ * của lề cắt. Trả thêm mặt nạ đỉnh của các tam giác giữ lại (để cấp độ đẩy cho đỉnh ngoài biên).
+ */
+export function selectShellTriangles(
+  index: ArrayLike<number>,
+  vertexMask: ArrayLike<number>,
+  vertexCount: number,
+): { index: Uint32Array; shellVerts: Uint8Array } {
+  const triCount = Math.floor(index.length / 3);
+  const shellVerts = new Uint8Array(vertexCount);
+  const keep = new Uint8Array(triCount);
+  let kept = 0;
+  for (let f = 0; f < triCount; f++) {
+    const a = index[f * 3];
+    const b = index[f * 3 + 1];
+    const c = index[f * 3 + 2];
+    if (vertexMask[a] || vertexMask[b] || vertexMask[c]) {
+      keep[f] = 1;
+      kept++;
+      shellVerts[a] = 1;
+      shellVerts[b] = 1;
+      shellVerts[c] = 1;
+    }
+  }
+  const out = new Uint32Array(kept * 3);
+  let w = 0;
+  for (let f = 0; f < triCount; f++) {
+    if (!keep[f]) continue;
+    out[w++] = index[f * 3];
+    out[w++] = index[f * 3 + 1];
+    out[w++] = index[f * 3 + 2];
+  }
+  return { index: out, shellVerts };
 }
 
 /** Tam giác có đủ ba đỉnh được che. Trả về chỉ số đỉnh (3 số mỗi tam giác) và cờ theo tam giác. */
@@ -109,9 +172,11 @@ export interface PieceResult {
   key: string;
   /** Đỉnh được che. */
   vertexMask: Uint8Array;
-  /** Chỉ số tam giác của vỏ. */
+  /** Chỉ số tam giác của vỏ (gồm cả tam giác vắt qua biên, shader sẽ cắt theo cut). */
   index: Uint32Array;
-  /** Cờ tam giác của vỏ trên chỉ số tam giác của thân. */
+  /** Lề cắt từng đỉnh (xem coverMargin); shader bỏ các mảnh có nội suy < 0. */
+  cut: Float32Array;
+  /** Cờ tam giác nằm trọn trong vùng che (cả ba đỉnh lề >= 0) trên chỉ số tam giác của thân: chỉ các tam giác này làm ẩn da. */
   triMask: Uint8Array;
   /** Độ đẩy theo pháp tuyến, mỗi đỉnh một giá trị (m, theo cỡ mesh thật). Giá trị 0 ở đỉnh không che. */
   offset: Float32Array;
@@ -171,17 +236,21 @@ export function resolveLayers(cls: Classification, index: ArrayLike<number>, pie
   const top = new Float32Array(cls.vertexCount); // độ đẩy ngoài cùng hiện tại tại mỗi đỉnh
   const gapScale = cls.bodyHeight / REFERENCE_HEIGHT;
   for (const { p } of sorted) {
-    const vertexMask = coverVertices(cls, p.spec, p.variant);
+    const cut = coverMargin(cls, p.spec, p.variant);
+    const vertexMask = new Uint8Array(cls.vertexCount);
+    for (let v = 0; v < vertexMask.length; v++) vertexMask[v] = cut[v] >= 0 ? 1 : 0;
     masks.set(p.key, vertexMask);
+    const shellSel = selectShellTriangles(index, vertexMask, cls.vertexCount);
     const offset = new Float32Array(cls.vertexCount);
+    // Đỉnh ngoài biên của tam giác vắt qua biên cũng được đẩy như đỉnh che để phần còn lại của tam giác không chìm vào da.
     for (let v = 0; v < cls.vertexCount; v++) {
-      if (!vertexMask[v]) continue;
+      if (!shellSel.shellVerts[v]) continue;
       const below = top[v];
       offset[v] = (below > 0 ? below + LAYER_GAP * gapScale : 0) + ownOffset(cls, p.spec, p.variant, v);
       if (offset[v] > top[v]) top[v] = offset[v];
     }
     const sel = selectTriangles(index, vertexMask);
-    results.set(p.key, { key: p.key, vertexMask, index: sel.index, triMask: sel.triMask, offset });
+    results.set(p.key, { key: p.key, vertexMask, index: shellSel.index, cut, triMask: sel.triMask, offset });
   }
   // Giữ thứ tự đầu vào.
   return pieces.map((p) => results.get(p.key) as PieceResult);

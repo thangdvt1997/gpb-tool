@@ -8,6 +8,7 @@ import { playerPose } from '../controls/playerPose';
 import { requestWalk } from '../controls/walkRequest';
 import { isSolidObject, type Rect } from '../layout';
 import { canFocusInState } from './characterState';
+import { attachSeatSync } from './seatSync';
 import {
   activateById,
   activateFocus,
@@ -107,6 +108,9 @@ export function InteractionSystem({ enabled, hovered = null, occluders }: System
     extra: undefined,
     rects: [],
   });
+
+  // Ngồi thật (điều khiển) -> characterState seated, để ghế đưa ra "Đứng dậy".
+  useEffect(() => attachSeatSync(), []);
 
   useFrame(() => {
     const l = latest.current;

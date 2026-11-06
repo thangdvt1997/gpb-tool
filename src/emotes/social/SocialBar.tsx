@@ -29,13 +29,15 @@ export interface SocialBarProps {
   getPeers: () => readonly Peer[];
   nameOf?: (id: string) => string;
   transport?: SocialTransport;
+  /** Đang sắp xếp nội thất: ẩn thanh nút (panel trình biên tập ở cùng góc), vẫn giữ phiên để nhận lời mời. */
+  editorOpen?: boolean;
 }
 
 /**
  * Thanh hành động xã hội (TASK 15) và hộp lời mời đến. Không chứa múa võ/tập quyền (chờ quyết định).
  * Transport mặc định là bus cục bộ; khi có world thì truyền transport mạng (docs/design/EMOTES_SOCIAL.md).
  */
-export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProps) {
+export function SocialBar({ selfId, getPeers, nameOf, transport, editorOpen = false }: SocialBarProps) {
   // Tạo trong effect: dispose() gỡ đăng ký transport, StrictMode chạy cleanup rồi effect lại nên cần phiên mới.
   const [session, setSession] = useState<SocialSession | null>(null);
   useEffect(() => {
@@ -56,7 +58,7 @@ export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProp
     const ctl = getControls();
     const r = session.start(
       id,
-      { speed: 0, airborne: false, sitting: ctl.seated, editorOpen: false, interacting: false, inMatch: false },
+      { speed: 0, airborne: false, sitting: ctl.seated, editorOpen, interacting: false, inMatch: false },
       { x: playerPose.x, z: playerPose.z, yaw: playerPose.yaw },
       getPeers(),
     );
@@ -66,7 +68,7 @@ export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProp
 
   return (
     <>
-      <div className="social-bar" role="group" aria-label="Hành động với người khác">
+      <div className="social-bar" role="group" aria-label="Hành động với người khác" hidden={editorOpen}>
         {SOCIAL_ACTIONS.map((a) => (
           <button key={a.id} type="button" className="btn btn-ghost small" onClick={() => start(a.id)}>
             {a.label}

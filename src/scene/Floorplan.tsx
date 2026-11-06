@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { ZoneObject } from '../content/types';
-import { canvasTexture, makeRng } from '../env/shared';
+import { canvasTexture } from '../env/shared';
 import { OFFICE_DAY_SCENE as R } from '../theme/tokens';
 import { stateOf, useScene, type ObjState } from './context';
 import { InstancedBoxes, type BoxItem } from './InstancedBoxes';
@@ -10,6 +10,7 @@ import { OfficeCeiling } from './OfficeCeiling';
 import { OFFICE_L_PLAN, OFFICE_L_POLYGON } from './officeBounds';
 import { useOfficeEnvMap } from './officeEnv';
 import { OfficeProps } from './OfficeProps';
+import { stoneTextureData } from './stoneTexture';
 
 /** Tường sơn trắng mờ như ảnh văn phòng thật (REAL_OFFICE_STYLE.md mục 3). */
 const WALL_COLOR = R.wallPaint;
@@ -59,11 +60,11 @@ function officeSurface(flipZ: boolean): THREE.ShapeGeometry {
  * Dùng chung cho sàn chính và lớp sàn hành lang (Corridors.tsx) ở theme office-day.
  */
 export const STONE_FLOOR_GLOSS = {
-  roughness: 0.4,
+  roughness: 0.45,
   metalness: 0,
-  clearcoat: 0.8,
-  clearcoatRoughness: 0.16,
-  envMapIntensity: 0.75,
+  clearcoat: 0.5,
+  clearcoatRoughness: 0.2,
+  envMapIntensity: 0.7,
 } as const;
 
 const HATCH_TINT: Record<ObjState, string> = {
@@ -73,79 +74,41 @@ const HATCH_TINT: Record<ObjState, string> = {
 };
 
 /**
- * Gạch vuông khổ lớn 0,8 x 0,8 m. Một ô texture chứa 5 x 5 viên (4 m), lặp trên sàn: chu kỳ lặp dài hơn
- * để mắt khó nhận ra (room.txt mục 6, tránh texture lặp quá rõ).
+ * Gạch vuông khổ lớn 0,8 x 0,8 m. Một ô texture chứa 8 x 8 viên (6,4 m), mỗi viên có vân riêng (xoay, lật, dịch
+ * nhiễu ngẫu nhiên), nên chu kỳ lặp dài và không thấy rõ (room.txt mục 6). Vân sinh ở stoneTexture.ts.
  */
 const TILE_M = 0.8;
-const TILES_PER_TEX = 5;
-const FLOOR_TEX_PX = 1280;
+const TILES_PER_TEX = 8;
+const FLOOR_TEX_PX = 2048;
 
-/**
- * Texture sàn đá xám: nền đá có hạt mịn, vân trắng mảnh chạy chéo (thưa), mạch lát 1–2 mm màu xám đậm hơn nền
- * chạy thẳng theo hai trục (trùng trục lối đi). Mạch nằm đúng mép ô nên lặp liền.
- */
+function hexRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Texture sàn đá xám: hạt mịn, mây nền nhẹ, vân trắng mảnh cong thưa, mạch lát 3 mm. Mipmap, anisotropy tối đa. */
 function makeStoneTexture(): THREE.CanvasTexture {
-  const rng = makeRng(80080);
   const tex = canvasTexture(FLOOR_TEX_PX, FLOOR_TEX_PX, (ctx, w, h) => {
-    const tile = w / TILES_PER_TEX;
-    ctx.fillStyle = R.floorStone;
-    ctx.fillRect(0, 0, w, h);
-    // Mỗi viên lệch sáng tối rất nhẹ, như gạch thật khác lô.
-    for (let i = 0; i < TILES_PER_TEX; i++) {
-      for (let j = 0; j < TILES_PER_TEX; j++) {
-        const a = (rng() - 0.5) * 0.06;
-        ctx.fillStyle = a > 0 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${-a})`;
-        ctx.fillRect(i * tile, j * tile, tile, tile);
-      }
-    }
-    // Hạt đá mịn.
-    for (let k = 0; k < 25000; k++) {
-      const v = rng() < 0.5 ? 255 : 60;
-      ctx.fillStyle = `rgba(${v},${v},${v},${0.04 + rng() * 0.05})`;
-      ctx.fillRect(rng() * w, rng() * h, 1.5, 1.5);
-    }
-    // Vân trắng mảnh chạy chéo, mỗi viên 1–2 vân, cắt theo mép viên.
-    ctx.strokeStyle = R.floorVein;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < TILES_PER_TEX; i++) {
-      for (let j = 0; j < TILES_PER_TEX; j++) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(i * tile, j * tile, tile, tile);
-        ctx.clip();
-        const veins = 1 + Math.floor(rng() * 2);
-        for (let v = 0; v < veins; v++) {
-          let x = i * tile + rng() * tile;
-          let y = j * tile;
-          ctx.globalAlpha = 0.35 + rng() * 0.35;
-          ctx.lineWidth = 0.8 + rng() * 1.6;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          const dir = rng() < 0.5 ? 1 : -1;
-          for (let s = 0; s < 12; s++) {
-            x += dir * (tile / 14) * (0.6 + rng() * 0.8);
-            y += (tile / 12) * (0.7 + rng() * 0.6);
-            ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-    }
-    ctx.globalAlpha = 1;
-    // Mạch lát: 2 px trên 256 px của viên 0,8 m, khoảng 3 mm hiển thị (mạch ở mép ô chia đôi qua hai mép texture).
-    ctx.fillStyle = R.floorGrout;
-    for (let k = 0; k <= TILES_PER_TEX; k++) {
-      const o = Math.round(k * tile);
-      ctx.fillRect(o - 1, 0, 2, h);
-      ctx.fillRect(0, o - 1, w, 2);
-    }
+    const data = stoneTextureData({
+      size: w,
+      tiles: TILES_PER_TEX,
+      seed: 80080,
+      stone: hexRgb(R.floorStone),
+      vein: hexRgb(R.floorVein),
+      grout: hexRgb(R.floorGrout),
+    });
+    ctx.putImageData(new ImageData(data, w, h), 0, 0);
+    void h;
   });
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   const cell = TILE_M * TILES_PER_TEX;
   tex.repeat.set(FLOOR.width / cell, FLOOR.depth / cell);
-  tex.anisotropy = 8;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = 16;
   return tex;
 }
 
@@ -209,7 +172,7 @@ export function Floorplan({ reserved }: { reserved: ZoneObject[] }) {
   return (
     <>
       <StoneFloor />
-      <InstancedBoxes items={OUTER_WALLS} interactive={false} castShadow receiveShadow />
+      <InstancedBoxes items={OUTER_WALLS} interactive={false} castShadow receiveShadow roughness={0.92} />
       <OfficeCeilingL />
       <OfficeProps />
       {reserved.map((o) => (

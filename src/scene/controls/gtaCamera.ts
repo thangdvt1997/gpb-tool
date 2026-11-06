@@ -718,7 +718,7 @@ const RECOVERY_TEXT: Record<RecoveryTarget['source'], string> = {
   'spawn-near': 'gần điểm xuất hiện',
 };
 
-/** Thanh nhỏ hiện khi tạm dừng: nút về vị trí an toàn, toàn cảnh và tùy chọn camera. DOM thật, không thuộc cây React. */
+/** Thanh nhỏ hiện khi mở menu tạm dừng (Esc): nút về vị trí an toàn, toàn cảnh và tùy chọn camera. DOM thật, không thuộc cây React. */
 function mountSafetyPanel(setStatus: { fn: ((s: string) => void) | null }): () => void {
   const root = document.createElement('div');
   root.className = 'cam-safety';
@@ -792,7 +792,8 @@ function mountSafetyPanel(setStatus: { fn: ((s: string) => void) | null }): () =
   };
   const syncVisible = (): void => {
     // Inline display: flex đè thuộc tính hidden, nên phải đặt display trực tiếp.
-    root.hidden = !getControls().paused;
+    // Chỉ menu Esc: phòng thay đồ, chụp ảnh cũng giữ tạm dừng nhưng có giao diện riêng, bảng này sẽ đè lên.
+    root.hidden = !getControls().menuPaused;
     root.style.display = root.hidden ? 'none' : 'flex';
     overview.textContent = cameraModes.has(MODE_SOURCE.overview) ? 'Thoát toàn cảnh' : 'Toàn cảnh';
   };

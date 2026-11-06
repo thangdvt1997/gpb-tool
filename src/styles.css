@@ -271,3 +271,7 @@ pre {
   .onb-choice-grid, .onb-swatch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .onb-otp { letter-spacing: 6px; }
 }
+
+/* Kéo chuột trên cảnh 3D (xoay camera) không được bôi đen chữ HUD. Ô nhập, hộp thoại, panel vẫn chọn chữ được. */
+.app { user-select: none; -webkit-user-select: none; }
+.app input, .app textarea, .app [role='dialog'], .app [role='region'], .app [role='log'] { user-select: text; -webkit-user-select: text; }

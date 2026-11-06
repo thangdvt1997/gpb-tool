@@ -85,6 +85,8 @@ export interface Classification {
    * thigh: hông tới gối; calf: gối tới cổ chân; foot: cổ chân tới mũi). Vùng thân/đầu: 0.
    */
   t: Float32Array;
+  /** Chiều dài đoạn xương (cùng đơn vị mesh) của trục t tại đỉnh; đổi t sang mét: t * tLen. 1 nếu đỉnh không thuộc chi. */
+  tLen: Float32Array;
   /** Độ cao chuẩn hoá: 0 tại xương chậu, 1 tại gốc cổ. Có thể âm (dưới hông) hoặc lớn hơn 1. */
   u: Float32Array;
   /** Mốc dùng để chuẩn hoá. */
@@ -112,6 +114,7 @@ export function classifyBody(data: BodyData): Classification {
   const region = new Uint8Array(n);
   const side = new Uint8Array(n);
   const t = new Float32Array(n);
+  const tLen = new Float32Array(n).fill(1);
   const u = new Float32Array(n);
   const boneInfo = data.boneNames.map(boneRegion);
 
@@ -170,6 +173,7 @@ export function classifyBody(data: BodyData): Classification {
         const dy = b[1] - a[1];
         const dz = b[2] - a[2];
         const len2 = dx * dx + dy * dy + dz * dz;
+        if (len2 > 1e-12) tLen[v] = Math.sqrt(len2);
         if (len2 > 1e-12) t[v] = ((px - a[0]) * dx + (py - a[1]) * dy + (pz - a[2]) * dz) / len2;
       }
     }
@@ -179,6 +183,7 @@ export function classifyBody(data: BodyData): Classification {
     region,
     side,
     t,
+    tLen,
     u,
     yPelvis,
     yNeck,

@@ -16,7 +16,7 @@ interface PlantLabelProps {
 export function PlantLabel({ plant, y, visible }: PlantLabelProps) {
   if (!visible) return null;
   return (
-    <Html position={[0, y, 0]} center>
+    <Html position={[0, y, 0]} center zIndexRange={[4, 0]}>
       <div className="label">
         {plant.name} · {STATUS_LABEL[plant.status]}
       </div>

@@ -12,7 +12,7 @@ export function fixedRectsOf(objects: readonly ZoneObject[]): Rect[] {
 
 /**
  * Footprint thang máy, thang bộ và lối vào, đưa vào keepOut của useMoveMode.
- * Không nới ở đây: hook tự nới KEEP_OUT (1,5 m).
+ * checkPlacement dùng tâm của chúng (bán kính KEEP_OUT 1,5 m, như server).
  */
 export function keepOutRectsOf(objects: readonly ZoneObject[]): Rect[] {
   return objects.filter((o) => o.kind === 'core' || o.id === 'entrance').map((o) => footprint(o));

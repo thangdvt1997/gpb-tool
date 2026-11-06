@@ -161,6 +161,10 @@ export interface SurfaceOptions {
   allSurfaces?: () => readonly Surface[];
 }
 
+/** Ưu tiên chọn mặt đặt: cầm đồ thì cao hơn máy in, ngăn kéo cùng chỗ; không cầm thì thấp. */
+export const SURFACE_PRIORITY_HOLDING = 1;
+export const SURFACE_PRIORITY_IDLE = -0.2;
+
 /** Vật "mặt đặt": hành động Đặt xuống / Trả về chỗ cũ khi đang cầm đồ. */
 export function surfaceInteractable(o: SurfaceOptions): InteractableDef {
   const holding = () => getHeldItem() !== null;
@@ -181,7 +185,11 @@ export function surfaceInteractable(o: SurfaceOptions): InteractableDef {
     footprint: o.footprint,
     baseY: o.surface.y - 0.05,
     height: 0.1,
-    priority: -0.2,
+    // Mặt đặt nằm chung chỗ với vật khác (máy in, ngăn kéo trên tủ): khi đang cầm đồ thì "Đặt xuống" phải thắng,
+    // nếu không người dùng không bao giờ đặt được. Không cầm thì nhường (getter đọc mỗi lần chọn vật).
+    get priority() {
+      return holding() ? SURFACE_PRIORITY_HOLDING : SURFACE_PRIORITY_IDLE;
+    },
     actions: [
       {
         id: 'place',

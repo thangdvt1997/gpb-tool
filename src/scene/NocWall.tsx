@@ -50,7 +50,7 @@ export function NocTiles({ obj, services }: { obj: ZoneObject; services: Service
     <>
       <InstancedBoxes items={items} />
       {tiles.map((t) => (
-        <Html key={t.id} position={t.labelPos} center style={{ pointerEvents: 'none' }}>
+        <Html key={t.id} position={t.labelPos} center zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
           <div className="label" style={{ borderColor: statusColor[t.status] }}>
             {t.name} · {STATUS_TEXT[t.status]}
           </div>

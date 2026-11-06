@@ -19,7 +19,7 @@ export interface MoveModeConfig {
    * nếu không vật đó sẽ tự chặn chính nó.
    */
   fixed: readonly Rect[];
-  /** Footprint thang máy, thang bộ, lối vào (dùng keepOutRectsOf). Hook tự nới 1,5 m. */
+  /** Footprint thang máy, thang bộ, lối vào (dùng keepOutRectsOf). Kiểm tra theo bán kính 1,5 m quanh tâm. */
   keepOut: readonly Rect[];
   /**
    * Kích thước chưa xoay của vật di chuyển được (lấy từ ZoneObject.size: w = size[0], d = size[2]).

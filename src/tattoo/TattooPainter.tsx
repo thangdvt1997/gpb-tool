@@ -83,13 +83,22 @@ export function TattooPainter({ masks, initialDoc, quality = 'medium', onDocChan
     if (!cv || !ctx) return;
     ctx.fillStyle = '#e9e4dc';
     ctx.fillRect(0, 0, PREVIEW, PREVIEW);
-    const cell = PREVIEW / MASK_RES;
-    for (const m of masks) {
-      const sel = m.region === region && (!side || m.side === side);
-      ctx.fillStyle = sel ? '#cfe3d3' : m.region && TATTOO_REGIONS.includes(m.region) ? '#d6d2ca' : '#bdb9b2';
-      if (m.grid) {
-        for (let y = 0; y < MASK_RES; y++) for (let x = 0; x < MASK_RES; x++) if (m.grid[y * MASK_RES + x]) ctx.fillRect(x * cell, y * cell, cell + 0.5, cell + 0.5);
-      } else ctx.fillRect(m.box.u0 * PREVIEW, m.box.v0 * PREVIEW, (m.box.u1 - m.box.u0) * PREVIEW, (m.box.v1 - m.box.v0) * PREVIEW);
+    // Mask vẽ ở MASK_RES x MASK_RES rồi phóng to có làm mượt, tránh các ô vuông răng cưa trên bản xem trước.
+    const maskCv = document.createElement('canvas');
+    maskCv.width = MASK_RES;
+    maskCv.height = MASK_RES;
+    const mctx = maskCv.getContext('2d');
+    if (mctx) {
+      for (const m of masks) {
+        const sel = m.region === region && (!side || m.side === side);
+        mctx.fillStyle = sel ? '#cfe3d3' : m.region && TATTOO_REGIONS.includes(m.region) ? '#d6d2ca' : '#bdb9b2';
+        if (m.grid) {
+          for (let y = 0; y < MASK_RES; y++) for (let x = 0; x < MASK_RES; x++) if (m.grid[y * MASK_RES + x]) mctx.fillRect(x, y, 1, 1);
+        } else mctx.fillRect(m.box.u0 * MASK_RES, m.box.v0 * MASK_RES, (m.box.u1 - m.box.u0) * MASK_RES, (m.box.v1 - m.box.v0) * MASK_RES);
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(maskCv, 0, 0, PREVIEW, PREVIEW);
     }
     let shown = doc;
     if (live && live.length >= 2 && tool !== 'stamp') {

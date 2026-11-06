@@ -3,7 +3,7 @@ import type { Pose, Rotation } from './types';
 
 /** Khoảng cách an toàn tối thiểu giữa vật di chuyển và vật khác, mét. */
 export const SAFE_GAP = 0.6;
-/** Vùng cấm quanh thang máy, thang bộ và lối vào, mét. */
+/** Vùng cấm: bán kính quanh TÂM thang máy, thang bộ và lối vào, mét (cùng luật FORBIDDEN_RADIUS của services/layout). */
 export const KEEP_OUT = 1.5;
 /** Nửa kích thước vùng đi được: sàn 58 × 30 m, trừ 0,8 m sát tường. Tâm sàn là gốc. */
 export const PLAY_HALF = { x: 28.2, z: 14.2 };
@@ -62,7 +62,7 @@ export interface PlacementCheck {
 export interface PlacementContext {
   /** Footprint vật cố định (đã loại vật di chuyển được). */
   fixed: readonly Rect[];
-  /** Footprint thang máy, thang bộ, lối vào, CHƯA nới. Hàm sẽ nới KEEP_OUT. */
+  /** Footprint thang máy, thang bộ, lối vào. Chỉ dùng tâm: footprint vật không được có điểm nào cách tâm dưới KEEP_OUT. */
   keepOut: readonly Rect[];
   /** Footprint hiện thời của các vật di chuyển khác. */
   movables: readonly Rect[];
@@ -82,7 +82,9 @@ export function checkPlacement(rect: Rect, ctx: PlacementContext): PlacementChec
     return { valid: false, reason: 'Vượt ra ngoài sàn.' };
   }
   for (const k of ctx.keepOut) {
-    if (overlaps(rect, inflate(k, KEEP_OUT))) {
+    // Giống server (movable.js, bước 2): khoảng cách từ tâm lõi tới footprint. Trước đây client nới cả footprint lõi
+    // thêm 1,5 m (lối vào rộng 3 m), chặt hơn server, làm Service Desk đặt sát lối vào không nhích được hướng nào.
+    if (distanceToRect((k.minX + k.maxX) / 2, (k.minZ + k.maxZ) / 2, rect) < KEEP_OUT - EPS) {
       return { valid: false, reason: 'Nằm trong vùng cấm 1,5 m quanh thang máy, thang bộ hoặc lối vào.' };
     }
   }
@@ -101,6 +103,13 @@ export function checkPlacement(rect: Rect, ctx: PlacementContext): PlacementChec
   );
   if (movableReason) return { valid: false, reason: movableReason };
   return { valid: true, reason: null };
+}
+
+/** Khoảng cách từ điểm (x, z) tới hình chữ nhật, 0 nếu nằm trong. */
+export function distanceToRect(x: number, z: number, r: Rect): number {
+  const dx = Math.max(r.minX - x, 0, x - r.maxX);
+  const dz = Math.max(r.minZ - z, 0, z - r.maxZ);
+  return Math.hypot(dx, dz);
 }
 
 /** Trả lý do nếu rect chồng hoặc quá sát một trong các rects; null nếu không. */

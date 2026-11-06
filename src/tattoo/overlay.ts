@@ -49,6 +49,7 @@ export function applyTattooOverlay(bodyMesh: THREE.Mesh, canvas: Source): Tattoo
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = 8;
   tex.needsUpdate = true;
 
   const uniforms = { tattooMap: { value: tex }, tattooOpacity: { value: 1 } };

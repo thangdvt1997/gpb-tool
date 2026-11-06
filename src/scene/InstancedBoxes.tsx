@@ -24,6 +24,8 @@ interface BoxesProps {
   receiveShadow?: boolean;
   /** Chỉ dùng để bắt chuột: vật liệu visible=false nên không vẽ (0 draw call). Vẫn nhận raycast và sự kiện. */
   hitOnly?: boolean;
+  /** Độ nhám vật liệu đặc (mặc định 0,7). Tường sơn mờ dùng 0,92. */
+  roughness?: number;
 }
 
 /** Nhiều hình hộp trong một lệnh vẽ (InstancedMesh). Màu từng mảnh lấy từ items. */
@@ -34,6 +36,7 @@ export function InstancedBoxes({
   castShadow = false,
   receiveShadow = false,
   hitOnly = false,
+  roughness = 0.7,
 }: BoxesProps) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const { select, hover, unhover } = useScene();
@@ -100,7 +103,7 @@ export function InstancedBoxes({
       ) : glass ? (
         <meshPhysicalMaterial color={WHITE} transparent opacity={0.25} roughness={0.1} depthWrite={false} />
       ) : (
-        <meshStandardMaterial color={WHITE} roughness={0.7} />
+        <meshStandardMaterial color={WHITE} roughness={roughness} metalness={0} />
       )}
     </instancedMesh>
   );

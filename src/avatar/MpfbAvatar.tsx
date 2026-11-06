@@ -230,6 +230,9 @@ export function materialAlphaMode(name: string): 'MASK' | 'OPAQUE' {
  * Sửa vật liệu dùng chung: GLB xuất BLEND làm vỡ thứ tự vẽ. Thân và mắt về OPAQUE, lông mày về MASK
  * (alphaTest, ghi depth). Gọi lặp lại không sao.
  */
+/** Da: nhám vừa, không phản chiếu gắt (không như nhựa). Hằng số vật liệu. */
+export const SKIN_MATERIAL = { roughness: 0.62, metalness: 0, envMapIntensity: 0.45, anisotropy: 8 } as const;
+
 function fixMaterials(root: THREE.Object3D): void {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
@@ -240,6 +243,19 @@ function fixMaterials(root: THREE.Object3D): void {
     for (const m of mats) {
       m.transparent = false;
       m.depthWrite = true;
+      if (/body/i.test(m.name)) {
+        const sm = m as THREE.MeshStandardMaterial;
+        sm.roughness = SKIN_MATERIAL.roughness;
+        sm.metalness = SKIN_MATERIAL.metalness;
+        sm.envMapIntensity = SKIN_MATERIAL.envMapIntensity;
+        // GLB xuất hai mặt: mặt trong của da tạo sọc bóng đổ tự che ở tay; da là khối kín nên chỉ cần mặt ngoài.
+        sm.side = THREE.FrontSide;
+        if (sm.map) {
+          sm.map.anisotropy = SKIN_MATERIAL.anisotropy;
+          sm.map.minFilter = THREE.LinearMipmapLinearFilter;
+          sm.map.needsUpdate = true;
+        }
+      }
       if (materialAlphaMode(m.name) === 'MASK') {
         m.alphaTest = EYEBROW_ALPHA_CUTOFF;
       } else {
@@ -262,7 +278,7 @@ function findMorphMesh(root: THREE.Object3D): THREE.Mesh | null {
 }
 
 /** Tạo bản sao riêng (xương riêng, geometry và vật liệu dùng chung với bộ đệm của useLoader) và đo rig. */
-function buildRig(gltf: GLTF): MpfbRig {
+export function buildRig(gltf: GLTF): MpfbRig {
   const root = cloneSkinned(gltf.scene);
   root.updateMatrixWorld(true);
 
@@ -348,7 +364,7 @@ interface PoseWork {
   tmp: THREE.Quaternion;
 }
 
-function createPoseWork(): PoseWork {
+export function createPoseWork(): PoseWork {
   const chain: Partial<Record<PoseJoint, THREE.Quaternion>> = {};
   const delta: Partial<Record<PoseJoint, THREE.Quaternion>> = {};
   for (const id of MPFB_JOINT_ORDER) {
@@ -363,13 +379,13 @@ function createPoseWork(): PoseWork {
  * rồi đổi sang cục bộ: local = inv(Wnghỉ_cha) * inv(D_cha) * D * Wnghỉ, với D = Rchuỗi * Rcăn.
  * Không cấp phát.
  */
-function applyMpfbPose(rig: MpfbRig, p: AvatarPose, w: PoseWork): void {
+export function applyMpfbPose(rig: MpfbRig, p: AvatarPose, w: PoseWork): void {
   for (const id of MPFB_JOINT_ORDER) {
     const j = rig.joints[id];
     const chain = w.chain[id] as THREE.Quaternion;
     const delta = w.delta[id] as THREE.Quaternion;
     const map = MPFB_BONE_MAP[id];
-    w.euler.set(map.rotX ? p[map.rotX] : 0, 0, map.rotZ ? p[map.rotZ] : 0, 'XYZ');
+    w.euler.set(map.rotX ? p[map.rotX] : 0, map.rotY ? p[map.rotY] : 0, map.rotZ ? p[map.rotZ] : 0, 'XYZ');
     w.own.setFromEuler(w.euler);
     if (map.follows) chain.copy(w.chain[map.follows] as THREE.Quaternion).multiply(w.own);
     else chain.copy(w.own);

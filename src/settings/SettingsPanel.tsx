@@ -50,7 +50,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
 
   /** Mũi tên trái/phải đổi tab (vòng tròn), Home/End về đầu/cuối (mẫu WAI-ARIA tabs). */
   const onTabKey = (e: ReactKeyboardEvent<HTMLDivElement>): void => {
-    const i = TABS.findIndex((t) => t.id === tab);
+    // Tính từ tab đang có focus (có thể khác tab đang chọn khi focus bằng chuột/script).
+    const focused = (e.target as HTMLElement).id?.replace(/^sp-tab-/, '');
+    const fi = TABS.findIndex((t) => t.id === focused);
+    const i = fi >= 0 ? fi : TABS.findIndex((t) => t.id === tab);
     let n = -1;
     if (e.key === 'ArrowRight') n = (i + 1) % TABS.length;
     else if (e.key === 'ArrowLeft') n = (i - 1 + TABS.length) % TABS.length;

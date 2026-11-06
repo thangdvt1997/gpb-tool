@@ -72,3 +72,14 @@
   transform: translateX(-50%);
   z-index: 15;
 }
+
+/* Bộ chọn đồ họa nằm trên cảnh 3D: cần nền để chữ đọc được, không lẫn vào nhãn khu. */
+.hud-tools .quality-picker {
+  background: var(--surface, rgba(20, 24, 32, 0.92));
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.hud-tools .quality-picker .muted { color: #c9d1dc; }
+.social-bar[hidden] { display: none; }

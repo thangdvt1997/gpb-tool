@@ -68,11 +68,16 @@ export interface ControlsDebug {
   x: number;
   z: number;
   speed: number;
+  /** Trạng thái ngồi: có đang ngồi, khung có điều khiển được không, có chạm đất, yêu cầu ngồi đang chờ. */
+  seated: boolean;
+  live: boolean;
+  grounded: boolean;
+  seatPending: boolean;
 }
 const debugHook: ControlsDebug | null = (() => {
   if (typeof window === 'undefined') return null;
   if (new URLSearchParams(window.location.search).get('debug') !== 'controls') return null;
-  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0 };
+  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false };
   (window as unknown as { __gpbControls?: ControlsDebug }).__gpbControls = h;
   return h;
 })();
@@ -140,6 +145,9 @@ interface Seated {
  * input (useGtaControls, session), chuyển động (gtaMotion), camera (gtaCamera), hoạt ảnh (stepLocomotion).
  * Khung hình: đọc phím, quy hướng theo camera, stepMotion, cập nhật trộn hoạt ảnh, rồi camera.
  */
+/** Thời gian giữ yêu cầu ngồi chưa thực hiện được (s). */
+const SEAT_REQUEST_TTL = 1;
+
 export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autopilot, bodyHeight }: GtaPlayerOptions): GtaPlayer {
   const heightsRef = useRef(cameraHeightsFor(bodyHeight));
   heightsRef.current = cameraHeightsFor(bodyHeight);
@@ -164,6 +172,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   const input = useRef(createMotionInput()).current;
   const autoDir = useRef({ x: 0, z: 0 }).current;
   const seated = useRef<Seated | null>(null);
+  const pendingSeat = useRef<{ req: SeatSpot | 'stand'; ttl: number } | null>(null);
   const camFrame = useRef<CameraFrame>({ firstPerson: false, eyeHeight: heightsRef.current.eyeStand, targetHeight: heightsRef.current.target }).current;
 
   const [isMoving, setIsMoving] = useState(false);
@@ -206,7 +215,16 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     const live = enabled && !ctl.paused && !(isLocked !== undefined && isLocked());
 
     // Ngồi, đứng dậy (yêu cầu từ InteractTracker).
-    const req = takeSeatRequest();
+    // Yêu cầu ngồi đến lúc chưa thực hiện được (menu vừa đóng còn tạm dừng, chưa chạm đất) thì giữ lại tối đa 1 s,
+    // không bỏ mất (ghế đã ghi người ngồi).
+    const fresh = takeSeatRequest();
+    if (fresh !== null) pendingSeat.current = { req: fresh, ttl: SEAT_REQUEST_TTL };
+    const pend = pendingSeat.current;
+    const req = pend ? pend.req : null;
+    if (pend) {
+      pend.ttl -= dt;
+      if (pend.req === 'stand' || pend.ttl <= 0 || seated.current !== null || (live && motion.grounded)) pendingSeat.current = null;
+    }
     if (req === 'stand') {
       const prev = seated.current;
       if (prev !== null) {
@@ -326,6 +344,10 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       debugHook.x = pos.x;
       debugHook.z = pos.z;
       debugHook.speed = motion.speed;
+      debugHook.seated = seated.current !== null;
+      debugHook.live = live;
+      debugHook.grounded = motion.grounded;
+      debugHook.seatPending = pendingSeat.current !== null;
     }
     const sitW = playerLocomotion.sit;
     camFrame.firstPerson = ctl.firstPerson;

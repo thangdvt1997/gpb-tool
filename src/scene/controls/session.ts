@@ -20,6 +20,8 @@ export interface ControlSettings {
 
 export interface ControlSnapshot {
   paused: boolean;
+  /** Tạm dừng do menu Esc (không tính phòng thay đồ, chụp ảnh...). Bảng an toàn camera chỉ hiện khi này bật. */
+  menuPaused: boolean;
   firstPerson: boolean;
   seated: boolean;
   settings: ControlSettings;
@@ -43,7 +45,7 @@ export function controlSettingsOf(s: Settings): ControlSettings {
   return { sensitivity: s.mouse.sensitivity, volume: s.volume, helpHidden: !s.hintsEnabled };
 }
 
-let snap: ControlSnapshot = { paused: false, firstPerson: false, seated: false, settings: controlSettingsOf(getSettings()) };
+let snap: ControlSnapshot = { paused: false, menuPaused: false, firstPerson: false, seated: false, settings: controlSettingsOf(getSettings()) };
 const listeners = new Set<() => void>();
 
 function emit(next: ControlSnapshot): void {
@@ -73,9 +75,9 @@ const pauseHolds = new Set<symbol>();
 
 function syncPaused(): void {
   const paused = menuPaused || pauseHolds.size > 0;
-  if (snap.paused === paused) return;
-  if (paused) resetTouchInput();
-  emit({ ...snap, paused });
+  if (snap.paused === paused && snap.menuPaused === menuPaused) return;
+  if (paused && !snap.paused) resetTouchInput();
+  emit({ ...snap, paused, menuPaused });
 }
 
 /** Menu tạm dừng (Esc). Không gỡ các lý do khác đang giữ: đóng menu khi phòng thay đồ mở vẫn giữ dừng. */

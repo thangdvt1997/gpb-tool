@@ -389,7 +389,8 @@ export function ITOffice({
   );
 
   // Tương tác: vật có action. Bấm vật ở gần và đang nhìn vào thì dùng ngay, ở xa thì tự đi tới rồi dùng.
-  const interactSelect = useInteractionSelect(obstacles, entry.kind === 'done', onSelect);
+  // Đang sắp xếp nội thất (interactions=false): bấm vật là chọn để kéo, không dùng vật hay tự đi tới.
+  const interactSelect = useInteractionSelect(obstacles, entry.kind === 'done' && interactions, onSelect);
 
   const scene: SceneState = useMemo(
     () => ({
@@ -481,6 +482,8 @@ export function ITOffice({
           key={`label-${o.id}`}
           position={[o.position[0], labelY(o), o.position[2]]}
           center
+          // Nhãn 3D nằm dưới HUD (z-index HUD từ 5 trở lên), không đè nút.
+          zIndexRange={[4, 0]}
           style={{ pointerEvents: 'none' }}
         >
           <div className="label">{o.label}</div>

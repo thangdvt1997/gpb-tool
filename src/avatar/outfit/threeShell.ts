@@ -61,7 +61,7 @@ export function analyzeBody(mesh: THREE.SkinnedMesh, baseGeometry: THREE.BufferG
 export function deriveGeometry(
   base: THREE.BufferGeometry,
   index: Uint32Array,
-  extra?: { offset: Float32Array; zone: Uint8Array },
+  extra?: { offset: Float32Array; zone: Uint8Array; cut?: Float32Array },
 ): THREE.BufferGeometry {
   const g = new THREE.BufferGeometry();
   for (const name of Object.keys(base.attributes)) g.setAttribute(name, base.attributes[name]);
@@ -73,6 +73,8 @@ export function deriveGeometry(
   if (extra) {
     g.setAttribute('aOff', new THREE.BufferAttribute(extra.offset, 1));
     g.setAttribute('aZone', new THREE.BufferAttribute(Float32Array.from(extra.zone), 1));
+    // Lề cắt: mảnh có giá trị nội suy < 0 bị bỏ, nên mép áo là đường đẳng trị thẳng thay vì bậc thang theo tam giác.
+    if (extra.cut) g.setAttribute('aCut', new THREE.BufferAttribute(extra.cut, 1));
   }
   if (base.boundingSphere) g.boundingSphere = base.boundingSphere.clone();
   if (base.boundingBox) g.boundingBox = base.boundingBox.clone();
@@ -83,8 +85,8 @@ export function deriveGeometry(
 export const geometryPool = new RefPool<THREE.BufferGeometry>();
 
 /** Khoá geometry vỏ theo nội dung (chỉ số và độ đẩy), nên hai nhân vật cùng bộ đồ dùng chung. */
-export function shellGeometryKey(baseUuid: string, specKey: string, index: Uint32Array, offset: Float32Array): string {
-  return `shell|${baseUuid}|${specKey}|${hashArray(index)}|${hashArray(offset, 1e6)}`;
+export function shellGeometryKey(baseUuid: string, specKey: string, index: Uint32Array, offset: Float32Array, cut?: Float32Array): string {
+  return `shell|${baseUuid}|${specKey}|${hashArray(index)}|${hashArray(offset, 1e6)}|${cut ? hashArray(cut, 1e6) : 0}`;
 }
 
 export function skinGeometryKey(baseUuid: string, index: Uint32Array): string {
@@ -95,7 +97,7 @@ export function skinGeometryKey(baseUuid: string, index: Uint32Array): string {
 /* Vật liệu                                                            */
 /* ------------------------------------------------------------------ */
 
-const SHELL_PROGRAM_KEY = 'gpb-outfit-shell-v1';
+const SHELL_PROGRAM_KEY = 'gpb-outfit-shell-v2';
 
 /** Độ nhám và kim loại theo chất liệu thời trang. */
 export const MATERIAL_PARAMS: Readonly<Record<FashionMaterial, { roughness: number; metalness: number }>> = {
@@ -130,10 +132,12 @@ export function createShellMaterial(layerRank: number): THREE.MeshStandardMateri
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uZoneColors = { value: colors };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aOff;\nattribute float aZone;\nvarying float vZone;')
-      .replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n  transformed += normalize(normal) * aOff;\n  vZone = aZone;');
+      .replace('#include <common>', '#include <common>\nattribute float aOff;\nattribute float aZone;\nattribute float aCut;\nvarying float vZone;\nvarying float vCut;')
+      .replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n  transformed += normalize(normal) * aOff;\n  vZone = aZone;\n  vCut = aCut;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform vec3 uZoneColors[${ZONE_SLOTS}];\nvarying float vZone;`)
+      .replace('#include <common>', `#include <common>\nuniform vec3 uZoneColors[${ZONE_SLOTS}];\nvarying float vZone;\nvarying float vCut;`)
+      // Cắt mép trang phục theo đường đẳng trị lề = 0 (đầu main, trước mọi tính toán khác).
+      .replace('#include <clipping_planes_fragment>', '  if (vCut < 0.0) discard;\n#include <clipping_planes_fragment>')
       .replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= uZoneColors[int(vZone + 0.5)];');
   };
   mat.customProgramCacheKey = () => SHELL_PROGRAM_KEY;
