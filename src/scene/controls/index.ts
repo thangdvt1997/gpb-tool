@@ -10,6 +10,7 @@ import { createMotionInput, createMotionState, haltMotion, stepMotion, wrapAngle
 import { getControls, setFirstPerson, setSeated, takeSeatRequest, type SeatSpot } from './session';
 import { useGtaControls, useSessionHotkeys, type MoveInput } from './useGtaControls';
 import { useGamepadInput } from '../../settings/useGamepadInput';
+import { cameraHeightsFor } from './eyeHeight';
 import { advanceFixedStep, createFixedStepper, lerpAngle } from '../motion/fixedStep';
 
 export { useGtaControls, useSessionHotkeys, isTypingTarget, type GtaControls, type MoveInput } from './useGtaControls';
@@ -56,9 +57,6 @@ export const ROOM_BOUNDS: Rect = {
 /** Độ cao mắt (góc nhìn thứ nhất) và điểm nhìn (góc nhìn thứ ba) khi đứng và khi ngồi (m). */
 /** Tốc độ xoay camera tối đa bằng cần phải tay cầm (rad/s) khi cần gạt hết. */
 const PAD_LOOK_RATE = 2.6;
-const EYE_STAND = 1.58;
-const EYE_SIT = 1.18;
-const TARGET_SIT = 1.1;
 
 /**
  * Tự đi (click sàn, walkRequest). useGtaPlayer gọi trước bước chuyển động của mỗi khung.
@@ -85,6 +83,8 @@ export interface GtaPlayerOptions {
   /** Gọi mỗi khung; true thì bỏ qua phím (ví dụ đang nằm đỡ trong trận). Không cấp phát. */
   isLocked?: () => boolean;
   autopilot?: GtaAutopilot;
+  /** Chiều cao nhân vật (m) để đặt tầm mắt và điểm nhìn camera (TASK 05). Mặc định 1,70 m. */
+  bodyHeight?: number;
 }
 
 export interface GtaPlayer {
@@ -118,7 +118,9 @@ interface Seated {
  * input (useGtaControls, session), chuyển động (gtaMotion), camera (gtaCamera), hoạt ảnh (stepLocomotion).
  * Khung hình: đọc phím, quy hướng theo camera, stepMotion, cập nhật trộn hoạt ảnh, rồi camera.
  */
-export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autopilot }: GtaPlayerOptions): GtaPlayer {
+export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autopilot, bodyHeight }: GtaPlayerOptions): GtaPlayer {
+  const heightsRef = useRef(cameraHeightsFor(bodyHeight));
+  heightsRef.current = cameraHeightsFor(bodyHeight);
   const controls = useGtaControls(enabled);
   // Tay cầm (TASK 11): gộp với bàn phím, cần nào lớn hơn thì thắng.
   const pad = useGamepadInput(enabled);
@@ -140,7 +142,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   const input = useRef(createMotionInput()).current;
   const autoDir = useRef({ x: 0, z: 0 }).current;
   const seated = useRef<Seated | null>(null);
-  const camFrame = useRef<CameraFrame>({ firstPerson: false, eyeHeight: EYE_STAND, targetHeight: CAM.targetHeight }).current;
+  const camFrame = useRef<CameraFrame>({ firstPerson: false, eyeHeight: heightsRef.current.eyeStand, targetHeight: heightsRef.current.target }).current;
 
   const [isMoving, setIsMoving] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -276,8 +278,9 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     stepLocomotion(playerLocomotion, motion.speed, motion.grounded, seat !== null, dt);
     const sitW = playerLocomotion.sit;
     camFrame.firstPerson = ctl.firstPerson;
-    camFrame.eyeHeight = EYE_STAND + (EYE_SIT - EYE_STAND) * sitW;
-    camFrame.targetHeight = CAM.targetHeight + (TARGET_SIT - CAM.targetHeight) * sitW;
+    const hs = heightsRef.current;
+    camFrame.eyeHeight = hs.eyeStand + (hs.eyeSit - hs.eyeStand) * sitW;
+    camFrame.targetHeight = hs.target + (hs.targetSit - hs.target) * sitW;
 
     const moving = motion.moved || !motion.grounded;
     if (moving !== isMovingPrev.current) {

@@ -38,3 +38,16 @@
   padding: 8px;
   border-radius: 8px;
 }
+
+/* Mất ngữ cảnh WebGL (TASK 07). */
+.hud-gpu-banner {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(20, 24, 32, 0.92);
+  color: #fff;
+  z-index: 20;
+}

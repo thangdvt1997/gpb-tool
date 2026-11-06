@@ -9,6 +9,8 @@ import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
 import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
 import { SettingsPanel } from './settings';
+import { createContextRecovery, useContextLoss, type ContextPhase } from './loading';
+import { setPaused } from './scene/controls';
 import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, useWorld, worldEnabled } from './net';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
@@ -281,6 +283,31 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
     [persist],
   );
   const [backupOpen, setBackupOpen] = useState(false);
+
+  // Mất ngữ cảnh WebGL (TASK 07): tạm dừng, chờ restored rồi remount Canvas; lặp lại quá 2 lần thì lưu và tải lại.
+  const [canvasKey, setCanvasKey] = useState(0);
+  const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
+  const [gpuPhase, setGpuPhase] = useState<ContextPhase>('ok');
+  const recovery = useMemo(
+    () =>
+      createContextRecovery({
+        pause: () => setPaused(true),
+        resume: () => setPaused(false),
+        remount: () => setCanvasKey((k) => k + 1),
+        saveState: async () => {
+          await persist.saveSnapshot();
+        },
+        reload: () => window.location.reload(),
+        onPhase: (p) => {
+          setGpuPhase(p);
+          if (p === 'lost') announce('Mất kết nối đồ họa, đang khôi phục…', 'assertive');
+          if (p === 'failed') announce('Không khôi phục được đồ họa, đang lưu và tải lại trang.', 'assertive');
+        },
+      }),
+    [persist],
+  );
+  useEffect(() => () => recovery.dispose(), [recovery]);
+  useContextLoss(canvasEl, recovery);
   useEffect(() => {
     const off = persist.attach();
     void persist.loadSnapshot().then((r) => {
@@ -398,6 +425,12 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           </header>
 
           <Canvas
+            key={canvasKey}
+            onCreated={({ gl }) => {
+              setCanvasEl(gl.domElement);
+              // Canvas mới (sau remount) đã có renderer: báo phục hồi xong.
+              requestAnimationFrame(() => recovery.onReady());
+            }}
             shadows={quality.config.shadows}
             dpr={[1, dprCap]}
             camera={{ position: [0, 7, 16], fov: 50 }}
@@ -438,6 +471,11 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           {WORLD_ON && <ConnectionBanner world={world} />}
           {WORLD_ON && <ChatPanel world={world} />}
           <PerfOverlay />
+          {gpuPhase !== 'ok' && (
+            <div className="hud-gpu-banner" role="status">
+              {gpuPhase === 'failed' ? 'Đang lưu và tải lại trang…' : 'Đang khôi phục đồ họa…'}
+            </div>
+          )}
           <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
           <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>

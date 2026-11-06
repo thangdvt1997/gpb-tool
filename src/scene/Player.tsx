@@ -3,6 +3,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Avatar } from '../avatar/Avatar';
 import { getSpatialAudio } from '../audio/spatial';
+import { targetHeightM } from '../avatar/MpfbAvatar';
 import type { CharacterLook } from '../fashion/types';
 import { DEFAULT_APPEARANCE, type Appearance } from '../avatar/appearance';
 import { isInternalEmote } from '../emotes/library';
@@ -143,6 +144,8 @@ export function Player({
     // Đang nằm đỡ trong trận thì không đi lại.
     isLocked: () => getMyVisual().locked,
     autopilot,
+    // Tầm mắt camera theo chiều cao nhân vật (chibi thấp hơn người thật).
+    bodyHeight: look ? targetHeightM(look.bodyStyle, look.body.frame, look.body.heightCm) : undefined,
   });
   yawSink.current = (yaw: number) => {
     yawRef.current = yaw;
