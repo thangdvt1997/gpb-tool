@@ -17,6 +17,10 @@ export interface AvatarPose {
   rootRotY: number;
   /** Nghiêng đầu quanh trục Z (rad). */
   headRotZ: number;
+  /** Quay đầu quanh trục Y (rad, dương: sang trái nhân vật), tương đối với cổ. Đầu nhìn theo camera. */
+  headRotY: number;
+  /** Quay cổ quanh trục Y (rad). Tổng góc nhìn = neckRotY + headRotY. */
+  neckRotY: number;
   /** Tay trái: xoay quanh X (đung đưa) và quanh Z (giơ ngang). */
   armLX: number;
   armLZ: number;
@@ -36,6 +40,8 @@ export const REST_POSE: AvatarPose = {
   rootY: 0,
   rootRotY: 0,
   headRotZ: 0,
+  headRotY: 0,
+  neckRotY: 0,
   armLX: 0,
   armLZ: 0,
   armRX: 0,
@@ -50,6 +56,8 @@ const POSE_KEYS: ReadonlyArray<keyof AvatarPose> = [
   'rootY',
   'rootRotY',
   'headRotZ',
+  'headRotY',
+  'neckRotY',
   'armLX',
   'armLZ',
   'armRX',
@@ -76,7 +84,7 @@ export const POSE_HIP_HEIGHT = HIP_HEIGHT;
 // sang không gian cục bộ của từng xương nên quy ước dấu giữ nguyên như FallbackAvatar.
 
 /** Khớp mà AvatarPose điều khiển. */
-export type PoseJoint = 'head' | 'armL' | 'armR' | 'foreArmL' | 'foreArmR' | 'legL' | 'legR' | 'kneeL' | 'kneeR';
+export type PoseJoint = 'neck' | 'head' | 'armL' | 'armR' | 'foreArmL' | 'foreArmR' | 'legL' | 'legR' | 'kneeL' | 'kneeR';
 
 export interface MpfbJointMap {
   /** Tên xương trong GLB. */
@@ -85,12 +93,16 @@ export interface MpfbJointMap {
   rotX: keyof AvatarPose | null;
   /** Trường góc xoay quanh Z (mô hình) lấy từ AvatarPose; null là không xoay. */
   rotZ: keyof AvatarPose | null;
+  /** Trường góc xoay quanh Y (mô hình) lấy từ AvatarPose; null là không xoay. */
+  rotY?: keyof AvatarPose | null;
   /** Khớp cha trong bảng này mà góc của nó cộng dồn (cẳng tay theo cánh tay, gối theo hông). */
   follows: PoseJoint | null;
 }
 
 export const MPFB_BONE_MAP: Readonly<Record<PoseJoint, MpfbJointMap>> = {
-  head: { bone: 'head', rotX: null, rotZ: 'headRotZ', follows: null },
+  // Cổ và đầu chia góc nhìn theo camera (đầu đi theo cổ).
+  neck: { bone: 'neck_01', rotX: null, rotZ: null, rotY: 'neckRotY', follows: null },
+  head: { bone: 'head', rotX: null, rotZ: 'headRotZ', rotY: 'headRotY', follows: 'neck' },
   armL: { bone: 'upperarm_l', rotX: 'armLX', rotZ: 'armLZ', follows: null },
   armR: { bone: 'upperarm_r', rotX: 'armRX', rotZ: 'armRZ', follows: null },
   // Cẳng tay đi theo cánh tay (AvatarPose không có khuỷu). Bàn tay, ngón giữ tư thế nghỉ tương đối.
@@ -109,13 +121,13 @@ export const MPFB_BONE_MAP: Readonly<Record<PoseJoint, MpfbJointMap>> = {
  * rootY và rootRotY áp lên group gốc của nhân vật, không lên xương Root.
  */
 export const MPFB_REST_BONES: readonly string[] = [
-  'pelvis', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'clavicle_l', 'clavicle_r', 'hand_l', 'hand_r',
+  'pelvis', 'spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r', 'hand_l', 'hand_r',
   'foot_l', 'foot_r', 'ball_l', 'ball_r',
 ];
 
 /** Thứ tự áp dụng: khớp cha trước khớp con (follows). */
 export const MPFB_JOINT_ORDER: readonly PoseJoint[] = [
-  'head', 'armL', 'armR', 'foreArmL', 'foreArmR', 'legL', 'legR', 'kneeL', 'kneeR',
+  'neck', 'head', 'armL', 'armR', 'foreArmL', 'foreArmR', 'legL', 'legR', 'kneeL', 'kneeR',
 ];
 
 function reset(out: AvatarPose): AvatarPose {
@@ -269,9 +281,68 @@ export interface LocomotionState {
   air: number;
   /** 0 = đứng, 1 = ngồi hẳn. */
   sit: number;
+  /** Góc quay đầu (rad) đã làm mượt, đầu nhìn theo camera. Bên điều khiển ghi qua stepHeadLook. */
+  headYaw: number;
+  /** 0..1: mức xoay tại chỗ (đứng yên mà thân đang quay). */
+  turn: number;
+  /** Pha bước nhỏ khi xoay tại chỗ (rad), tăng theo góc đã quay. */
+  turnPhase: number;
 }
 
-export const playerLocomotion: LocomotionState = { phase: 0, move: 0, run: 0, air: 0, sit: 0 };
+export const playerLocomotion: LocomotionState = {
+  phase: 0, move: 0, run: 0, air: 0, sit: 0, headYaw: 0, turn: 0, turnPhase: 0,
+};
+
+/** Giới hạn quay đầu so với thân (rad), khoảng ±70 độ. */
+export const HEAD_YAW_LIMIT = (70 * Math.PI) / 180;
+/** Phần góc nhìn do cổ đảm nhận, phần còn lại do đầu. */
+const NECK_SHARE = 0.4;
+/** Tốc độ làm mượt góc quay đầu (1/s). */
+const HEAD_RATE = 9;
+/** Tốc độ quay thân (rad/s) từ đó coi là xoay tại chỗ hết mức. */
+const TURN_FULL = 2.5;
+/** Pha bước (rad) cho mỗi rad thân quay: quay 90 độ khoảng hai bước nhỏ. */
+const TURN_STRIDE = 4;
+
+function wrapPi(a: number): number {
+  const t = Math.PI * 2;
+  let r = a % t;
+  if (r > Math.PI) r -= t;
+  else if (r < -Math.PI) r += t;
+  return r;
+}
+
+/**
+ * Góc đầu cần quay để nhìn theo hướng camera: hiệu (camera - thân) gói về [-π, π], kẹp ±HEAD_YAW_LIMIT.
+ * Quy ước yaw của playerPose: dương quay sang trái nhân vật, khớp headRotY. Hàm thuần.
+ */
+export function headYawGoal(cameraYaw: number, bodyYaw: number, limit: number = HEAD_YAW_LIMIT): number {
+  const d = wrapPi(cameraYaw - bodyYaw);
+  return d > limit ? limit : d < -limit ? -limit : d;
+}
+
+/**
+ * Cập nhật quay đầu và xoay tại chỗ. turnSpeed: tốc độ quay thân (rad/s, có dấu), speed: tốc độ đi (m/s).
+ * lookActive false (ngồi, góc nhìn thứ nhất, emote) thì đầu về giữa. Không cấp phát.
+ */
+export function stepHeadLook(
+  s: LocomotionState,
+  cameraYaw: number,
+  bodyYaw: number,
+  turnSpeed: number,
+  speed: number,
+  lookActive: boolean,
+  dt: number,
+): void {
+  const d = Math.min(Math.max(dt, 0), 0.1);
+  // Đang đi thì biên hẹp dần (70 xuống 42 độ) để chạy ngang không ngoái đầu quá mức.
+  const goal = lookActive ? headYawGoal(cameraYaw, bodyYaw, HEAD_YAW_LIMIT * (1 - 0.4 * s.move)) : 0;
+  s.headYaw = approach(s.headYaw, goal, HEAD_RATE, d);
+  const still = speed < 0.4 && s.sit < 0.5 && s.air < 0.5;
+  const turnGoal = still ? clamp01(Math.abs(turnSpeed) / TURN_FULL) : 0;
+  s.turn = approach(s.turn, turnGoal, turnGoal > s.turn ? 14 : 8, d);
+  if (still) s.turnPhase = (s.turnPhase + Math.abs(turnSpeed) * TURN_STRIDE * d) % (Math.PI * 2000);
+}
 
 /** Pha bước (rad) mỗi mét: 4 m/s cho nhịp 6 rad/s như hoạt ảnh walk cũ. Chạy sải dài hơn nên ít rad/m hơn. */
 const WALK_STRIDE = 1.5;
@@ -323,7 +394,21 @@ function locomotionPose(t: number): AvatarPose {
     if (s.run > 1e-3) mixInto(LOCO.a, LOCO.a, runInto(LOCO.b, s.phase), s.run);
     mixInto(out, out, LOCO.a, s.move);
   }
+  if (s.turn > 1e-3) {
+    // Xoay tại chỗ: nhấc chân nhỏ luân phiên theo góc đã quay, để thân không trượt trên sàn.
+    const ph = Math.sin(s.turnPhase);
+    const lift = 0.22 * s.turn;
+    out.legLX += -lift * Math.max(0, ph);
+    out.kneeLX += 2 * lift * Math.max(0, ph);
+    out.legRX += -lift * Math.max(0, -ph);
+    out.kneeRX += 2 * lift * Math.max(0, -ph);
+    out.armLX += 0.08 * s.turn * ph;
+    out.armRX -= 0.08 * s.turn * ph;
+  }
   if (s.air > 1e-3) mixInto(out, out, jumpInto(LOCO.b), s.air);
   if (s.sit > 1e-3) mixInto(out, out, sitInto(LOCO.b, t), s.sit);
+  // Cổ 40 %, đầu 60 % góc nhìn.
+  out.neckRotY = s.headYaw * NECK_SHARE;
+  out.headRotY = s.headYaw * (1 - NECK_SHARE);
   return out;
 }

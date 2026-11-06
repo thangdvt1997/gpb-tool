@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getEmoteState, notifyMovement } from '../../emotes/player';
 import { isInternalEmote } from '../../emotes/library';
-import { playerLocomotion, stepLocomotion } from '../../avatar/animation';
+import { playerLocomotion, stepHeadLook, stepLocomotion } from '../../avatar/animation';
 import { FLOOR, OUTER_WALL, PLAYER_RADIUS, type Rect } from '../layout';
 import { CAM, createCameraRig, useGtaCamera, type CameraFrame, type CameraRig } from './gtaCamera';
 import { createMotionInput, createMotionState, haltMotion, stepMotion, wrapAngle, type MotionState } from './gtaMotion';
@@ -55,7 +55,28 @@ export const ROOM_BOUNDS: Rect = {
   maxZ: FLOOR.depth / 2 - OUTER_WALL.thickness,
 };
 
-/** Độ cao mắt (góc nhìn thứ nhất) và điểm nhìn (góc nhìn thứ ba) khi đứng và khi ngồi (m). */
+/**
+ * Số đo điều khiển cho kiểm tra trình duyệt (Playwright), chỉ khi URL có ?debug=controls.
+ * window.__gpbControls: hướng camera, hướng thân, góc đầu (rad), mức xoay tại chỗ, vị trí. Chỉ đọc.
+ */
+export interface ControlsDebug {
+  cameraYaw: number;
+  bodyYaw: number;
+  headYaw: number;
+  turn: number;
+  dragging: boolean;
+  x: number;
+  z: number;
+  speed: number;
+}
+const debugHook: ControlsDebug | null = (() => {
+  if (typeof window === 'undefined') return null;
+  if (new URLSearchParams(window.location.search).get('debug') !== 'controls') return null;
+  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0 };
+  (window as unknown as { __gpbControls?: ControlsDebug }).__gpbControls = h;
+  return h;
+})();
+
 /** Tốc độ xoay camera tối đa bằng cần phải tay cầm (rad/s) khi cần gạt hết. */
 const PAD_LOOK_RATE = 2.6;
 
@@ -231,6 +252,8 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       input.dirZ = cosA * f + sinA * st;
       input.run = live && (controls.isRunning() || pad.isRunning());
       input.faceYaw = ctl.firstPerson ? rig.azimuth : null;
+      // Giữ chuột phải kéo: thân xoay theo camera (đứng yên thì xoay tại chỗ, có hoạt ảnh bước nhỏ).
+      input.turnYaw = live && rig.dragging && !ctl.firstPerson ? rig.yaw : null;
 
       const ap = autopilotRef.current;
       let auto = false;
@@ -240,8 +263,11 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
         input.dirZ = autoDir.z;
         input.run = false;
         input.faceYaw = null;
+        input.turnYaw = null;
       }
       let jumped = false;
+      let turned = 0;
+      let steps = 0;
       advanceFixedStep(stepper, dt, (h) => {
         prevPose.x = pos.x;
         prevPose.y = pos.y;
@@ -252,9 +278,13 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
         pendingJump.current = false;
         stepMotion(motion, input, h, PLAYER_RADIUS, obstacles, ROOM_BOUNDS);
         jumped ||= motion.jumped;
+        turned += motion.turnSpeed;
+        steps++;
         if (auto && ap !== undefined) ap.after(motion, h);
       });
       motion.jumped = jumped;
+      // Khung không có bước mô phỏng nào (màn hình > 60 Hz) thì giữ tốc độ quay của bước trước.
+      if (steps > 0) motion.turnSpeed = turned / steps;
 
       // Emote nội bộ (apologize, startle, hit, down) do cảnh phát, không bị phím di chuyển hủy.
       const intent = keyMove || motion.jumped;
@@ -277,6 +307,26 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     renderPose.yaw = lerpAngle(prevPose.yaw, motion.yaw, a);
 
     stepLocomotion(playerLocomotion, motion.speed, motion.grounded, seat !== null, dt);
+    // Đầu nhìn theo hướng camera (kẹp ±70 độ so với thân), trừ khi ngồi hoặc ở góc nhìn thứ nhất.
+    stepHeadLook(
+      playerLocomotion,
+      rig.azimuth,
+      renderPose.yaw,
+      seat !== null ? 0 : motion.turnSpeed,
+      motion.speed,
+      seat === null && !ctl.firstPerson,
+      dt,
+    );
+    if (debugHook !== null) {
+      debugHook.cameraYaw = rig.azimuth;
+      debugHook.bodyYaw = motion.yaw;
+      debugHook.headYaw = playerLocomotion.headYaw;
+      debugHook.turn = playerLocomotion.turn;
+      debugHook.dragging = rig.dragging;
+      debugHook.x = pos.x;
+      debugHook.z = pos.z;
+      debugHook.speed = motion.speed;
+    }
     const sitW = playerLocomotion.sit;
     camFrame.firstPerson = ctl.firstPerson;
     const hs = heightsRef.current;

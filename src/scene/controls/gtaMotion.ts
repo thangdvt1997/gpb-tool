@@ -20,6 +20,9 @@ export const MOTION = {
   faceRate: 11,
   /** Tốc độ xoay tối đa (rad/s) khi quay mặt. */
   turnRate: 9,
+  /** Xoay tại chỗ (đứng yên, thân theo camera): làm mượt (1/s) và tốc độ tối đa (rad/s). */
+  turnInPlaceRate: 8,
+  turnInPlaceMax: 6,
   jumpVelocity: 4.6,
   gravity: 14,
   /** Giới hạn dt để không nhảy vọt khi tab bị treo. */
@@ -43,6 +46,8 @@ export interface MotionState {
   jumped: boolean;
   /** Tốc độ ngang thực tế (m/s), sau va chạm. Dùng cho nhịp hoạt ảnh. */
   speed: number;
+  /** Tốc độ quay thân (rad/s, có dấu) của bước vừa rồi. Dùng cho hoạt ảnh xoay tại chỗ. */
+  turnSpeed: number;
 }
 
 export interface MotionInput {
@@ -53,6 +58,11 @@ export interface MotionInput {
   jump: boolean;
   /** Có giá trị thì quay mặt về hướng này (góc nhìn thứ nhất: theo camera). null: quay theo hướng đi. */
   faceYaw: number | null;
+  /**
+   * Có giá trị và đứng yên (không đẩy cần) thì thân quay mượt về hướng này, tại chỗ (giữ chuột phải kéo:
+   * thân theo camera). Đang đi thì vẫn quay theo hướng đi. null: đứng yên giữ hướng.
+   */
+  turnYaw: number | null;
 }
 
 export function createMotionState(
@@ -70,11 +80,12 @@ export function createMotionState(
     running: false,
     jumped: false,
     speed: 0,
+    turnSpeed: 0,
   };
 }
 
 export function createMotionInput(): MotionInput {
-  return { dirX: 0, dirZ: 0, run: false, jump: false, faceYaw: null };
+  return { dirX: 0, dirZ: 0, run: false, jump: false, faceYaw: null, turnYaw: null };
 }
 
 const TWO_PI = Math.PI * 2;
@@ -216,11 +227,16 @@ export function stepMotion(
   // Quay mặt: theo camera (góc nhìn thứ nhất) hoặc theo hướng đang đẩy cần.
   const k = 1 - Math.exp(-MOTION.faceRate * d);
   const maxTurn = MOTION.turnRate * d;
+  const yaw0 = s.yaw;
   if (input.faceYaw !== null) {
     s.yaw = wrapAngle(input.faceYaw);
   } else if (mag > 0) {
     s.yaw = turnToward(s.yaw, Math.atan2(ux, uz), k, maxTurn);
+  } else if (input.turnYaw !== null) {
+    const kt = 1 - Math.exp(-MOTION.turnInPlaceRate * d);
+    s.yaw = turnToward(s.yaw, input.turnYaw, kt, MOTION.turnInPlaceMax * d);
   }
+  s.turnSpeed = d > 0 ? wrapAngle(s.yaw - yaw0) / d : 0;
 
   // Nhảy theo trục đứng, độc lập với va chạm phẳng (obstacles là hình chữ nhật 2D, không có chiều cao).
   s.jumped = false;
@@ -256,4 +272,5 @@ export function haltMotion(s: MotionState): void {
   s.running = false;
   s.jumped = false;
   s.speed = 0;
+  s.turnSpeed = 0;
 }

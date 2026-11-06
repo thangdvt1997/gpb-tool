@@ -88,7 +88,10 @@ function VrmModel({ url, animation, emote }: VrmModelProps) {
       const pose = computePose(animation, state.clock.elapsedTime);
       vrm.scene.position.y = pose.rootY;
       vrm.scene.rotation.y = pose.rootRotY;
-      if (bones.head) bones.head.rotation.z = pose.headRotZ;
+      if (bones.head) {
+        bones.head.rotation.z = pose.headRotZ;
+        bones.head.rotation.y = pose.headRotY + pose.neckRotY;
+      }
       if (bones.leftUpperLeg) bones.leftUpperLeg.rotation.x = pose.legLX;
       if (bones.rightUpperLeg) bones.rightUpperLeg.rotation.x = pose.legRX;
       if (knees.left) knees.left.rotation.x = pose.kneeLX;

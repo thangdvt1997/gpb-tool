@@ -71,7 +71,10 @@ function applyPose(refs: PoseRefs, p: AvatarPose): void {
     root.current.position.y = p.rootY;
     root.current.rotation.y = p.rootRotY;
   }
-  if (head.current) head.current.rotation.z = p.headRotZ;
+  if (head.current) {
+    head.current.rotation.z = p.headRotZ;
+    head.current.rotation.y = p.headRotY + p.neckRotY;
+  }
   if (armL.current) {
     armL.current.rotation.x = p.armLX;
     armL.current.rotation.z = p.armLZ;
