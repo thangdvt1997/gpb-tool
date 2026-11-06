@@ -35,6 +35,7 @@ import {
   type RouteResult,
 } from './core/index.js';
 import { drawMap } from './draw';
+import { handleTrapKey } from './focusTrap';
 import { buildMinimapSources } from './sources';
 import { useNavigation, type Destination, type NavApi } from './useNavigation';
 import './minimap.css';
@@ -151,12 +152,17 @@ export function Minimap({ zone, role, plants = false, applyLayout = false }: Min
   const [zoom, setZoom] = useState(1);
   const [open, setOpen] = useState(false);
   const openBtn = useRef<HTMLButtonElement>(null);
+  /** Phần tử đang focus trước khi mở hộp thoại, để trả focus khi đóng. */
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   // Phím M mở / đóng bản đồ lớn (bỏ qua khi đang gõ).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyM' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
-      setOpen((v) => !v);
+      setOpen((v) => {
+        if (!v) returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        return !v;
+      });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -164,7 +170,11 @@ export function Minimap({ zone, role, plants = false, applyLayout = false }: Min
 
   const close = useCallback(() => {
     setOpen(false);
-    openBtn.current?.focus();
+    // Trả focus về nơi đã mở hộp (nút Bản đồ, hoặc phần tử đang focus lúc bấm M); nếu đã biến mất thì về nút Bản đồ.
+    const back = returnFocus.current;
+    returnFocus.current = null;
+    if (back && back.isConnected) back.focus();
+    else openBtn.current?.focus();
   }, []);
 
   return (
@@ -192,7 +202,11 @@ export function Minimap({ zone, role, plants = false, applyLayout = false }: Min
         >
           +
         </button>
-        <button ref={openBtn} type="button" className="mm-btn mm-btn-wide" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
+        <button ref={openBtn} type="button" className="mm-btn mm-btn-wide" onClick={() => {
+            returnFocus.current = openBtn.current;
+            setOpen(true);
+          }}
+          aria-haspopup="dialog" aria-expanded={open}>
           Bản đồ (M)
         </button>
       </div>
@@ -281,6 +295,7 @@ interface BigMapProps {
 
 function BigMap({ model, nav, index, onClose }: BigMapProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const results = useMemo(() => searchIndex(index, query, 12), [index, query]);
@@ -298,6 +313,12 @@ function BigMap({ model, nav, index, onClose }: BigMapProps) {
 
   // Esc đóng bản đồ; phím di chuyển không lọt xuống điều khiển nhân vật (keyup vẫn lọt để không kẹt phím).
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Focus trap: Tab xoay vòng trong hộp.
+    if (e.key === 'Tab') {
+      handleTrapKey(e, dialogRef.current);
+      e.stopPropagation();
+      return;
+    }
     if (e.key === 'Escape') {
       e.stopPropagation();
       e.preventDefault();
@@ -317,7 +338,7 @@ function BigMap({ model, nav, index, onClose }: BigMapProps) {
 
   return (
     <div className="mm-overlay" onKeyDown={onKeyDown}>
-      <div className="mm-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div ref={dialogRef} className="mm-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <header className="mm-dialog-head">
           <h2 id={titleId}>Bản đồ văn phòng</h2>
           <button type="button" className="mm-btn mm-btn-wide" onClick={onClose}>
@@ -354,6 +375,10 @@ function BigMap({ model, nav, index, onClose }: BigMapProps) {
                 <label className="mm-check">
                   <input type="checkbox" checked={nav.guidance} onChange={(e) => nav.setGuidance(e.target.checked)} />
                   Hiện chỉ đường trên bản đồ
+                </label>
+                <label className="mm-check">
+                  <input type="checkbox" checked={nav.worldMarkers} onChange={(e) => nav.setWorldMarkers(e.target.checked)} />
+                  Hiện cột đích và đường đi trong thế giới 3D
                 </label>
                 <label className="mm-check">
                   <input

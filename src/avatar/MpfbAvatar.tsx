@@ -21,6 +21,7 @@ import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { FallbackAvatar } from './FallbackAvatar';
 import { useLimbIK, type GroundSampler } from './ik';
+import { MpfbOutfit } from './outfit/MpfbOutfit';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Tệp mô hình (xuất từ MPFB, rig game_engine 53 xương, 18 morph trên mesh thân).
@@ -500,6 +501,8 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
       <group ref={rootRef}>
         <group scale={scale}>
           <primitive object={rig.root} />
+          {/* Trang phục dựng từ vỏ thân, cùng skeleton và morph (TASK 04, docs/design/WARDROBE.md). */}
+          <MpfbOutfit rig={rig} look={look} />
         </group>
       </group>
     </group>

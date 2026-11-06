@@ -24,6 +24,9 @@ export function rectFromCenter(cx: number, cz: number, w: number, d: number): Re
 export function distPointRect(x: number, z: number, r: Rect): number;
 export function pointInRects(x: number, z: number, rects: readonly Rect[], eps?: number): boolean;
 export function squareCovered(cx: number, cz: number, half: number, rects: readonly Rect[]): boolean;
+export const CLEAR_TOL: number;
+export function circleCovered(cx: number, cz: number, radius: number, rects: readonly Rect[]): boolean;
+export function distSegmentRect(ax: number, az: number, bx: number, bz: number, r: Rect): number;
 export function rectsBounds(rects: readonly Rect[]): Rect;
 export function polygonBounds(points: ReadonlyArray<readonly [number, number]>): Rect;
 export function segmentIntersectsRect(ax: number, az: number, bx: number, bz: number, r: Rect): boolean;
@@ -73,6 +76,8 @@ export interface NavGrid {
   cellSize: number;
   radius: number;
   walk: Uint8Array;
+  /** Ô khe hẹp: điểm đứng được thay cho tâm ô. */
+  anchors: Map<number, XZ>;
   walkRects: Rect[];
   obstacles: Rect[];
   bounds: Rect;
@@ -167,3 +172,27 @@ export function buildMapModel(input: {
   items?: readonly MapItem[];
   grid?: NavGrid | null;
 }): MapModel;
+
+// autowalk.js
+export type AutoWalkStopReason = 'key' | 'scene' | 'stall' | 'arrived' | 'no_route';
+export interface AutoWalkState {
+  issuedRoute: RouteResult | null;
+  issuedIndex: number;
+  lastX: number;
+  lastZ: number;
+  lastMoveAt: number;
+}
+export type AutoWalkAction =
+  | { type: 'none' }
+  | { type: 'walk'; x: number; z: number; index: number }
+  | { type: 'stop'; reason: AutoWalkStopReason };
+export const STALL_MOVE_M: number;
+export const STALL_MS: number;
+export const AUTOWALK_ARRIVE_M: number;
+export const MOVE_CODES: ReadonlySet<string>;
+export const STOP_TEXT: Record<AutoWalkStopReason, string | null>;
+export function createAutoWalk(pos: XZ, now: number): AutoWalkState;
+export function isMoveKey(code: string): boolean;
+export function isSceneClick(o: { isCanvas: boolean; insideMinimap: boolean }): boolean;
+export function markArrivedAtPoint(state: AutoWalkState, route: RouteResult, index: number): void;
+export function stepAutoWalk(state: AutoWalkState, input: { route: RouteResult | null; x: number; z: number; now: number }): AutoWalkAction;

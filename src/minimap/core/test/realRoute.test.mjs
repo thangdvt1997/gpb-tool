@@ -2,7 +2,7 @@
 // Chạy: node --test "src/minimap/core/test/*.test.mjs"
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildNavGrid, buildSearchIndex, distPointRect, findRoute, searchIndex, squareCovered } from '../index.js';
+import { buildNavGrid, buildSearchIndex, distPointRect, findRoute, searchIndex, circleCovered } from '../index.js';
 import { real } from './realData.mjs';
 
 const grid = buildNavGrid({ walkRects: real.walkRects, obstacles: real.obstacles, radius: real.radius, cellSize: 0.2 });
@@ -24,7 +24,7 @@ function assertClear(points, label) {
       const x = a.x + ((b.x - a.x) * s) / n;
       const z = a.z + ((b.z - a.z) * s) / n;
       assert.ok(real.bounds.isInsideOffice(x, z), `${label}: (${x.toFixed(2)}, ${z.toFixed(2)}) ngoài chữ L`);
-      assert.ok(squareCovered(x, z, R - 1e-3, real.walkRects), `${label}: (${x.toFixed(2)}, ${z.toFixed(2)}) sát mép L quá bán kính`);
+      assert.ok(circleCovered(x, z, R - 1e-3, real.walkRects), `${label}: (${x.toFixed(2)}, ${z.toFixed(2)}) sát mép L quá bán kính`);
       for (const o of real.obstacles) {
         const d = distPointRect(x, z, o);
         assert.ok(d >= R - 1e-3, `${label}: (${x.toFixed(2)}, ${z.toFixed(2)}) cách vật cản ${d.toFixed(3)}`);

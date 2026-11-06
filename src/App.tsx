@@ -4,8 +4,9 @@ import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud } from './scene/interact';
 import { HelpCenter, HelpLayer, HelpReplayButton } from './help';
 import { ProfilePanel } from './profile';
+import { WardrobeRoom } from './wardrobe';
 import { SocialBar } from './emotes/social';
-import { Minimap } from './minimap';
+import { Minimap, NavMarkers } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
@@ -252,6 +253,13 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  // Phòng thay đồ (fashion.txt, user.txt): khóa di chuyển khi mở.
+  const [wardrobeOpen, setWardrobeOpen] = useState(false);
+  useEffect(() => {
+    if (!wardrobeOpen) return undefined;
+    setPaused(true);
+    return () => setPaused(false);
+  }, [wardrobeOpen]);
   // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
   const world = useWorld({ enabled: WORLD_ON });
   // Người khác cho hành động xã hội (TASK 15): vị trí nội suy từ world; không có world thì rỗng.
@@ -478,6 +486,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
             <EditorLayer state={editor.state} dispatch={editor.dispatch} />
+            <NavMarkers />
             {WORLD_ON && <RemotePlayers world={world} />}
             {WORLD_ON && <PoseSender world={world} />}
           </Canvas>
@@ -564,6 +573,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-expanded={libraryOpen} onClick={() => setLibraryOpen((v) => !v)}>
               Thư viện
             </button>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={wardrobeOpen} onClick={() => setWardrobeOpen(true)}>
+              Phòng thay đồ
+            </button>
             <button type="button" className="btn btn-ghost" aria-expanded={profileOpen} onClick={() => setProfileOpen((v) => !v)}>
               Hồ sơ
             </button>
@@ -577,6 +589,19 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
             )}
           </aside>
+          {wardrobeOpen && (
+            <WardrobeRoom
+              initialLook={look}
+              appearance={appearance ?? undefined}
+              onConfirm={(l) => {
+                setLook(l);
+                persist.markDirty();
+                setWardrobeOpen(false);
+                announce('Đã lưu trang phục và hình thể.', 'polite');
+              }}
+              onCancel={() => setWardrobeOpen(false)}
+            />
+          )}
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
           <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

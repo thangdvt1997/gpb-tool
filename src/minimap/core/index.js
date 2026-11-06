@@ -5,3 +5,4 @@ export * from './navgrid.js';
 export * from './search.js';
 export * from './debounce.js';
 export * from './mapModel.js';
+export * from './autowalk.js';

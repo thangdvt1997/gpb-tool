@@ -9,7 +9,9 @@ import {
   findRoute,
   pointInRects,
   routeProgress,
-  squareCovered,
+  circleCovered,
+  isPointClear,
+  segmentClear,
 } from '../index.js';
 
 const R = 0.35;
@@ -27,7 +29,7 @@ function assertRouteClear(points, walkRects, obstacles, label = '') {
         const d = distPointRect(x, z, o);
         assert.ok(d >= R - 1e-3, `${label} điểm (${x.toFixed(2)}, ${z.toFixed(2)}) cách vật cản ${d.toFixed(3)} < ${R}`);
       }
-      assert.ok(squareCovered(x, z, R - 1e-3, walkRects), `${label} điểm (${x.toFixed(2)}, ${z.toFixed(2)}) ra ngoài vùng đi lại`);
+      assert.ok(circleCovered(x, z, R - 1e-3, walkRects), `${label} điểm (${x.toFixed(2)}, ${z.toFixed(2)}) ra ngoài vùng đi lại`);
     }
   }
 }
@@ -151,4 +153,44 @@ test('A* không cắt góc vật cản khi đi chéo', () => {
   grid.walk[cellIndexAt(grid, 1.5, 0.5)] = 1;
   const p = astar(grid, cellIndexAt(grid, 0.5, 0.5), cellIndexAt(grid, 1.5, 1.5));
   assert.equal(p.length, 3);
+});
+
+// Khe đúng 0,7 m = 2 x PLAYER_RADIUS: vòng tròn bán kính 0,35 lọt đúng vào giữa (Player dùng so sánh ngặt
+// nên đi được trên đường tâm). Khe lệch ô lưới (0,2 m) nên cần ô neo.
+for (const [z0, z1, tên] of [
+  [4.4, 5.1, 'khe trùng tâm ô lưới'],
+  [4.63, 5.33, 'khe lệch ô lưới'],
+  [4.37, 5.07, 'khe lệch ô lưới (2)'],
+]) {
+  test(`cửa đúng 0,7 m đi được (${tên})`, () => {
+    const obstacles = wallWithDoor(z0, z1);
+    assert.ok(Math.abs(z1 - z0 - 0.7) < 1e-9);
+    const grid = buildNavGrid({ walkRects: ROOM, obstacles, radius: R, cellSize: 0.2 });
+    const res = findRoute(grid, { x: 2, z: 1 }, { x: 8, z: 1 });
+    assert.equal(res.status, 'ok');
+    assertRouteClear(res.points, ROOM, obstacles, tên);
+    // Tuyến phải đi qua mặt phẳng x = 5 đúng đường tâm khe.
+    const mid = (z0 + z1) / 2;
+    let crossZ = null;
+    for (let k = 1; k < res.points.length; k++) {
+      const a = res.points[k - 1];
+      const b = res.points[k];
+      if ((a.x - 5) * (b.x - 5) <= 0 && a.x !== b.x) crossZ = a.z + ((b.z - a.z) * (5 - a.x)) / (b.x - a.x);
+    }
+    assert.ok(crossZ !== null && Math.abs(crossZ - mid) < 1e-3, `cắt x=5 tại z=${crossZ}, tâm khe ${mid}`);
+  });
+}
+
+test('khe 0,69 m vẫn không đi được (chỉ dung sai số học, không nới clearance)', () => {
+  const grid = buildNavGrid({ walkRects: ROOM, obstacles: wallWithDoor(4.4, 5.09), radius: R, cellSize: 0.2 });
+  assert.equal(findRoute(grid, { x: 2, z: 1 }, { x: 8, z: 1 }).status, 'unreachable');
+});
+
+test('kiểm tra tròn: góc vật cản cách đúng R theo đường chéo thì đi được, hình vuông thì không', () => {
+  const o = { minX: 4, maxX: 6, minZ: 4, maxZ: 6 };
+  const grid = buildNavGrid({ walkRects: ROOM, obstacles: [o], radius: R, cellSize: 0.2 });
+  const d = R / Math.SQRT2; // cách góc đúng R theo đường chéo (ngoài hình vuông nới R)
+  assert.equal(isPointClear(grid, 4 - d, 4 - d), true);
+  assert.equal(isPointClear(grid, 4 - d + 0.01, 4 - d + 0.01), false);
+  assert.equal(segmentClear(grid, { x: 3.2, z: 4 - d - 0.4 }, { x: 4 - d - 0.4, z: 3.2 }), true);
 });

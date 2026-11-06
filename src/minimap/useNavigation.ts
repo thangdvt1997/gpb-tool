@@ -7,25 +7,35 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObjec
 import { playerPose } from '../scene/controls/playerPose';
 import { cancelWalkRequest, requestWalk } from '../scene/controls/walkRequest';
 import {
+  AUTOWALK_ARRIVE_M,
+  STOP_TEXT,
   buildNavGrid,
+  createAutoWalk,
   createDebouncer,
   findRoute,
+  isMoveKey,
+  isSceneClick,
+  markArrivedAtPoint,
   routeProgress,
+  stepAutoWalk,
+  type AutoWalkStopReason,
   type MapItem,
   type NavGrid,
   type Rect,
   type RouteResult,
 } from './core/index.js';
+import { resetNavSnapshot, setNavSnapshot } from './navStore';
 import type { MinimapSources } from './sources';
+
+const EMPTY_POINTS: ReadonlyArray<{ x: number; z: number }> = [];
 
 export const GRID_DEBOUNCE_MS = 300;
 export const ROUTE_DEBOUNCE_MS = 150;
 /** Lệch khỏi tuyến quá khoảng này (m) thì tính lại. */
 export const OFF_ROUTE_M = 1.5;
 /** Còn lại dưới khoảng này (m) thì coi là tới nơi. */
-export const ARRIVE_M = 0.8;
+export const ARRIVE_M = AUTOWALK_ARRIVE_M;
 const TICK_MS = 250;
-const STALL_MS = 2000;
 
 export interface Destination {
   /** Nhãn hiển thị: nhãn vật thể, hoặc "Điểm đã chọn trên bản đồ". */
@@ -44,6 +54,7 @@ export interface NavState {
   /** Tuyến đang chờ tính lại (lưới vừa đổi hoặc lệch tuyến). */
   stale: boolean;
   guidance: boolean;
+  worldMarkers: boolean;
   autoWalk: boolean;
   /** Lý do tự đi bị tắt gần nhất (để báo người dùng). */
   autoWalkStopped: string | null;
@@ -55,13 +66,13 @@ export interface NavApi extends NavState {
   setDestination: (d: Destination) => void;
   clearDestination: () => void;
   setGuidance: (on: boolean) => void;
+  /** Bật / tắt marker (cột đích, dải tuyến) trong thế giới 3D. */
+  setWorldMarkers: (on: boolean) => void;
   setAutoWalk: (on: boolean) => void;
   recomputeNow: () => void;
   /** Tuyến hiện tại cho vòng vẽ (không gây render). */
   routeRef: MutableRefObject<RouteResult | null>;
 }
-
-const MOVE_CODES = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 export function useNavigation(sources: MinimapSources): NavApi {
   // Lưới: dựng ngay lần đầu, sau đó debounce theo signature.
@@ -87,6 +98,7 @@ export function useNavigation(sources: MinimapSources): NavApi {
   const [routeGrid, setRouteGrid] = useState<NavGrid | null>(null);
   const [offRouteStale, setOffRouteStale] = useState(false);
   const [guidance, setGuidance] = useState(true);
+  const [worldMarkers, setWorldMarkers] = useState(true);
   const [autoWalk, setAutoWalkState] = useState(false);
   const [autoWalkStopped, setAutoWalkStopped] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -126,11 +138,11 @@ export function useNavigation(sources: MinimapSources): NavApi {
     compute();
   }, [dest, compute, routeDebounce]);
 
-  const stopAuto = useCallback((reason: string | null) => {
+  const stopAuto = useCallback((reason: AutoWalkStopReason | null) => {
     setAutoWalkState((on) => {
       if (on) {
         cancelWalkRequest();
-        setAutoWalkStopped(reason);
+        setAutoWalkStopped(reason ? STOP_TEXT[reason] : null);
       }
       return false;
     });
@@ -150,11 +162,12 @@ export function useNavigation(sources: MinimapSources): NavApi {
   useEffect(() => {
     if (!autoWalk) return undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (MOVE_CODES.has(e.code)) stopAuto('Đã tắt tự đi vì bạn bấm phím di chuyển.');
+      if (isMoveKey(e.code)) stopAuto('key');
     };
     const onPointer = (e: PointerEvent) => {
-      if (e.target instanceof HTMLCanvasElement && !e.target.closest('.mm-root')) {
-        stopAuto('Đã tắt tự đi vì bạn bấm vào cảnh.');
+      const t = e.target;
+      if (isSceneClick({ isCanvas: t instanceof HTMLCanvasElement, insideMinimap: t instanceof Element && t.closest('.mm-root') !== null })) {
+        stopAuto('scene');
       }
     };
     window.addEventListener('keydown', onKey);
@@ -192,39 +205,43 @@ export function useNavigation(sources: MinimapSources): NavApi {
     return () => window.clearInterval(id);
   }, [routeDebounce, stopAuto]);
 
-  // Tự đi: chỉ khi bật. Gửi từng điểm gấp của tuyến cho Player qua walkRequest (đoạn thẳng đã kiểm tra clearance).
+  // Tự đi: chỉ khi bật. Logic quyết định nằm ở core/autowalk.js (thuần, có test): gửi từng điểm gấp của tuyến
+  // cho Player qua walkRequest (đoạn thẳng đã kiểm tra clearance); dừng khi kẹt 2 s, tới nơi hoặc mất tuyến.
   useEffect(() => {
-    if (!autoWalk) {
-      issued.current = null;
-      return undefined;
-    }
-    const now = () => performance.now();
-    lastMove.current = { x: playerPose.x, z: playerPose.z, t: now() };
+    if (!autoWalk) return undefined;
+    const state = createAutoWalk({ x: playerPose.x, z: playerPose.z }, performance.now());
     const id = window.setInterval(() => {
       const r = routeRef.current;
-      if (!r || r.status !== 'ok' || r.points.length < 2) return;
-      const p = routeProgress(r.points, playerPose.x, playerPose.z);
-      const index = Math.min(r.points.length - 1, p.segment + 1);
-      const target = r.points[index];
-      if (!issued.current || issued.current.route !== r || issued.current.index !== index) {
-        issued.current = { route: r, index };
+      const act = stepAutoWalk(state, { route: r, x: playerPose.x, z: playerPose.z, now: performance.now() });
+      if (act.type === 'stop') {
+        stopAuto(act.reason === 'arrived' ? null : act.reason);
+      } else if (act.type === 'walk' && r) {
         requestWalk({
-          x: target.x,
-          z: target.z,
+          x: act.x,
+          z: act.z,
           facingYaw: null,
-          // Tới điểm gấp: xóa dấu đã gửi, nhịp sau gửi điểm kế tiếp theo tiến độ trên tuyến.
-          onArrive: () => {
-            if (issued.current?.route === r && issued.current.index === index) issued.current = null;
-          },
+          // Tới điểm gấp: nhịp sau gửi điểm kế tiếp theo tiến độ trên tuyến.
+          onArrive: () => markArrivedAtPoint(state, r, act.index),
         });
       }
-      // Không nhúc nhích quá STALL_MS: Player đã bỏ đích (bị chặn hoặc bị hủy). Tắt tự đi, không ép tiếp.
-      const moved = Math.hypot(playerPose.x - lastMove.current.x, playerPose.z - lastMove.current.z);
-      if (moved > 0.1) lastMove.current = { x: playerPose.x, z: playerPose.z, t: now() };
-      else if (now() - lastMove.current.t > STALL_MS) stopAuto('Đã tắt tự đi vì nhân vật không tiến thêm được.');
     }, TICK_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      cancelWalkRequest();
+    };
   }, [autoWalk, stopAuto]);
+
+  // Đẩy tuyến sang store cho NavMarkers (trong Canvas). Tuyến đang chờ tính lại thì giữ tuyến cũ tới khi có mới.
+  useEffect(() => {
+    const ok = route && route.status === 'ok' && dest;
+    setNavSnapshot({
+      goal: ok && route.goal ? { x: route.goal.x, z: route.goal.z } : null,
+      points: ok ? route.points : EMPTY_POINTS,
+      guidance,
+      worldMarkers,
+    });
+  }, [route, dest, guidance, worldMarkers]);
+  useEffect(() => () => resetNavSnapshot(), []);
 
   const setDestination = useCallback((d: Destination) => setDest(d), []);
   const clearDestination = useCallback(() => {
@@ -238,6 +255,7 @@ export function useNavigation(sources: MinimapSources): NavApi {
     route,
     stale: offRouteStale || (dest !== null && routeGrid !== grid),
     guidance,
+    worldMarkers,
     autoWalk,
     autoWalkStopped,
     remaining,
@@ -245,6 +263,7 @@ export function useNavigation(sources: MinimapSources): NavApi {
     setDestination,
     clearDestination,
     setGuidance,
+    setWorldMarkers,
     setAutoWalk,
     recomputeNow: compute,
     routeRef,

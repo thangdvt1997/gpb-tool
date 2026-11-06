@@ -2,3 +2,5 @@
 export { Minimap, type MinimapProps } from './Minimap';
 export { buildMinimapSources, outerWallRects, type MinimapSources } from './sources';
 export { useNavigation, type Destination, type NavApi } from './useNavigation';
+export { NavMarkers } from './NavMarkers';
+export { useNavSnapshot, type NavMarkerSnapshot } from './navStore';

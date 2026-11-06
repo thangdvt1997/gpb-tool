@@ -124,3 +124,47 @@ export function polylineLength(points) {
   for (let i = 1; i < points.length; i++) s += Math.hypot(points[i].x - points[i - 1].x, points[i].z - points[i - 1].z);
   return s;
 }
+
+/** Dung sai số học khi so khoảng cách với bán kính nhân vật (m). Khe đúng 2 x radius vẫn đi được. */
+export const CLEAR_TOL = 1e-6;
+
+/**
+ * Khoảng cách ngắn nhất từ đoạn thẳng A-B tới hình chữ nhật đặc (0 nếu cắt hoặc nằm trong).
+ * Hai hình lồi rời nhau: khoảng cách nhỏ nhất đạt ở một đầu đoạn hoặc một đỉnh hình chữ nhật.
+ */
+export function distSegmentRect(ax, az, bx, bz, r) {
+  if (distPointRect(ax, az, r) === 0 || distPointRect(bx, bz, r) === 0) return 0;
+  if (segmentIntersectsRect(ax, az, bx, bz, r)) return 0;
+  let best = Math.min(distPointRect(ax, az, r), distPointRect(bx, bz, r));
+  const dx = bx - ax;
+  const dz = bz - az;
+  const l2 = dx * dx + dz * dz;
+  for (const [cx, cz] of [
+    [r.minX, r.minZ],
+    [r.minX, r.maxZ],
+    [r.maxX, r.minZ],
+    [r.maxX, r.maxZ],
+  ]) {
+    const t = l2 > 0 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cz - az) * dz) / l2)) : 0;
+    best = Math.min(best, Math.hypot(ax + dx * t - cx, az + dz * t - cz));
+  }
+  return best;
+}
+
+/**
+ * Vòng tròn tâm (cx, cz), bán kính radius nằm trọn trong hợp các hình chữ nhật (không chồng nhau).
+ * Va chạm của Player là vòng tròn bán kính PLAYER_RADIUS nên dùng kiểm tra tròn, không dùng hình vuông.
+ * Nhanh: hình vuông ngoại tiếp nằm trọn thì vòng tròn chắc chắn nằm trọn. Còn lại lấy mẫu 48 điểm trên chu vi
+ * (sai số hướng kính dưới 0,0005 m với radius 0,35).
+ */
+export function circleCovered(cx, cz, radius, rects) {
+  if (radius <= 0) return pointInRects(cx, cz, rects);
+  if (squareCovered(cx, cz, radius, rects)) return true;
+  if (!pointInRects(cx, cz, rects)) return false;
+  const n = 48;
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2;
+    if (!pointInRects(cx + Math.cos(a) * radius, cz + Math.sin(a) * radius, rects, 1e-9)) return false;
+  }
+  return true;
+}

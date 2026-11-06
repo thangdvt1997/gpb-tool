@@ -1,19 +1,22 @@
 // Lưới đi lại và tìm đường A* cho minimap. Hàm thuần, test bằng node:test.
 //
-// Một ô là "đi được" khi nhân vật (vòng tròn bán kính radius, đặt ở tâm ô) đứng được ở đó:
-// - hình vuông nửa cạnh radius quanh tâm nằm trọn trong vùng đi lại (walkRects, ví dụ OFFICE_L_RECTS),
-//   nên không ra ngoài chữ L. Hình vuông chặt hơn hình tròn, an toàn hơn ở góc lồi;
-// - khoảng cách từ tâm tới mọi vật cản (footprint va chạm) không nhỏ hơn radius.
+// Một ô là "đi được" khi nhân vật (vòng tròn bán kính radius) đứng được ở điểm đại diện của ô:
+// - vòng tròn nằm trọn trong vùng đi lại (walkRects, ví dụ OFFICE_L_RECTS), nên không ra ngoài chữ L;
+// - khoảng cách từ tâm vòng tròn tới mọi vật cản (footprint va chạm) không nhỏ hơn radius (dung sai CLEAR_TOL),
+//   nên khe đúng 2 x radius (0,7 m) vẫn đi được.
+// Điểm đại diện thường là tâm ô. Ô bị chặn tại tâm nhưng có điểm đứng được ngay trong ô (khe hẹp không trùng
+// tâm ô) được "neo" vào điểm đó (grid.anchors). Cạnh nối ô có neo được kiểm bằng segmentClear.
 // Đi chéo chỉ khi hai ô kề thẳng cũng đi được (không cắt góc vật cản).
 
 import {
+  CLEAR_TOL,
   EPS,
+  circleCovered,
   distPointRect,
+  distSegmentRect,
   inflateRect,
   polylineLength,
   rectsBounds,
-  segmentIntersectsRect,
-  squareCovered,
 } from './geometry.js';
 
 const SQRT2 = Math.SQRT2;
@@ -38,7 +41,7 @@ export function buildNavGrid({ walkRects, obstacles = [], radius, cellSize = 0.2
     const z = oz + (j + 0.5) * cellSize;
     for (let i = 0; i < cols; i++) {
       const x = ox + (i + 0.5) * cellSize;
-      if (squareCovered(x, z, radius, walkRects)) walk[j * cols + i] = 1;
+      if (circleCovered(x, z, radius, walkRects)) walk[j * cols + i] = 1;
     }
   }
 
@@ -52,12 +55,17 @@ export function buildNavGrid({ walkRects, obstacles = [], radius, cellSize = 0.2
       const z = oz + (j + 0.5) * cellSize;
       for (let i = i0; i <= i1; i++) {
         const x = ox + (i + 0.5) * cellSize;
-        if (distPointRect(x, z, o) < radius - 1e-9) walk[j * cols + i] = 0;
+        if (distPointRect(x, z, o) < radius - CLEAR_TOL) walk[j * cols + i] = 0;
       }
     }
   }
 
+  const anchors = new Map();
+  const grid0 = { originX: ox, originZ: oz, cols, rows, cellSize, radius, walkRects, obstacles };
+  anchorNarrowCells(grid0, walk, anchors);
+
   return {
+    anchors,
     originX: ox,
     originZ: oz,
     cols,
@@ -71,6 +79,68 @@ export function buildNavGrid({ walkRects, obstacles = [], radius, cellSize = 0.2
   };
 }
 
+/** Dựng điểm đứng được cho ô bị chặn tại tâm: thử các tọa độ "mép vật cản + radius" nằm trong ô. */
+function anchorNarrowCells(g, walk, anchors) {
+  const { cols, rows, cellSize: cs, radius: r, walkRects, obstacles } = g;
+  const half = cs / 2;
+  // Tọa độ biên của vùng đi lại (cộng hoặc trừ radius) dùng chung cho mọi ô.
+  const wx = [];
+  const wz = [];
+  for (const w of walkRects) {
+    wx.push(w.minX + r, w.maxX - r);
+    wz.push(w.minZ + r, w.maxZ - r);
+  }
+  for (let j = 0; j < rows; j++) {
+    const cz = g.originZ + (j + 0.5) * cs;
+    for (let i = 0; i < cols; i++) {
+      const idx = j * cols + i;
+      if (walk[idx]) continue;
+      const cx = g.originX + (i + 0.5) * cs;
+      const near = obstacles.filter((o) => distPointRect(cx, cz, o) < r + cs);
+      const xs = [cx];
+      const zs = [cz];
+      const addX = (v) => {
+        if (v >= cx - half && v <= cx + half) xs.push(v);
+      };
+      const addZ = (v) => {
+        if (v >= cz - half && v <= cz + half) zs.push(v);
+      };
+      wx.forEach(addX);
+      wz.forEach(addZ);
+      for (const o of near) {
+        addX(o.minX - r);
+        addX(o.maxX + r);
+        addZ(o.minZ - r);
+        addZ(o.maxZ + r);
+      }
+      if (xs.length === 1 && zs.length === 1) continue;
+      let best = null;
+      let bestD = Infinity;
+      for (const x of xs) {
+        for (const z of zs) {
+          if (!circleCovered(x, z, r, walkRects)) continue;
+          let ok = true;
+          for (const o of near) {
+            if (distPointRect(x, z, o) < r - CLEAR_TOL) {
+              ok = false;
+              break;
+            }
+          }
+          const d = Math.hypot(x - cx, z - cz);
+          if (ok && d < bestD) {
+            bestD = d;
+            best = { x, z };
+          }
+        }
+      }
+      if (best) {
+        walk[idx] = 1;
+        anchors.set(idx, best);
+      }
+    }
+  }
+}
+
 /** Chỉ số ô chứa điểm (x, z), -1 nếu ngoài lưới. */
 export function cellIndexAt(grid, x, z) {
   const i = Math.floor((x - grid.originX) / grid.cellSize);
@@ -79,34 +149,36 @@ export function cellIndexAt(grid, x, z) {
   return j * grid.cols + i;
 }
 
-/** Tâm ô theo tọa độ world. */
+/** Điểm đại diện của ô theo tọa độ world: tâm ô, hoặc điểm neo nếu ô là khe hẹp. */
 export function cellCenter(grid, idx) {
+  const a = grid.anchors?.get(idx);
+  if (a) return { x: a.x, z: a.z };
   const i = idx % grid.cols;
   const j = (idx - i) / grid.cols;
   return { x: grid.originX + (i + 0.5) * grid.cellSize, z: grid.originZ + (j + 0.5) * grid.cellSize };
 }
 
-/** Nhân vật đứng được tại đúng điểm (x, z) (không làm tròn theo ô). */
+/** Nhân vật (vòng tròn bán kính radius) đứng được tại đúng điểm (x, z) (không làm tròn theo ô). */
 export function isPointClear(grid, x, z) {
-  if (!squareCovered(x, z, grid.radius, grid.walkRects)) return false;
-  for (const o of grid.obstacles) if (distPointRect(x, z, o) < grid.radius - 1e-9) return false;
+  if (!circleCovered(x, z, grid.radius, grid.walkRects)) return false;
+  for (const o of grid.obstacles) if (distPointRect(x, z, o) < grid.radius - CLEAR_TOL) return false;
   return true;
 }
 
 /**
- * Nhân vật đi thẳng được từ a tới b. Kiểm tra bảo thủ: đoạn thẳng không đi vào vật cản đã nới radius
- * (góc vuông, chặt hơn góc bo) và các điểm lấy mẫu dọc đoạn (bước cellSize / 2) đều trong vùng đi lại.
+ * Nhân vật (vòng tròn) đi thẳng được từ a tới b: khoảng cách từ đoạn tới mọi vật cản không nhỏ hơn radius
+ * và các điểm lấy mẫu dọc đoạn (bước cellSize / 2) đều có vòng tròn nằm trong vùng đi lại.
  */
 export function segmentClear(grid, a, b) {
-  const r = Math.max(0, grid.radius - EPS);
+  const r = grid.radius;
   for (const o of grid.obstacles) {
-    if (segmentIntersectsRect(a.x, a.z, b.x, b.z, inflateRect(o, r))) return false;
+    if (distSegmentRect(a.x, a.z, b.x, b.z, o) < r - CLEAR_TOL) return false;
   }
   const len = Math.hypot(b.x - a.x, b.z - a.z);
   const steps = Math.max(1, Math.ceil(len / (grid.cellSize / 2)));
   for (let k = 0; k <= steps; k++) {
     const t = k / steps;
-    if (!squareCovered(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, r, grid.walkRects)) return false;
+    if (!circleCovered(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, r - CLEAR_TOL, grid.walkRects)) return false;
   }
   return true;
 }
@@ -137,7 +209,15 @@ function forEachNeighbor(grid, idx, fn) {
       // Không cắt góc: cả hai ô kề thẳng phải đi được.
       if (!walk[j * cols + ni] || !walk[nj * cols + i]) continue;
     }
-    fn(n, c * grid.cellSize);
+    let cost = c * grid.cellSize;
+    if (grid.anchors && (grid.anchors.has(n) || grid.anchors.has(idx))) {
+      // Ô có neo: tâm thật lệch khỏi tâm ô, phải kiểm cạnh nối và tính độ dài thật.
+      const a = cellCenter(grid, idx);
+      const b = cellCenter(grid, n);
+      if (!segmentClear(grid, a, b)) continue;
+      cost = Math.hypot(b.x - a.x, b.z - a.z);
+    }
+    fn(n, cost);
   }
 }
 
