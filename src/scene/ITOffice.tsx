@@ -17,6 +17,7 @@ import {
 } from './entry';
 import type { AmbientZone } from '../audio/engine';
 import type { Appearance } from '../avatar/appearance';
+import type { CharacterLook } from '../fashion/types';
 import { useServices } from '../data/useServices';
 import { decorBlockersOf, DeskDecorField, PartyDecor, zoneDecorOf, type PartyTheme } from '../env';
 import { LIGHT_PRESETS, type ThemeName } from '../lighting/presets';
@@ -56,6 +57,8 @@ interface Props {
   lightTheme?: ThemeName;
   /** Ngoại hình nhân vật người chơi. Không truyền thì dùng DEFAULT_APPEARANCE. */
   appearance?: Appearance;
+  /** Ngoại hình fashion của người chơi (mô hình MPFB). */
+  look?: CharacterLook | null;
   /** Bật âm nền. Âm chỉ phát sau thao tác của người dùng. Mặc định false. */
   audioEnabled?: boolean;
   /** Dụng cụ chăm cây đang chọn. Có dụng cụ thì bấm cây là chăm, không thì bấm cây là mở panel. Mặc định null. */
@@ -188,6 +191,7 @@ export function ITOffice({
   theme = 'none',
   lightTheme = 'office-day',
   appearance,
+  look,
   audioEnabled = false,
   plantTool = null,
   userName = '',
@@ -479,6 +483,7 @@ export function ITOffice({
         <Player
           obstacles={obstacles}
           appearance={appearance}
+          look={look}
           onMove={onMove}
           spawn={entry.spawn}
           world={world}

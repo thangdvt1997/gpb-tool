@@ -10,3 +10,13 @@
   .hud-duel { top: 72px; left: 72px; right: 16px; width: auto; }
   .hud-duel-panel { top: 72px; left: 72px; width: auto; right: 16px; max-height: calc(100% - 130px); }
 }
+
+/* Chế độ chụp ảnh (src/photo/PhotoMode.tsx). */
+.photo-open { position: absolute; right: 16px; bottom: 72px; z-index: 20; }
+.photo-panel {
+  position: absolute; right: 16px; bottom: 72px; z-index: 30; display: flex; flex-direction: column; gap: 8px;
+  padding: 12px; background: rgba(20, 24, 32, 0.92); color: #fff; border-radius: 8px; font-size: 14px; max-width: 260px;
+}
+.photo-panel select { margin-left: 4px; }
+.photo-actions { display: flex; gap: 8px; }
+.photo-msg { margin: 0; font-size: 13px; }

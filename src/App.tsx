@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractHelp, InteractPrompt } from './scene/interact';
 import { HelpLayer, HelpReplayButton } from './help';
+import { LiveRegion, announce } from './a11y';
+import { QuickWheel, useQuickHost } from './emotes/quick';
+import { PhotoPanel, PhotoScene } from './photo/PhotoMode';
+import { createPersistManager } from './persist';
+import { appearanceToLook } from './fashion/migrate';
+import { DEFAULT_APPEARANCE } from './avatar/appearance';
+import type { CharacterLook } from './fashion/types';
 import { PLANT_IDS } from './scene/itFixtures';
 import { Panel } from './ui/Panel';
 import { DisplayPanel } from './ui/DisplayPanel';
@@ -224,6 +231,37 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const pollSeq = useRef(0);
   const { theme } = useTheme();
   useEmoteHotkeys(!emoteOpen && !duelOpen);
+  const getQuickContext = useQuickHost();
+
+  // Look của nhân vật: suy ra từ ngoại hình trên máy chủ, rồi bị bản lưu cục bộ (src/persist) ghi đè nếu có.
+  const [look, setLook] = useState<CharacterLook>(() => appearanceToLook(appearance ?? DEFAULT_APPEARANCE).look);
+  const lookRef = useRef(look);
+  lookRef.current = look;
+  useEffect(() => {
+    if (appearance) setLook(appearanceToLook(appearance).look);
+  }, [appearance]);
+
+  // Lưu và khôi phục trạng thái (TASK 06). Bố cục vật do máy chủ giữ (LayoutProvider) nên không lưu cục bộ;
+  // vị trí nhân vật chưa khôi phục vì Player chỉ đọc spawn khi mount (chuỗi ghi danh quyết định spawn).
+  const persist = useMemo(
+    () =>
+      createPersistManager(
+        { getLook: () => lookRef.current, getLayoutOverrides: () => ({}), getColliders: () => [] },
+        {
+          applyLook: setLook,
+          applyLayoutOverrides: () => undefined,
+          placeCharacter: () => undefined,
+        },
+      ),
+    [],
+  );
+  useEffect(() => {
+    const off = persist.attach();
+    void persist.loadSnapshot().then((r) => {
+      if (!r.ok) announce(`Không khôi phục được bản lưu: ${r.error}`, 'assertive');
+    });
+    return off;
+  }, [persist]);
 
   /** Hỏi trận đang diễn ra. Bỏ kết quả cũ nếu đã có lần hỏi mới hơn. */
   const pollDuel = useCallback(async () => {
@@ -297,7 +335,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
       onLoggedOut();
     } catch (err) {
       setLoggingOut(false);
-      setLogoutError(err instanceof ApiError ? err.message : 'Không đăng xuất được. Thử lại.');
+      const msg = err instanceof ApiError ? err.message : 'Không đăng xuất được. Thử lại.';
+      setLogoutError(msg);
+      announce(msg, 'assertive');
     }
   };
 
@@ -337,6 +377,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               lightTheme={theme}
               theme={partyOf(theme)}
               appearance={appearance ?? undefined}
+              look={look}
               plantTool={canCare ? plantTool : null}
               userName={user.name}
               role={user.role}
@@ -344,6 +385,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               duel={activeDuel}
               reactBump={reactBump}
             />
+            <PhotoScene />
           </Canvas>
 
           <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>
@@ -351,6 +393,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           <InteractPrompt />
           <HelpLayer />
           <HelpReplayButton />
+          <LiveRegion />
+          <QuickWheel getContext={getQuickContext} enabled={!duelOpen && !emoteOpen} />
+          <PhotoPanel />
 
           {selectedObj && <Panel obj={selectedObj} role={user.role} onClose={() => setSelected(null)} />}
           {displayKind !== null && selected !== null && (
@@ -365,7 +410,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               onClose={() => setSelected(null)}
             />
           )}
-          <nav className="ui-hud" aria-label="Thi đấu và biểu cảm">
+          <nav className="ui-hud" data-hud aria-label="Thi đấu và biểu cảm">
             <button
               type="button"
               className="ui-hud-chip"
