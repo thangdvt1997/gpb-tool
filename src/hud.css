@@ -12,9 +12,10 @@
 }
 
 /* Chế độ chụp ảnh (src/photo/PhotoMode.tsx). */
-.photo-open { position: absolute; right: 16px; bottom: 72px; z-index: 20; }
+/* Cột phải dưới, xếp từ dưới lên: Xem lại hướng dẫn (bottom 44, help.css), Chụp ảnh (100), thanh xã hội (156). */
+.photo-open { position: absolute; right: 16px; bottom: 100px; z-index: 20; }
 .photo-panel {
-  position: absolute; right: 16px; bottom: 72px; z-index: 30; display: flex; flex-direction: column; gap: 8px;
+  position: absolute; right: 16px; bottom: 100px; z-index: 30; display: flex; flex-direction: column; gap: 8px;
   padding: 12px; background: rgba(20, 24, 32, 0.92); color: #fff; border-radius: 8px; font-size: 14px; max-width: 260px;
 }
 .photo-panel select { margin-left: 4px; }
@@ -55,21 +56,19 @@
 /* Hành động xã hội (TASK 15). */
 .social-bar {
   position: absolute;
-  bottom: 56px;
-  right: 12px;
+  bottom: 156px;
+  right: 16px;
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 4px;
   max-width: min(420px, 60vw);
   z-index: 4;
 }
 .social-prompt {
   position: absolute;
-  bottom: 100px;
+  bottom: 200px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 15;
-}
-@media (max-width: 760px) {
-  .social-bar { bottom: 120px; }
 }

@@ -14,4 +14,12 @@ export default defineConfig({
       '/api/kudos': 'http://127.0.0.1:3002',
     },
   },
+  // `vite preview` (kiểm tra trình duyệt e2e): mọi /api trỏ về gateway đang chạy (mặc định 127.0.0.1:18080).
+  preview: {
+    host: '127.0.0.1',
+    port: 4173,
+    proxy: {
+      '/api': process.env.GPB_PREVIEW_API ?? 'http://127.0.0.1:18080',
+    },
+  },
 });

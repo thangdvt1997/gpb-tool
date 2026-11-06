@@ -41,6 +41,7 @@ import type { WizardStart } from './onboarding/OnboardingWizard';
 import type { Appearance } from './avatar/appearance';
 import { DisplayProvider, isBoardId, isTvId } from './display';
 import { LayoutProvider } from './layout';
+import { collisionRects } from './scene/layout';
 import { CARE_ROLES, PlantToolbar } from './plants';
 import type { PlantTool } from './plants';
 import { useTheme } from './theme/ThemeProvider';
@@ -287,16 +288,17 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
     if (appearance) setLook(appearanceToLook(appearance).look);
   }, [appearance]);
 
-  // Lưu và khôi phục trạng thái (TASK 06). Bố cục vật do máy chủ giữ (LayoutProvider) nên không lưu cục bộ;
-  // vị trí nhân vật chưa khôi phục vì Player chỉ đọc spawn khi mount (chuỗi ghi danh quyết định spawn).
+  // Lưu và khôi phục trạng thái (TASK 06). Bố cục vật do máy chủ giữ (LayoutProvider) nên không lưu cục bộ.
+  // Vị trí nhân vật: placeCharacter đổi restoreSpawn, ITOffice mount lại Player tại điểm đó (chuỗi ghi danh vẫn ưu tiên).
+  const [restoreSpawn, setRestoreSpawn] = useState<{ x: number; z: number; rotY: number; seq: number } | null>(null);
   const persist = useMemo(
     () =>
       createPersistManager(
-        { getLook: () => lookRef.current, getLayoutOverrides: () => ({}), getColliders: () => [] },
+        { getLook: () => lookRef.current, getLayoutOverrides: () => ({}), getColliders: () => collisionRects(zone.objects) },
         {
           applyLook: setLook,
           applyLayoutOverrides: () => undefined,
-          placeCharacter: () => undefined,
+          placeCharacter: (pos) => setRestoreSpawn((prev) => ({ x: pos.x, z: pos.z, rotY: pos.yaw, seq: (prev?.seq ?? 0) + 1 })),
         },
       ),
     [],
@@ -506,6 +508,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               duel={activeDuel}
               reactBump={reactBump}
               interactions={!editor.state.active}
+              restoreSpawn={restoreSpawn}
             />
             <PhotoScene />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
@@ -525,7 +528,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           )}
           <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
-          <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>
+          {/* Hướng dẫn phím nằm ở InteractionHelp (tắt được); chân trang chỉ giữ ghi chú dữ liệu mẫu. */}
+          <footer className="hint hint-end">Dữ liệu là mẫu (mock)</footer>
           <InteractionHelp />
           <InteractionHud />
           <HelpLayer role={user.role} />

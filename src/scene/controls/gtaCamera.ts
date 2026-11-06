@@ -791,7 +791,9 @@ function mountSafetyPanel(setStatus: { fn: ((s: string) => void) | null }): () =
     shakeInput.disabled = c.reduceMotion;
   };
   const syncVisible = (): void => {
+    // Inline display: flex đè thuộc tính hidden, nên phải đặt display trực tiếp.
     root.hidden = !getControls().paused;
+    root.style.display = root.hidden ? 'none' : 'flex';
     overview.textContent = cameraModes.has(MODE_SOURCE.overview) ? 'Thoát toàn cảnh' : 'Toàn cảnh';
   };
   syncComfort();

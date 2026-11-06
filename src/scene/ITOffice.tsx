@@ -82,6 +82,11 @@ interface Props {
   reactBump?: boolean;
   /** false: tắt phím E và gợi ý tương tác (ví dụ khi đang ở chế độ sắp xếp nội thất). Mặc định true. */
   interactions?: boolean;
+  /**
+   * Vị trí khôi phục từ bản lưu (TASK 06). Dùng khi vào thẳng (không có chuỗi ghi danh đặt spawn riêng).
+   * Đổi `seq` thì Player mount lại tại điểm này (Player chỉ đọc spawn khi mount).
+   */
+  restoreSpawn?: { x: number; z: number; rotY?: number; seq: number } | null;
 }
 
 /**
@@ -206,6 +211,7 @@ export function ITOffice({
   duel,
   reactBump,
   interactions = true,
+  restoreSpawn = null,
 }: Props) {
   // Ẩn vật thể chỉ dành cho vai trò khác (bàn kiểm duyệt chỉ moderator và admin thấy).
   // Chỉ dựng vật thể có footprint nằm trọn trong chữ L (officeBounds.ts, isObjectInOffice); vật khác không dựng,
@@ -500,11 +506,12 @@ export function ITOffice({
       <SocialLayer world={world} />
       {entry.kind === 'done' && (
         <Player
+          key={entry.spawn ? 'entry' : `restore-${restoreSpawn?.seq ?? 0}`}
           obstacles={obstacles}
           appearance={appearance}
           look={look}
           onMove={onMove}
-          spawn={entry.spawn}
+          spawn={entry.spawn ?? restoreSpawn ?? undefined}
           world={world}
           selfId={selfId ?? 'self'}
         />

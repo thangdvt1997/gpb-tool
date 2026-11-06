@@ -156,6 +156,17 @@ export function createPersistManager(
     listeners.forEach((l) => l());
   };
 
+  // Vị trí nhân vật trong lần ghi gần nhất: đi xa hơn POS_EPS thì lúc ẩn tab cũng ghi (di chuyển không gọi markDirty).
+  const POS_EPS = 0.5;
+  let lastPos: SavedPosition | null = null;
+  const positionNow = (): SavedPosition | null =>
+    sources.getPosition ? sources.getPosition() : { x: playerPose.x, z: playerPose.z, yaw: playerPose.yaw };
+  const positionMoved = (): boolean => {
+    const p = positionNow();
+    if (!p) return false;
+    return !lastPos || Math.hypot(p.x - lastPos.x, p.z - lastPos.z) > POS_EPS;
+  };
+
   const buildSnapshot = (): OfficeSnapshot => ({
     format: SNAPSHOT_FORMAT,
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
@@ -164,7 +175,7 @@ export function createPersistManager(
     savedAt: Date.now(),
     writerId,
     assets: [...assetRefs.values()],
-    character: { look: sources.getLook(), position: sources.getPosition ? sources.getPosition() : { x: playerPose.x, z: playerPose.z, yaw: playerPose.yaw } },
+    character: { look: sources.getLook(), position: (lastPos = positionNow()) },
     layout: { overrides: sources.getLayoutOverrides() },
     objects: objectStatesNow(),
     settings: settingsNow(),
@@ -274,6 +285,7 @@ export function createPersistManager(
         spawn,
       });
       appliers.placeCharacter(pos.position);
+      lastPos = pos.position;
       if (pos.moved && pos.reason) notes.push(`${pos.reason} Nhân vật được đưa về sảnh.`);
       set({ missingAssets: missing });
     } finally {
@@ -401,7 +413,9 @@ export function createPersistManager(
       };
       const onHide = () => {
         // Cố gắng ghi khi tab bị ẩn. Transaction IndexedDB nguyên tử nên đóng tab giữa chừng không làm hỏng bản cũ.
-        if (document.visibilityState === 'hidden' && state.dirty && prefs.autosave) void scheduler.flush();
+        if (document.visibilityState !== 'hidden' || !prefs.autosave) return;
+        if (!state.dirty && positionMoved()) markDirty();
+        if (state.dirty) void scheduler.flush();
       };
       window.addEventListener('beforeunload', onBeforeUnload);
       document.addEventListener('visibilitychange', onHide);
