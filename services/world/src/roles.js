@@ -1,0 +1,120 @@
+// TASK 26: vai trò theo phòng, ma trận quyền, hàm can() dùng chung cho mọi message, kick/mute, audit.
+// Phòng = tenant. Vai trò phòng tách khỏi vai trò tài khoản: tài khoản chỉ cho vai trò MẶC ĐỊNH,
+// chủ phòng có thể ghi đè (role.set) trong bộ nhớ. Mặc định từ chối với action lạ.
+
+export const ROLES = ['guest', 'member', 'editor', 'owner'];
+
+// Ánh xạ ban đầu từ role tài khoản (auth). Role lạ hoặc thiếu -> guest (quyền tối thiểu).
+const ACCOUNT_TO_ROOM = { admin: 'owner', it: 'editor', employee: 'member', moderator: 'member', guest: 'guest' };
+
+export function roleFromAccount(accountRole) {
+  return ACCOUNT_TO_ROOM[accountRole] || 'guest';
+}
+
+// Quyền tối thiểu của từng vai trò; vai trò cao kế thừa vai trò thấp.
+const BASE = {
+  guest: ['room.view', 'room.join', 'pose.send', 'chat.read'],
+  member: ['chat.send', 'seat.use', 'object.use'],
+  editor: ['layout.edit'],
+  owner: ['member.kick', 'member.mute', 'role.set', 'audit.view', 'lease.force_release'],
+};
+
+export const MATRIX = (() => {
+  const out = {};
+  let acc = [];
+  for (const r of ROLES) {
+    acc = [...acc, ...BASE[r]];
+    out[r] = new Set(acc);
+  }
+  return out;
+})();
+
+export const ACTIONS = new Set(Object.values(BASE).flat());
+
+/**
+ * Quyết định dùng chung cho realtime (và HTTP nếu cần).
+ * actor: {id, tenantId, role, muted?}. resource: {tenantId?, targetId?, targetRole?, newRole?}.
+ * Trả {ok:true} hoặc {ok:false, reason}.
+ */
+export function can(actor, action, resource = {}) {
+  if (!actor || !actor.id || !ACTIONS.has(action)) return { ok: false, reason: 'forbidden' };
+  const perms = MATRIX[actor.role];
+  if (!perms || !perms.has(action)) return { ok: false, reason: 'forbidden' };
+  // Chống truy cập phòng khác bằng đổi ID.
+  if (resource.tenantId !== undefined && resource.tenantId !== actor.tenantId) return { ok: false, reason: 'cross_room' };
+  if (action === 'chat.send' && actor.muted) return { ok: false, reason: 'muted' };
+  if (action === 'member.kick' || action === 'member.mute' || action === 'role.set') {
+    if (resource.targetId === actor.id) return { ok: false, reason: 'cannot_target_self' };
+    // Chủ phòng không đụng tới chủ phòng khác: không để phòng mất chủ cuối cùng.
+    if (resource.targetRole === 'owner') return { ok: false, reason: 'cannot_target_owner' };
+  }
+  if (action === 'role.set') {
+    if (!ROLES.includes(resource.newRole)) return { ok: false, reason: 'invalid_role' };
+    if (resource.newRole === 'owner') return { ok: false, reason: 'cannot_grant_owner' };
+  }
+  return { ok: true };
+}
+
+export function capabilitiesOf(role) {
+  return [...(MATRIX[role] || [])];
+}
+
+export function createRoleStore({ kickMs = 300_000, auditMax = 500, now = Date.now } = {}) {
+  const overrides = new Map(); // `${tenant}:${user}` -> role
+  const mutes = new Map(); // key -> until (ms) hoặc Infinity
+  const kicks = new Map(); // key -> until
+  const audits = new Map(); // tenant -> [entry]
+  const k = (tenantId, userId) => `${tenantId}:${userId}`;
+
+  function roleOf(user) {
+    return overrides.get(k(user.tenantId, user.id)) || roleFromAccount(user.accountRole);
+  }
+  function isMuted(user) {
+    const key = k(user.tenantId, user.id);
+    const until = mutes.get(key);
+    if (until === undefined) return false;
+    if (now() >= until) {
+      mutes.delete(key);
+      return false;
+    }
+    return true;
+  }
+  /** Actor đầy đủ để đưa vào can(). Vai trò đọc lại mỗi lần nên thu hồi có hiệu lực ngay. */
+  function actorOf(user) {
+    return { id: user.id, tenantId: user.tenantId, role: roleOf(user), muted: isMuted(user) };
+  }
+  function setRole(tenantId, userId, role) {
+    if (role === undefined) overrides.delete(k(tenantId, userId));
+    else overrides.set(k(tenantId, userId), role);
+  }
+  function setMute(tenantId, userId, on, durationMs) {
+    const key = k(tenantId, userId);
+    if (!on) mutes.delete(key);
+    else mutes.set(key, durationMs > 0 ? now() + durationMs : Infinity);
+  }
+  function kick(tenantId, userId) {
+    kicks.set(k(tenantId, userId), now() + kickMs);
+  }
+  function isKicked(tenantId, userId) {
+    const key = k(tenantId, userId);
+    const until = kicks.get(key);
+    if (until === undefined) return false;
+    if (now() >= until) {
+      kicks.delete(key);
+      return false;
+    }
+    return true;
+  }
+  /** Ghi audit trong bộ nhớ (giới hạn auditMax mỗi phòng). Không ghi nội dung chat hay token. */
+  function audit(tenantId, entry) {
+    let list = audits.get(tenantId);
+    if (!list) audits.set(tenantId, (list = []));
+    list.push({ at: now(), ...entry });
+    if (list.length > auditMax) list.splice(0, list.length - auditMax);
+  }
+  function auditList(tenantId, limit = 50) {
+    const list = audits.get(tenantId) || [];
+    return list.slice(-Math.max(1, Math.min(200, limit))).reverse();
+  }
+  return { roleOf, actorOf, isMuted, setRole, setMute, kick, isKicked, audit, auditList };
+}

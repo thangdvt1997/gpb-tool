@@ -19,3 +19,15 @@ Giá trị sai kiểu dùng mặc định, số ngoài khoảng bị kẹp. Mous
 
 ## Chưa kiểm chứng
 Test thuần `runSettingsSelfTest()` chưa chạy (không có runner, không chạy npm/tsc). Giao diện trang cài đặt chưa làm. Chạm thật, gamepad, localStorage trên trình duyệt thật chưa kiểm.
+
+## Giao diện cài đặt (Task 11, phần UI)
+- `SettingsPanel.tsx` (props `open`, `onClose`): hộp thoại có focus trap, Esc đóng, role dialog. Tab: Điều khiển, Chuột/cảm ứng, Gamepad, Camera, Hiển thị. Mount ví dụ: `<SettingsPanel open={open} onClose={() => setOpen(false)} />` (import từ `src/settings`).
+- Đổi phím: `rebindFlow.ts` (thuần): `resolveCapture` (Esc hủy, phím giữ riêng báo invalid, trùng thì trả `conflict`), `confirmSwap`, `resetOne`, `resetAll`, `keyLabel`.
+- Schema thêm `gamepad {deadzone 0 đến 0,5; sensitivity 0,2 đến 3}` và `display {reducedMotion}`; dữ liệu cũ không có hai trường này vẫn nạp được (dùng mặc định).
+- `gamepad.ts` (thuần): vùng chết tròn có co giãn, đường cong bình phương, `mapGamepad` (chỉ mapping standard): cần trái = đi, cần phải = nhìn, A nhảy, X tương tác, Y đổi góc nhìn, RT/L3 chạy, Start tạm dừng, Back bản đồ.
+- `useGamepadInput(enabled)`: polling rAF, trả `getMoveInput` (cùng hình dạng MoveInput), `getLook`, `isRunning`, `consumeJump`, `consumePress`, `isConnected`. Xóa trạng thái khi blur, tab ẩn, tháo tay cầm.
+
+### Có hiệu lực thật
+Độ nhạy, đảo X/Y (camera), âm lượng, hintsEnabled, phím di chuyển/chạy/nhảy/firstPerson/cancel.
+### Đã lưu nhưng chưa nối (panel ghi chú trên giao diện)
+interact, map, editor (phím); controlMode, joystickSize, buttonsEnabled, chạm để đi; highlightEnabled kiểm tra lại ở interact; reducedMotion; toàn bộ gamepad (hook chưa được gọi trong scene). FOV, khoảng cách camera, cỡ chữ chưa có trong schema nên không hiển thị.

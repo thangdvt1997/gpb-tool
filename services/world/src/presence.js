@@ -90,6 +90,12 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
     return expired;
   }
 
+  /** Pose hiện tại của một người (bản sao công khai) hoặc null. */
+  function get(tenantId, userId) {
+    const e = room(tenantId, false)?.get(userId);
+    return e ? publicEntry(e) : null;
+  }
+
   function list(tenantId) {
     const m = room(tenantId, false);
     return m ? [...m.values()].map(publicEntry) : [];
@@ -117,5 +123,5 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
     return { tenants: tenants.size, players };
   }
 
-  return { update, remove, sweep, list, drainDirty, stats };
+  return { update, remove, sweep, get, list, drainDirty, stats };
 }

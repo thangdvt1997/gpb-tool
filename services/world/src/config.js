@@ -46,7 +46,22 @@ export const CLOSE = {
   POLICY: 1008,
   UNSUPPORTED: 1003,
   SHUTDOWN: 1001,
+  KICKED: 4403, // bị chủ phòng đuổi: không tự kết nối lại
+  REPLACED: 4409, // tab/thiết bị mới thay phiên này: không tự kết nối lại
 };
+
+// TASK 24: lease. Tim đập mỗi ~5 s; lease hết hạn sau LEASE_TTL_MS không có tim đập.
+export const LEASE_TTL_MS = Number(process.env.WORLD_LEASE_TTL_MS) || 15_000;
+// Mất kết nối: giữ lease thêm khoảng ân hạn này (khớp resume để kịp quay lại).
+export const LEASE_GRACE_MS = Number(process.env.WORLD_LEASE_GRACE_MS) || 30_000;
+// TASK 27: resume token sống tới đó kể từ lúc mất kết nối cuối.
+export const RESUME_TTL_MS = Number(process.env.WORLD_RESUME_TTL_MS) || 120_000;
+// Số sự kiện tin cậy giữ lại mỗi phòng để bù cho client quay lại. Khoảng trống lớn hơn thì gửi full.
+export const EVENT_LOG_MAX = 500;
+// TASK 26: thời gian chặn kết nối lại sau khi bị kick.
+export const KICK_COOLDOWN_MS = Number(process.env.WORLD_KICK_COOLDOWN_MS) || 300_000;
+// TASK 25: bán kính chat gần (mét).
+export const CHAT_NEAR_RADIUS = Number(process.env.WORLD_CHAT_NEAR_RADIUS) || 10;
 
 // Origin luôn được phép. Thêm qua ALLOWED_ORIGINS (phân cách bằng dấu phẩy).
 export const DEFAULT_ORIGINS = ['https://gp.daisoncoop.com'];

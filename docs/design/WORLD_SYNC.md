@@ -172,3 +172,106 @@ npx wscat -c ws://127.0.0.1:3011/api/world/ws -o https://gp.daisoncoop.com -H "C
 ```
 
 Lặp lại qua gateway (`wss://gp.daisoncoop.com/api/world/ws`) để xác nhận nginx chuyển tiếp Upgrade.
+
+---
+
+# Lát cắt 2: lease, chat, vai trò, reconnect (TASK 24, 25a, 26, 27)
+
+Cập nhật 2026-11-06. Mã: `services/world/src/{leases,chat,roles,sessions,profanity}.js` (điều phối trong `world.js`), client `src/net/*`. Tất cả trạng thái trong RAM của một tiến trình; restart mất hết (lease, phiên, nhật ký sự kiện, audit, vai trò ghi đè). Không có khóa nào sống sót qua restart, nên không có khóa mồ côi vô hạn.
+
+**Chưa làm:** thoại theo khoảng cách (TASK 25 phần voice) bị chặn vì chưa có TURN/SFU; chat riêng 1-1; báo cáo (report) tin nhắn; phòng họp; lưu bền vững (SQLite) lịch sử, vai trò, audit; đa instance; UI quản lý thành viên; HTTP API cho vai trò (chỉ realtime); khách chưa đăng nhập (bắt tay vẫn bắt buộc đăng nhập, vai trò `guest` chỉ áp dụng cho tài khoản có role lạ/thiếu).
+
+## Đối tượng và định danh
+
+- Phòng = tenant. `playerId` = `user.id` (auth xác nhận). `sessionId` + `resumeToken` cấp mỗi lần kết nối (trong `snapshot.session`). `epoch` = mã lần chạy của server. `eseq` = số thứ tự sự kiện tin cậy trong phòng.
+- Sự kiện tin cậy (có `eseq`, giữ 500 gần nhất mỗi phòng): `lease`, `edit.applied`, `chat` kênh `room`. Sự kiện tạm (không `eseq`): `poses`, `join`, `leave`, chat `near`.
+
+## Snapshot (mở rộng)
+
+`snapshot` thêm: `epoch, eseq, role, capabilities[], leases[], objects[], session{id,resumeToken,resumeTtlMs}, resumed`. `resumed` là `null` (kết nối không mang token) hoặc `{ok, reason?, restored[], lost[{resource,reason}], spawn{x,z,yaw}|null, full, events[]}`. Chỉ vai trò của chính mình được gửi lại; không lộ role tài khoản của người khác.
+
+## Lease (TASK 24)
+
+Resource: `seat:<id>`, `held:<id>`, `edit:<id>` (id `[A-Za-z0-9_-]{1,40}`). Quyền cần có (kiểm bằng `can` mỗi lần): `seat.use`, `object.use`, `layout.edit`. Có quyền vào phòng không đồng nghĩa giữ ghế.
+
+| Client gửi | Trường | Trả về |
+|---|---|---|
+| `lease.acquire` | `resource, requestId, expectedRevision?` | `lease.result{op:'acquire', ok, lease{leaseId,fence,revision,expiresInMs}}` hoặc `error`: `occupied` (kèm `owner`), `already_seated`, `limit_reached`, `revision_conflict`, `forbidden`, `invalid_resource` |
+| `lease.heartbeat` | `resource, leaseId, fence` | `lease.result{op:'heartbeat'}`; `lease_lost` nếu hết hạn, đổi chủ hoặc mất quyền |
+| `lease.release` | `resource, leaseId, fence` | `ok` (`released:false` nếu đã nhả), `stale_token` nếu đã đổi chủ |
+| `lease.query` | `resource` | trạng thái hiện tại |
+| `lease.force` | `resource` | chỉ owner, có audit |
+| `edit.commit` | `resource:'edit:..', leaseId, fence, patch{x?,z?,yaw?}, requestId, expectedRevision?` | `edit.result{ok, revision}`; lỗi `lease_lost`, `forbidden`, `invalid_patch`, `revision_conflict`, `rate_limited` |
+
+Server phát `lease{resource, ownerId|null, ownerName, fence, revision, reason}` (reason: `acquired, released, expired, left, kicked, revoked, forced, session_reset`) và `edit.applied`.
+
+Luật: một ghế một người; mỗi người tối đa 1 ghế, 1 vật cầm, 3 khóa chỉnh sửa; `fence` tăng ngặt trong phòng, `revision` tăng mỗi lần đổi chủ. Hết hạn theo giờ server: TTL 15 s (`WORLD_LEASE_TTL_MS`), client nên heartbeat mỗi 5 s. Retry cùng `requestId` trả đúng kết quả cũ (`duplicate:true`); chủ gọi lại acquire chỉ gia hạn. Mất kết nối cuối: lease giữ thêm ân hạn 30 s (`WORLD_LEASE_GRACE_MS`) rồi nhả khi tick quét; gửi `leave` thì nhả ngay. `edit.commit` chỉ chấp nhận khi vai trò hiện tại còn `layout.edit` VÀ token còn hiệu lực, nên client cũ mang token hết hạn hoặc editor vừa bị thu hồi bị từ chối; client phải áp lại `objects` từ server (trạng thái server thắng). Tối đa 500 vật có trạng thái mỗi phòng.
+
+## Chat chữ (TASK 25a)
+
+| type | Trường | Ghi chú |
+|---|---|---|
+| `chat` | `channel:'room'\|'near', text, clientMsgId` | server trả `chat.ack{clientMsgId,id,at}` rồi phát `chat{id,channel,from{id,name},text,at}` |
+| `chat.history` | `beforeId?, limit?` | trả `chat.history{messages}` (chỉ kênh room, tối đa 50, bỏ người đã chặn) |
+| `chat.block` | `target, on` | chặn/bỏ chặn người; chỉ ảnh hưởng thứ mình nhận |
+
+Server quyết định người nhận: `room` = cả phòng, `near` = người có pose trong bán kính 10 m (`WORLD_CHAT_NEAR_RADIUS`) quanh vị trí server của người gửi (chưa có pose thì `no_position`). `from` do server gán. Giới hạn: 250 ký tự (sau khi bỏ ký tự điều khiển/đảo chiều/độ rộng 0), burst 5 rồi 1 tin/2 giây (`rate_limited` + `retryAfterMs`), từ cấm (bản sao `services/auth/profanity.js`) trả `content_rejected`, trùng `clientMsgId` không phát lại. Lịch sử: 100 tin `room` mỗi phòng trong RAM, `near` không lưu. Không HTML: client phải render như chữ. Lỗi: `forbidden` (guest), `muted`, `invalid_channel`, `empty`, `too_long`.
+
+## Vai trò và quyền (TASK 26)
+
+Vai trò phòng: `owner > editor > member > guest`. Ánh xạ ban đầu từ role tài khoản (`/api/auth/me` `user.role`, giữ nội bộ, không phát cho người khác): `admin→owner`, `it→editor`, `employee→member`, `moderator→member`, khác/thiếu→`guest`. Chủ phòng ghi đè được bằng `role.set` (RAM). Hàm dùng chung `can(actor, action, resource)` trong `roles.js`; mọi message đi qua nó, vai trò đọc lại mỗi lần nên thu hồi có hiệu lực ngay.
+
+| Quyền | guest | member | editor | owner |
+|---|---|---|---|---|
+| room.view, room.join, pose.send, chat.read | x | x | x | x |
+| chat.send, seat.use, object.use | | x | x | x |
+| layout.edit | | | x | x |
+| member.kick, member.mute, role.set, audit.view, lease.force_release | | | | x |
+
+Ràng buộc: khác phòng → `cross_room`; không tác động chính mình (`cannot_target_self`) hoặc owner khác (`cannot_target_owner`); `role.set` không cấp `owner` (`cannot_grant_owner`) nên không mất/đổi owner cuối cùng; mute chặn `chat.send`. Chưa có chuyển quyền owner. Hạ vai trò nhả ngay lease không còn quyền (`revoked`) và gửi `role{role,capabilities}` cho người đó.
+
+| Client gửi | Kết quả |
+|---|---|
+| `mod.kick{target}` | `mod.result`; nhả lease, hủy phiên, đóng socket mục tiêu **4403**, chặn vào lại `WORLD_KICK_COOLDOWN_MS` (5 phút) |
+| `mod.mute{target,on?,durationMs?}` | mặc định 10 phút, tối đa 24 giờ; mục tiêu nhận `muted` |
+| `role.set{target,role}` | `mod.result` |
+| `audit.list{limit?}` | `audit.list{entries}`; chỉ owner |
+
+Mục tiêu phải đang trong phòng (`target_not_found`). Audit trong RAM, 500 mục mỗi phòng: `{at, actor, action, target, result, requestId, detail?}`; ghi cả lần bị từ chối; không ghi nội dung chat hay token.
+
+## Reconnect và phiên (TASK 27)
+
+- Bắt tay: `/api/world/ws?resume=<token>&last=<eseq>`. Token dùng một lần (xoay mỗi kết nối), gắn đúng người đã đăng nhập, sống 120 s kể từ lúc mất kết nối cuối (`WORLD_RESUME_TTL_MS`). Cookie vẫn là danh tính; token chỉ chứng minh "phiên trước của chính bạn".
+- Có token hợp lệ: lease còn trong ân hạn được giữ và gia hạn (`restored`); lease đã mất liệt kê trong `lost` (client đứng dậy/tay trống, báo người dùng); `spawn` là pose cuối đã qua kẹp sàn (client gửi lại làm pose đầu, server kẹp lại một lần nữa); `events` là sự kiện tin cậy bị lỡ nếu khoảng trống còn nằm trong nhật ký 500 mục, ngược lại `full:true` (dùng snapshot, bỏ trạng thái cục bộ). `last` lớn hơn eseq hiện tại (server restart) cũng là `full`.
+- Token sai/hết hạn hoặc không có token: phiên mới sạch, lease cũ của người đó được nhả (`session_reset`), `resumed` là `{ok:false}` hoặc `null`.
+- Nhiều tab: tab mới thay phiên cũ; socket cũ bị đóng **4409** `replaced_by_new_session`, một avatar duy nhất, không phát `leave`. Client nhận 4409/4403/4401 không tự thử lại.
+- Phát hiện mất kết nối: ping giao thức 25 s phía server; client gửi `ping` mỗi 10 s và coi là chết nếu 25 s không nhận gì (đóng 4000 rồi reconnect).
+- Client: backoff mũ 0.5 s → 15 s với equal jitter, tối đa 12 lần rồi `disconnected` (thử lại thủ công). Trạng thái: `connecting, connected, reconnecting, resyncing, disconnected, authExpired, replaced, kicked`; chỉ `connected` mới cho gửi pose/acquire/edit/mod. Chỉ `chat`, `chat.block`, `lease.release` được xếp hàng (tối đa 20 tin, 30 s) và gửi lại sau snapshot; pose/acquire/commit bị bỏ vì server thắng sau resync. Hàng đợi chat an toàn vì có `clientMsgId` (server khử trùng).
+
+### Bảng tình huống
+
+| Tình huống | Hành vi mong đợi | Kết quả (test tự động) |
+|---|---|---|
+| Rớt mạng ngắn (< 30 s) có token | giữ ghế, nhận sự kiện lỡ, spawn tại vị trí cuối | đạt (`session.test.js`) |
+| Rớt mạng quá ân hạn | ghế nhả, người khác ngồi được; quay lại thì `lost` và không ghi đè | đạt |
+| Token sai, của người khác, hết hạn | phiên mới sạch, `resumed.ok=false` | đạt |
+| Nhật ký thiếu / server restart | `full:true`, dùng snapshot | đạt (đơn vị `eventLog`) |
+| Tab mới | socket cũ 4409, không `leave` giả | đạt, kể cả qua `ws` thật |
+| Bị kick | 4403, lease nhả, không vào lại 5 phút | đạt qua `ws` thật |
+| Auth hết hạn | 4401, client `authExpired`, không retry | đạt (client giả lập) |
+| Chat gửi lúc offline | xếp hàng, gửi lại sau resync, khử trùng | đạt (client giả lập) |
+| Thu hồi editor khi đang giữ khóa | lease nhả, commit sau đó `forbidden` | đạt |
+
+Thời gian phục hồi đo thật: chưa đo (test dùng đồng hồ giả). `WorldClient.lastRecoveryMs` ghi lại thời gian từ lúc mất đến lúc có snapshot để đo khi chạy thật.
+
+## Gắn vào ứng dụng (chưa gắn; App.tsx ngoài phạm vi)
+
+```tsx
+const world = useWorld({ enabled: loggedIn });          // trong App
+<ConnectionBanner world={world} />                        // ngoài Canvas
+<ChatPanel world={world} />                               // ngoài Canvas
+<RemotePlayers world={world} />                           // trong Canvas
+// vòng lặp Player: world.client.current?.sendPose({seq, x, z, yaw, anim}) tối đa 10 lần/giây
+```
+
+Các giới hạn chưa kiểm chứng: bắt tay thật qua gateway nginx, hai trình duyệt thật, quy ước hướng `yaw` của Avatar (RemotePlayers gán `rotation.y = yaw`), ngoại hình người khác (đang dùng ngoại hình mặc định).

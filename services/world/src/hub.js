@@ -81,6 +81,39 @@ export function createHub({ maxClients, maxPerUser, maxBufferBytes }) {
     for (const c of [...set]) sendRaw(c, text);
   }
 
+  /** Phát cho kết nối trong tenant thỏa pred(client). Dùng cho chat theo khoảng cách và lọc chặn. */
+  function broadcastWhere(tenantId, msg, pred) {
+    const set = rooms.get(tenantId);
+    if (!set) return;
+    const text = encode(msg);
+    for (const c of [...set]) if (pred(c)) sendRaw(c, text);
+  }
+
+  /** Mọi kết nối của một người. */
+  function clientsOf(user) {
+    const out = [];
+    for (const c of rooms.get(user.tenantId) || []) if (c.user.id === user.id) out.push(c);
+    return out;
+  }
+
+  /**
+   * Đóng mọi kết nối của một người ngay (thay phiên, kick). Gỡ khỏi hub trước nên onClose muộn của
+   * kết nối cũ không bị tính là "người đó đã rời". Trả số kết nối đã đóng.
+   */
+  function closeUser(user, code, reason) {
+    const list = clientsOf(user);
+    for (const c of list) {
+      c.replaced = true;
+      remove(c);
+      try {
+        c.conn.close(code, reason);
+      } catch {
+        // Bỏ qua.
+      }
+    }
+    return list.length;
+  }
+
   function forEach(fn) {
     for (const set of rooms.values()) for (const c of [...set]) fn(c);
   }
@@ -96,5 +129,5 @@ export function createHub({ maxClients, maxPerUser, maxBufferBytes }) {
     });
   }
 
-  return { add, remove, send, broadcast, forEach, closeAll, size: () => total };
+  return { add, remove, send, broadcast, broadcastWhere, clientsOf, closeUser, forEach, closeAll, size: () => total };
 }

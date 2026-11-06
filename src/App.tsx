@@ -8,6 +8,8 @@ import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
 import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
+import { SettingsPanel } from './settings';
+import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, useWorld, worldEnabled } from './net';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
@@ -48,6 +50,7 @@ const zone = itZone as unknown as ZoneDef;
 // Thư viện asset (TASK 18) nạp lười: AssetViewer kéo theo GLTFLoader.
 const LibraryPanel = lazy(() => import('./library').then((m) => ({ default: m.LibraryPanel })));
 const audioRects = audioZoneRects(zone.objects);
+const WORLD_ON = typeof window !== 'undefined' && worldEnabled(import.meta.env.VITE_WORLD_ENABLED, window.location.search);
 
 const ROLE_LABEL: Record<Role, string> = {
   employee: 'Nhân viên',
@@ -243,6 +246,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   useEmoteHotkeys(!emoteOpen && !duelOpen);
   const getQuickContext = useQuickHost();
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
+  const world = useWorld({ enabled: WORLD_ON });
   // Chất lượng đồ họa (TASK 13) + đo khung (TASK 08): PerfProbe đẩy mẫu vào bộ tự thích nghi.
   const quality = useQuality();
   const dprCap = clampDpr(typeof window === 'undefined' ? 1 : window.devicePixelRatio, quality.config.dprCap);
@@ -426,7 +432,11 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
             <EditorLayer state={editor.state} dispatch={editor.dispatch} />
+            {WORLD_ON && <RemotePlayers world={world} />}
+            {WORLD_ON && <PoseSender world={world} />}
           </Canvas>
+          {WORLD_ON && <ConnectionBanner world={world} />}
+          {WORLD_ON && <ChatPanel world={world} />}
           <PerfOverlay />
           <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
@@ -502,6 +512,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-expanded={libraryOpen} onClick={() => setLibraryOpen((v) => !v)}>
               Thư viện
             </button>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)}>
+              Cài đặt
+            </button>
             <button type="button" className="btn btn-ghost" aria-expanded={backupOpen} onClick={() => setBackupOpen((v) => !v)}>
               Sao lưu
             </button>
@@ -509,6 +522,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
             )}
           </aside>
+          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (
             <Suspense fallback={null}>

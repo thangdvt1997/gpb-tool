@@ -51,10 +51,10 @@ export function attachWorldSocket({ server, config, world, hub, authClient }) {
       pending -= 1;
     }
     if (socket.destroyed) return;
-    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, user, cookie));
+    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, user, cookie, req));
   });
 
-  function onConnection(ws, user, cookie) {
+  function onConnection(ws, user, cookie, req) {
     ws.on('error', () => {});
     if (!user) return ws.close(CLOSE.UNAUTHENTICATED, 'unauthenticated');
 
@@ -68,15 +68,28 @@ export function attachWorldSocket({ server, config, world, hub, authClient }) {
       terminate: () => ws.terminate(),
       ping: () => ws.ping(),
     };
+    // Bị chủ phòng kick: chặn kết nối lại trong thời gian chờ.
+    if (world.isKicked(user)) return ws.close(CLOSE.KICKED, 'kicked');
+    // Chính sách nhiều tab: tab mới thay phiên cũ (đóng socket cũ với mã 4409).
+    world.takeover(user);
+    // Mở phiên TRƯỚC khi vào hub để sự kiện nhả lease của phiên cũ không đến trước snapshot.
+    // Resume token và eseq cuối nằm trong query (token dùng một lần, có hạn, chỉ có giá trị với đúng người đã đăng nhập).
+    const q = new URL(req.url, 'http://x').searchParams;
+    const last = q.get('last');
+    const opened = world.openSession(user, {
+      resumeToken: q.get('resume') || undefined,
+      lastEventSeq: last !== null && /^\d{1,12}$/.test(last) ? Number(last) : undefined,
+    });
     const added = hub.add(user, conn);
     if (added.error) {
+      world.abortSession(user);
       const code = added.error === 'server_full' ? CLOSE.SERVER_FULL : CLOSE.TOO_MANY_CONNECTIONS;
       return ws.close(code, added.error);
     }
     const client = added.client;
     const handler = createConnectionHandler({ world, hub, client });
     // snapshot là tin đầu tiên; mọi broadcast sau đó chạy ở vòng sự kiện sau nên không chen trước.
-    hub.send(client, world.snapshot(user));
+    hub.send(client, { ...world.snapshot(user), ...opened });
 
     // Kiểm tra lại phiên định kỳ. Chỉ đóng khi auth từ chối rõ ràng; auth chập chờn (timeout) thì giữ.
     const revalidate = setInterval(() => {

@@ -20,6 +20,15 @@ export function normalizeUser(body) {
   return { id: String(u.id), name: name || 'Người dùng', tenantId };
 }
 
+// Như normalizeUser nhưng giữ thêm role tài khoản để world suy ra vai trò phòng. accountRole chỉ dùng
+// nội bộ trong tiến trình, không gửi cho người khác (chỉ vai trò phòng của chính mình được gửi lại).
+export function normalizeUserWithRole(body) {
+  const u = normalizeUser(body);
+  if (!u) return null;
+  const role = body.user && typeof body.user.role === 'string' ? body.user.role : undefined;
+  return { ...u, accountRole: role };
+}
+
 /**
  * fetchUser(cookie): trả user, null khi auth từ chối (status khác 200 hoặc thiếu dữ liệu).
  * Ném lỗi khi mạng hỏng hoặc quá 3 giây; người gọi quyết định coi đó là gì.
@@ -37,7 +46,7 @@ export function createAuthClient({ authUrl, fetchImpl = fetch }) {
       await res.arrayBuffer().catch(() => {});
       return null;
     }
-    return normalizeUser(await res.json());
+    return normalizeUserWithRole(await res.json());
   }
 
   /** Như fetchUser nhưng mọi lỗi đều thành null (dùng cho bắt tay và route HTTP). */

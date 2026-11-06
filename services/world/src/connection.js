@@ -20,7 +20,7 @@ export function createConnectionHandler({ world, hub, client, now = Date.now }) 
   }
 
   function onMessage(data, isBinary) {
-    if (!client.open) return;
+    if (!client.open || client.replaced) return;
     if (isBinary) return closeWith(CLOSE.UNSUPPORTED, 'binary_not_supported');
     const size = typeof data === 'string' ? Buffer.byteLength(data) : data.length;
     // `ws` đã chặn bằng maxPayload (đóng 1009); kiểm thêm ở đây để không phụ thuộc cấu hình transport.
@@ -48,6 +48,7 @@ export function createConnectionHandler({ world, hub, client, now = Date.now }) 
         return hub.send(client, { type: 'pong', t, serverTime: now(), tick: world.getTick() });
       }
       default:
+        if (world.handle(user, client, msg)) return undefined;
         return hub.send(client, { type: 'error', code: 'unknown_type' });
     }
   }

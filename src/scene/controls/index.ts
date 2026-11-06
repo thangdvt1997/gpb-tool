@@ -6,9 +6,10 @@ import { isInternalEmote } from '../../emotes/library';
 import { playerLocomotion, stepLocomotion } from '../../avatar/animation';
 import { FLOOR, OUTER_WALL, PLAYER_RADIUS, type Rect } from '../layout';
 import { CAM, createCameraRig, useGtaCamera, type CameraFrame, type CameraRig } from './gtaCamera';
-import { createMotionInput, createMotionState, haltMotion, stepMotion, type MotionState } from './gtaMotion';
+import { createMotionInput, createMotionState, haltMotion, stepMotion, wrapAngle, type MotionState } from './gtaMotion';
 import { getControls, setFirstPerson, setSeated, takeSeatRequest, type SeatSpot } from './session';
 import { useGtaControls, useSessionHotkeys, type MoveInput } from './useGtaControls';
+import { useGamepadInput } from '../../settings/useGamepadInput';
 import { advanceFixedStep, createFixedStepper, lerpAngle } from '../motion/fixedStep';
 
 export { useGtaControls, useSessionHotkeys, isTypingTarget, type GtaControls, type MoveInput } from './useGtaControls';
@@ -53,6 +54,8 @@ export const ROOM_BOUNDS: Rect = {
 };
 
 /** Độ cao mắt (góc nhìn thứ nhất) và điểm nhìn (góc nhìn thứ ba) khi đứng và khi ngồi (m). */
+/** Tốc độ xoay camera tối đa bằng cần phải tay cầm (rad/s) khi cần gạt hết. */
+const PAD_LOOK_RATE = 2.6;
 const EYE_STAND = 1.58;
 const EYE_SIT = 1.18;
 const TARGET_SIT = 1.1;
@@ -117,6 +120,10 @@ interface Seated {
  */
 export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autopilot }: GtaPlayerOptions): GtaPlayer {
   const controls = useGtaControls(enabled);
+  // Tay cầm (TASK 11): gộp với bàn phím, cần nào lớn hơn thì thắng.
+  const pad = useGamepadInput(enabled);
+  const padMove = useRef({ forward: 0, strafe: 0 }).current;
+  const padLook = useRef({ x: 0, y: 0 }).current;
   useSessionHotkeys(enabled);
 
   const positionRef = useRef<THREE.Vector3>(null as unknown as THREE.Vector3);
@@ -171,6 +178,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     const pos = positionRef.current;
     // positionRef và yawRef là nguồn sự thật, bên ngoài có thể ghi vào.
     motion.yaw = yawRef.current;
+    // Chế độ chụp ảnh (TASK 16) khóa nhân vật qua setPaused, nên ctl.paused đã bao gồm.
     const live = enabled && !ctl.paused && !(isLocked !== undefined && isLocked());
 
     // Ngồi, đứng dậy (yêu cầu từ InteractTracker).
@@ -190,6 +198,16 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     }
 
     const mv = controls.getMoveInput(scratchMove);
+    pad.getMoveInput(padMove);
+    if (Math.abs(padMove.forward) > Math.abs(mv.forward)) mv.forward = padMove.forward;
+    if (Math.abs(padMove.strafe) > Math.abs(mv.strafe)) mv.strafe = padMove.strafe;
+    if (live && pad.isConnected()) {
+      // Cần phải xoay camera: tốc độ chuẩn hóa nhân dt (độc lập FPS).
+      pad.getLook(padLook);
+      rig.yaw = wrapAngle(rig.yaw - padLook.x * PAD_LOOK_RATE * dt);
+      rig.pitchGoal = Math.max(CAM.minPitch, Math.min(CAM.maxPitch, rig.pitchGoal + padLook.y * PAD_LOOK_RATE * 0.6 * dt));
+    }
+    if (pad.consumeJump() && live) pendingJump.current = true;
     const f = live ? mv.forward : 0;
     const st = live ? mv.strafe : 0;
     const keyMove = f !== 0 || st !== 0;
@@ -208,7 +226,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       const cosA = Math.cos(rig.azimuth);
       input.dirX = sinA * f - cosA * st;
       input.dirZ = cosA * f + sinA * st;
-      input.run = live && controls.isRunning();
+      input.run = live && (controls.isRunning() || pad.isRunning());
       input.faceYaw = ctl.firstPerson ? rig.azimuth : null;
 
       const ap = autopilotRef.current;

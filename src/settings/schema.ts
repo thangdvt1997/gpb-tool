@@ -74,12 +74,18 @@ export interface Settings {
   highlightEnabled: boolean;
   controlMode: ControlMode;
   touch: { joystickSize: number; buttonsEnabled: boolean };
+  /** Tay cầm: vùng chết (0 đến 0,5) và độ nhạy nhìn (hệ số nhân). Chỉ useGamepadInput đọc. */
+  gamepad: { deadzone: number; sensitivity: number };
+  /** Hiển thị: giảm chuyển động (chưa có nơi tiêu thụ ngoài SettingsPanel). */
+  display: { reducedMotion: boolean };
 }
 
 export const RANGES = {
   sensitivity: { min: 0.2, max: 3 },
   volume: { min: 0, max: 1 },
   joystickSize: { min: 80, max: 200 },
+  deadzone: { min: 0, max: 0.5 },
+  gamepadSensitivity: { min: 0.2, max: 3 },
 } as const;
 
 export function defaultSettings(): Settings {
@@ -92,6 +98,8 @@ export function defaultSettings(): Settings {
     highlightEnabled: true,
     controlMode: 'rightMouse',
     touch: { joystickSize: 120, buttonsEnabled: true },
+    gamepad: { deadzone: 0.15, sensitivity: 1 },
+    display: { reducedMotion: false },
   };
 }
 
@@ -166,6 +174,8 @@ export function sanitize(input: unknown): Settings {
   const o = rec(input);
   const mouse = rec(o.mouse);
   const touch = rec(o.touch);
+  const gp = rec(o.gamepad);
+  const disp = rec(o.display);
   const rawB = rec(o.bindings);
   const bindings = { ...d.bindings };
   for (const id of ACTION_IDS) {
@@ -189,6 +199,11 @@ export function sanitize(input: unknown): Settings {
       joystickSize: num(touch.joystickSize, RANGES.joystickSize.min, RANGES.joystickSize.max, d.touch.joystickSize),
       buttonsEnabled: bool(touch.buttonsEnabled, d.touch.buttonsEnabled),
     },
+    gamepad: {
+      deadzone: num(gp.deadzone, RANGES.deadzone.min, RANGES.deadzone.max, d.gamepad.deadzone),
+      sensitivity: num(gp.sensitivity, RANGES.gamepadSensitivity.min, RANGES.gamepadSensitivity.max, d.gamepad.sensitivity),
+    },
+    display: { reducedMotion: bool(disp.reducedMotion, d.display.reducedMotion) },
   };
 }
 
