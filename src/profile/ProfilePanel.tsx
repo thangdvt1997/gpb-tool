@@ -200,7 +200,7 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
   const dirty = profile !== null && (name !== profile.name || avatar !== avatarRefToChoice(profile.avatarRef));
 
   return (
-    <aside className="ui-panel profile-panel" role="dialog" aria-labelledby="profile-title">
+    <aside className="ui-panel profile-panel" role="dialog" aria-modal="false" aria-labelledby="profile-title">
       <header className="ui-panel-header">
         <h2 className="ui-panel-title" id="profile-title">
           Hồ sơ của tôi

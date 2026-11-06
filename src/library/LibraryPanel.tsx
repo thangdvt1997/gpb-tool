@@ -98,7 +98,7 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
   const sel = selected ? byId.get(selected) : undefined;
 
   return (
-    <section role="dialog" aria-label="Thư viện asset" onKeyDown={onRootKey} style={rootStyle}>
+    <section role="dialog" aria-modal="false" aria-label="Thư viện asset" onKeyDown={onRootKey} style={rootStyle}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0, fontSize: 16 }}>Thư viện asset ({lib.items.length})</h2>
         {onClose && <button onClick={onClose} aria-label="Đóng thư viện">Đóng</button>}
@@ -145,6 +145,7 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
           <li key={it.id} role="option" aria-selected={selected === it.id}>
             <div
               data-card
+              role="button"
               tabIndex={i === focusIdx ? 0 : -1}
               onClick={() => open(it.id)}
               style={{ ...cardStyle, opacity: it.usable ? 1 : 0.6, outline: selected === it.id ? '2px solid #4f8cff' : undefined }}

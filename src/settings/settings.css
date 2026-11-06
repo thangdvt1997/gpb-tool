@@ -2,7 +2,7 @@
 .sp-dialog { background: #1e2127; color: #eef; width: min(560px, 94vw); max-height: 88vh; overflow: auto; border-radius: 10px; padding: 16px; font: 14px/1.4 system-ui, sans-serif; }
 .sp-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .sp-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
-.sp-tabs button[aria-selected="true"] { background: #3b82f6; color: #fff; }
+.sp-tabs button[aria-selected="true"] { background: #2563eb; color: #fff; }
 .sp-dialog button { background: #2f343d; color: inherit; border: 1px solid #444; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 .sp-dialog button:focus-visible, .sp-dialog input:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
 .sp-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }

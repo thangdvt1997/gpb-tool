@@ -347,7 +347,7 @@ export function PhotoPanel(): JSX.Element {
           {count}
         </div>
       )}
-      <div className="photo-panel" role="dialog" aria-label="Chế độ chụp ảnh" style={count > 0 ? { visibility: 'hidden' } : undefined}>
+      <div className="photo-panel" role="dialog" aria-modal="false" aria-label="Chế độ chụp ảnh" style={count > 0 ? { visibility: 'hidden' } : undefined}>
         <label>
           Camera{' '}
           <select value={s.cam} onChange={(e) => set({ cam: e.target.value as CamKind })}>

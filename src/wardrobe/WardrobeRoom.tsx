@@ -323,7 +323,7 @@ export function WardrobeRoom({ initialLook, appearance = DEFAULT_APPEARANCE, onC
               </div>
             )}
             {s.pending && (
-              <div role="alertdialog" style={{ padding: 8, marginBottom: 10, borderRadius: 6, border: `1px solid ${C.warn}` }}>
+              <div role="alertdialog" aria-label="Xác nhận thay đổi" style={{ padding: 8, marginBottom: 10, borderRadius: 6, border: `1px solid ${C.warn}` }}>
                 <div>{s.pending.message}</div>
                 <div style={{ ...S.row, marginTop: 6, marginBottom: 0 }}>
                   <button type="button" style={btn(true)} onClick={() => dispatch({ type: 'confirmPending' })}>
