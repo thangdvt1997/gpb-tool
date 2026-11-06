@@ -1,0 +1,18 @@
+{
+  "name": "gpb-karaoke-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservice karaoke ảo GPBank: danh sách bài hát tự sáng tác, ghi điểm và bảng xếp hạng",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "11.7.0",
+    "express": "4.21.2"
+  }
+}

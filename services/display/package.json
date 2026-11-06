@@ -1,0 +1,18 @@
+{
+  "name": "gpb-display-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservice màn hình văn phòng: tivi và bảng vẽ realtime qua SSE",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "11.7.0",
+    "express": "4.21.2"
+  }
+}

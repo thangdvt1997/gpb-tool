@@ -1,0 +1,30 @@
+/*
+ * Bảng biểu cảm: chỉ còn định vị và lưới. Hình thức do src/ui/ui-system.css (ui-panel, ui-btn-tile,
+ * ui-kbd, ui-check, ui-banner). Đặc tả: docs/design/UI_SYSTEM.md mục 3.5.
+ */
+.emote-panel {
+  position: absolute;
+  right: 12px;
+  bottom: 48px;
+  width: 300px;
+  max-width: calc(100% - 24px);
+  z-index: 20;
+}
+.emote-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.emote-label { min-width: 0; overflow-wrap: anywhere; }
+.emote-stop { margin-top: 8px; }
+.emote-toggle { margin-top: 8px; }
+.emote-hint { margin-top: 8px; }
+
+/* Điện thoại: tấm trượt từ đáy. */
+@media (max-width: 720px) {
+  .emote-panel.ui-panel {
+    left: 0; right: 0; bottom: 0; width: auto; max-width: none;
+    max-height: 80%; overflow-y: auto;
+    border-radius: 10px 10px 0 0;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+}

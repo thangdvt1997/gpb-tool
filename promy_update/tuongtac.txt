@@ -1,0 +1,106 @@
+Bổ sung hệ thống **tương tác vật thể trong văn phòng 3D trên web**, tích hợp với nhân vật, camera và điều khiển hiện có. Hãy trực tiếp triển khai vào dự án.
+
+### 1. Cơ chế tương tác chung
+
+- Khi nhân vật đến gần và nhìn vào vật thể có thể tương tác, làm nổi nhẹ vật thể và hiển thị gợi ý: **“E — Mở cửa”, “E — Ngồi xuống”, “E — Sử dụng máy tính”**.
+- Dùng raycast hoặc shape cast để xác định đối tượng trước mặt, kết hợp khoảng cách và kiểm tra vật cản.
+- Chỉ chọn một đối tượng phù hợp nhất tại mỗi thời điểm; không tương tác xuyên tường.
+- Nhấn E để thực hiện hành động chính. Nếu có nhiều hành động, mở menu nhỏ để lựa chọn.
+- Gợi ý phải cập nhật theo trạng thái hiện tại của vật thể.
+- Trên điện thoại, hiển thị nút tương tác tương đương.
+- Có thể bật/tắt viền sáng và hướng dẫn phím.
+
+### 2. Các vật thể và hành vi
+
+**Cửa**
+- Mở/đóng bằng chuyển động xoay quanh đúng bản lề.
+- Có trạng thái đóng, đang mở, mở, đang đóng và khóa.
+- Cửa có collider phù hợp trong suốt chuyển động; không đẩy xuyên nhân vật.
+- Nếu bị chặn, dừng hoặc giới hạn chuyển động hợp lý.
+
+**Ghế**
+- Nhấn E để ngồi, căn nhân vật đúng vị trí và hướng của ghế.
+- Điều chỉnh tư thế theo chiều cao nhân vật và mặt ghế; chân không xuyên sàn.
+- Khi ngồi, chuyển sang animation ngồi và khóa di chuyển đi bộ.
+- Nhấn E để đứng dậy tại vị trí trống cạnh ghế; kiểm tra khoảng trống trước khi thực hiện.
+- Ghế đang có người ngồi không thể bị kéo hoặc dùng bởi người khác.
+
+**Máy tính**
+- Chỉ sử dụng khi nhân vật ở vị trí thích hợp trước bàn hoặc đang ngồi tại ghế tương ứng.
+- Khi tương tác, đưa camera gần màn hình và mở giao diện máy tính trong ứng dụng.
+- Có các chức năng mẫu hoạt động được: bật/tắt màn hình, xem tài liệu giả lập, ghi chú và đổi hình nền.
+- Esc để thoát, khôi phục camera và điều khiển trước đó.
+- Khi đang nhập văn bản, các phím W/A/S/D không làm nhân vật di chuyển.
+
+**Hộc tủ và tủ hồ sơ**
+- Từng ngăn kéo hoặc cánh tủ có thể mở/đóng riêng.
+- Ngăn kéo trượt đúng ray; cánh tủ xoay đúng bản lề.
+- Có giới hạn hành trình và trạng thái khóa nếu được cấu hình.
+- Vật bên trong đi theo ngăn kéo, không lơ lửng khi tủ di chuyển.
+
+**Đồ nhỏ: điện thoại, cốc, sách, bình nước**
+- Có thể cầm lên, quan sát, xoay, đặt xuống và trả về vị trí ban đầu.
+- Khi cầm, vật gắn vào điểm cầm phù hợp trên tay; animation và hướng tay phải khớp.
+- Khi đặt, hiển thị hình xem trước: xanh nếu hợp lệ, đỏ nếu bị chặn.
+- Chỉ đặt lên bề mặt phù hợp, không xuyên bàn hoặc chồng vào đồ vật khác.
+- Giữ nguyên tỷ lệ và kiểm tra độ ổn định sau khi đặt.
+- Khi thả tự do, dùng vật lý với khối lượng và collider phù hợp.
+
+**TV, đèn và rèm**
+- TV: bật/tắt, đổi nội dung mẫu và chỉnh âm lượng.
+- Đèn: bật/tắt theo thiết bị hoặc nhóm; ánh sáng trong cảnh phải thay đổi thật.
+- Rèm: kéo lên/xuống trong giới hạn; thay đổi mức che sáng phù hợp với hệ thống render.
+
+**Cây nước và máy in**
+- Cây nước: thực hiện hành động lấy nước với animation và âm thanh ngắn.
+- Máy in: mở bảng điều khiển đơn giản, chọn tài liệu mẫu và chạy hiệu ứng in.
+- Mỗi hành động phải có phản hồi trạng thái rõ ràng.
+
+### 3. Kéo và di chuyển đồ nội thất
+
+Tách thành hai chế độ:
+
+- **Tham quan:** sử dụng đồ vật, ngồi, mở cửa và cầm đồ nhỏ.
+- **Sắp xếp:** chọn bàn, ghế hoặc tủ được cho phép để kéo di chuyển và xoay.
+
+Trong chế độ sắp xếp:
+- Hiển thị đường bao chọn và vùng chiếm chỗ.
+- Hỗ trợ kéo trên mặt sàn, xoay theo bước và tùy chọn bắt lưới.
+- Kiểm tra va chạm với tường và đồ nội thất khác.
+- Không cho di chuyển vật kết cấu hoặc thiết bị cố định.
+- Có xác nhận vị trí, hủy thao tác, hoàn tác/làm lại và khôi phục bố trí ban đầu.
+- Đồ đặt trên bàn đi theo bàn theo quan hệ cha/con hoặc ràng buộc đã xác định.
+
+### 4. Animation, camera và âm thanh
+
+- Có các hành động với tay, cầm đồ, ngồi, đứng dậy và sử dụng thiết bị.
+- Dùng IK khi cần để tay chạm đúng điểm tương tác, thích nghi với hình thể nhân vật.
+- Chỉ cho phép hủy ở thời điểm an toàn; không để nhân vật mắc kẹt giữa các trạng thái.
+- Camera chuyển mượt khi ngồi, quan sát đồ hoặc dùng máy tính; tránh xuyên vật thể.
+- Thêm âm thanh theo khoảng cách cho cửa, ngăn kéo, bước chân và thiết bị; có chỉnh âm lượng.
+
+### 5. Kiến trúc triển khai
+
+- Kiểm tra mã nguồn và thư viện hiện có trước khi bổ sung.
+- Tạo hệ thống tương tác dùng chung, tránh viết logic riêng rải rác cho từng mesh.
+- Mỗi đối tượng khai báo: ID, loại, hành động, khoảng cách, điểm tương tác, điều kiện sử dụng và trạng thái.
+- Tách phần phát hiện mục tiêu, xử lý hành động, giao diện gợi ý, animation và lưu dữ liệu.
+- Quản lý trạng thái nhân vật rõ ràng: đi lại, đang tương tác, đang ngồi, đang cầm đồ, đang dùng giao diện và đang sắp xếp.
+- Không để các thao tác xung đột hoặc kích hoạt lặp khi giữ phím.
+- Nếu dự án có nhiều người dùng, dùng cơ chế xác nhận quyền sử dụng vật thể để tránh hai người cùng chiếm ghế hoặc cầm một đồ vật.
+- Lưu trạng thái cần thiết như vị trí đồ nội thất, cửa, rèm và thiết bị; cung cấp nút đặt lại.
+
+### 6. Tiêu chí hoàn thành
+
+Triển khai một khu mẫu có đầy đủ:
+- Một cửa mở/đóng.
+- Một ghế ngồi/đứng.
+- Một máy tính sử dụng được.
+- Một hộc tủ mở/đóng.
+- Một đồ nhỏ cầm và đặt được.
+- Một công tắc làm thay đổi ánh sáng.
+- Một món nội thất di chuyển được trong chế độ sắp xếp.
+
+Tự chạy kiểm tra bằng chuột/bàn phím và thao tác cảm ứng. Kiểm tra trường hợp đứng quá xa, bị tường che, vị trí đặt bị chặn, thoát giao diện và mất focus trình duyệt.
+
+Mọi nút và gợi ý hiển thị phải có hành vi thật. Hoàn thiện luồng tương tác xuyên suốt, cung cấp cách chạy và hướng dẫn thao tác ngắn.

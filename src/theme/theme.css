@@ -1,0 +1,90 @@
+/* Quy tắc bổ sung cho theme. Không sửa styles.css.
+   Mọi selector có tiền tố :root nên độ ưu tiên (0,2,0) cao hơn quy tắc cũ (0,1,0).
+   Vì vậy thứ tự import theme.css và styles.css không làm đổi kết quả. */
+
+/* Nút chính: chữ lấy từ --accent-text. styles.css đặt color: white cố định.
+   Đã đo: accentText/accent >= 5.89:1 cho mọi theme. */
+:root .btn {
+  color: var(--accent-text, #fff);
+}
+
+/* Thanh trên, thanh dưới và nhãn: styles.css đặt nền rgba tối cố định.
+   Chữ trên lớp nền này đã đo >= 13.3:1 cho mọi theme. */
+:root .topbar,
+:root .hint,
+:root .label {
+  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+/* Ô nhập, ô chọn và khối pre: styles.css đặt nền #0c1222 cố định.
+   Viền ô nhập dùng --muted: muted/bg >= 6.72:1, đạt yêu cầu 3:1 cho thành phần giao diện. */
+:root select,
+:root input,
+:root textarea {
+  background: var(--bg);
+  border-color: var(--muted);
+}
+
+:root pre {
+  background: var(--bg);
+}
+
+/* Theme tết và tiệc có nền gradient nhẹ, pha 18% màu nhấn vào nền.
+   Đã đo: chữ chính >= 10.4:1, chữ phụ >= 8.6:1. Nếu trình duyệt không hỗ trợ color-mix thì giữ nền phẳng. */
+:root[data-theme="tet"] body,
+:root[data-theme="party"] body {
+  background: linear-gradient(
+    160deg,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--accent) 18%, var(--bg)) 100%
+  );
+}
+
+/* Viền trái của panel đổi theo màu nhấn. */
+:root .panel {
+  border-left-color: var(--accent);
+}
+
+/* Ô chọn giao diện dạng thẻ. */
+:root .theme-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+:root .theme-picker label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+:root .theme-picker select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Màn hình hẹp dưới 640px: panel nằm dưới, nhãn và tiêu đề được xuống dòng để không tràn ngang. */
+@media (max-width: 639.98px) {
+  :root .panel {
+    max-width: 100%;
+    border-left-color: var(--line);
+    border-top-color: var(--accent);
+  }
+
+  :root .label {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  :root .hint,
+  :root .topbar-title {
+    overflow-wrap: anywhere;
+  }
+}

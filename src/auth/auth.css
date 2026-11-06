@@ -1,0 +1,756 @@
+/*
+ * Màn xác thực (AuthScreen) và onboarding (OnboardingWizard, AvatarCreator).
+ * Đặc tả: docs/design/UI_SYSTEM.md. Nút, ô nhập, tab, banner, danh sách, huy hiệu và chữ phụ dùng class ui-*
+ * từ src/ui/ui-system.css (nạp bằng @import dưới đây, để luôn đứng trước các quy tắc trong file này).
+ * File này chỉ giữ bố cục riêng của luồng đăng nhập và đăng ký: khung trang, thanh tiến trình,
+ * ô OTP, thanh độ mạnh mật khẩu, bộ chọn nhân vật.
+ *
+ * Màu thương hiệu là placeholder: khai báo --brand-primary, --brand-accent và --brand-accent-on-dark
+ * trên :root (hoặc .auth-page) khi có bộ nhận diện. Không khai báo hex thương hiệu ở đây.
+ * Chữ nhỏ nhất 14px. Tương phản chữ >= 4.5:1, đã tính trong UI_SYSTEM.md mục 1.
+ */
+@import "../ui/ui-system.css";
+
+.auth-page {
+  /* Trung tính: trùng bảng màu office-day trong UI_SYSTEM.md. */
+  --auth-bg: #eef2f7; /* Giấy nghiệp vụ: nền trang */
+  --auth-surface: #ffffff; /* Mặt phiếu: tờ phiếu, ô nhập */
+  --auth-text: #0f172a; /* Mực in: 17.85:1 trên phiếu, 15.9:1 trên nền */
+  --auth-muted: #4b5563; /* Chì: 7.56:1 trên phiếu, 6.72:1 trên nền */
+  --auth-line: #d5dce6; /* đường kẻ trang trí, không mang thông tin */
+  --auth-field-line: #6b7280; /* viền ô nhập và nút phụ: 4.8:1 trên trắng, đạt 3:1 cho thành phần giao diện */
+
+  /* Trạng thái. */
+  --auth-error: #b42318; /* lỗi: 6.6:1 trên phiếu */
+  --auth-success: #067647; /* thành công: 5.7:1 trên phiếu */
+
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  overflow-y: auto;
+  background: var(--auth-bg);
+  color: var(--auth-text);
+  color-scheme: light;
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-md);
+  line-height: var(--ui-lh-body);
+}
+
+/* Viền ngoài trang (phần overscroll) cũng cùng màu nền. Biến --auth-bg không có hiệu lực ngoài .auth-page. */
+body:has(.auth-page) {
+  background: #eef2f7;
+}
+
+/* Khung trang: một cột trên điện thoại, hai cột trên màn rộng từ 768px. */
+.auth-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.auth-split {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  min-width: 0;
+}
+
+/* Giới thiệu: chữ trên nền giấy, không cột màu, không logo. Điện thoại chỉ hiện tên văn phòng. */
+.auth-brand {
+  display: grid;
+  gap: var(--ui-s2);
+  padding: var(--ui-s5) var(--ui-s4) 0;
+  color: var(--ui-ink);
+}
+
+.auth-brand-name {
+  margin: 0;
+  font-size: var(--ui-fs-xl);
+  font-weight: 600;
+  line-height: var(--ui-lh-title);
+  overflow-wrap: anywhere;
+}
+
+.auth-brand-desc {
+  display: none;
+}
+
+.auth-main {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: var(--ui-s4);
+}
+
+.auth-main > .ui-panel-sheet {
+  margin: 0;
+}
+
+.auth-sheet--wide {
+  max-width: 980px;
+}
+
+.auth-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ui-s1) var(--ui-s3);
+  padding: var(--ui-s4);
+  border-top: 1px solid var(--ui-rule);
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink-2);
+}
+
+/* Tiêu đề phiếu. Cỡ chữ do .ui-panel-sheet .ui-panel-title quyết định (20px, 24px từ 768px). */
+.auth-head {
+  display: grid;
+  gap: var(--ui-s1);
+  margin-bottom: var(--ui-s4);
+}
+
+.auth-title:focus {
+  outline: none;
+}
+
+.auth-step-head {
+  display: grid;
+  gap: var(--ui-s2);
+  min-width: 0;
+  margin-bottom: var(--ui-s4);
+}
+
+.auth-panel {
+  display: grid;
+  gap: var(--ui-s4);
+  min-width: 0;
+  margin-top: var(--ui-s2);
+}
+
+.auth-form {
+  display: grid;
+  gap: var(--ui-s4);
+  min-width: 0;
+}
+
+.auth-forgot strong {
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+
+.auth-email {
+  margin: 0;
+  font-size: var(--ui-fs-md);
+  overflow-wrap: anywhere;
+}
+
+.auth-email strong {
+  font-weight: 600;
+}
+
+/* Ô nhập mật khẩu có nút hiện/ẩn bên trong. :root để thắng ":root .ui-input". */
+.auth-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+:root .ui-input.auth-input--with-toggle {
+  padding-right: 88px;
+}
+
+.auth-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin: 0;
+  padding: var(--ui-s1) var(--ui-s2);
+  border: 0;
+  border-radius: var(--ui-r-xs);
+  background: transparent;
+  color: var(--ui-primary);
+  font: inherit;
+  font-size: var(--ui-fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-toggle:focus-visible,
+.onb-av-canvas:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.auth-toggle:disabled {
+  color: var(--ui-ink-2);
+  cursor: not-allowed;
+}
+
+.auth-toggle-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.auth-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-s2) var(--ui-s4);
+}
+
+/* Đăng nhập bằng nhà cung cấp. */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-s3);
+  margin: var(--ui-s5) 0 var(--ui-s4);
+  font-size: var(--ui-fs-sm);
+  color: var(--ui-ink-2);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ui-rule);
+}
+
+.auth-providers {
+  display: grid;
+  gap: var(--ui-s3);
+}
+
+.auth-provider-item {
+  display: grid;
+  gap: var(--ui-s1);
+  min-width: 0;
+}
+
+/* Vùng thông báo. Vùng luôn có trong DOM để trình đọc màn hình báo khi nội dung đổi.
+   Khi rỗng thì đưa ra ngoài luồng bố cục (không chiếm chỗ, không tạo khoảng cách). */
+.auth-live {
+  min-width: 0;
+}
+
+.auth-live:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.auth-live > .ui-banner {
+  margin: 0;
+}
+
+/* Mật khẩu: thanh độ mạnh và danh sách tiêu chí. Độ mạnh luôn có chữ đi kèm. */
+.auth-strength-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-s3);
+  min-width: 0;
+}
+
+.auth-strength {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ui-s1);
+}
+
+.auth-strength-seg {
+  height: 6px;
+  border-radius: var(--ui-r-xs);
+  background: var(--ui-rule);
+}
+
+.auth-strength-seg.is-on {
+  background: var(--ui-primary);
+}
+
+.auth-strength-text {
+  flex: none;
+  font-size: var(--ui-fs-sm);
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.auth-checklist {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink-2);
+}
+
+.auth-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-s2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.auth-check-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--ui-ink-2);
+}
+
+.auth-check.is-ok,
+.auth-check.is-ok .auth-check-icon {
+  color: var(--ui-ok);
+}
+
+.auth-check.is-todo {
+  color: var(--ui-ink);
+}
+
+/* Mã OTP: sáu ô riêng. Kiểu ô do .ui-input .ui-input-otp quyết định. */
+.auth-otp {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--ui-s2);
+  max-width: 380px;
+}
+
+:root .auth-otp .ui-input-otp {
+  max-width: none;
+}
+
+.auth-timer {
+  justify-self: start;
+}
+
+/* Thanh tiến trình 5 bước (OnboardingProgress). */
+.onb-stepper {
+  display: flex;
+  margin: 0 0 var(--ui-s1);
+  padding: 0;
+  list-style: none;
+}
+
+.onb-step {
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink-2);
+}
+
+.onb-step::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: -50%;
+  right: 50%;
+  height: 2px;
+  background: var(--ui-rule);
+  z-index: 0;
+}
+
+.onb-step:first-child::before {
+  display: none;
+}
+
+.onb-step.is-done::before,
+.onb-step.is-current::before {
+  background: var(--ui-primary);
+}
+
+.onb-step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--ui-field-line);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.onb-step-dot svg {
+  width: 16px;
+  height: 16px;
+}
+
+.onb-step.is-done .onb-step-dot,
+.onb-step.is-current .onb-step-dot {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: var(--ui-on-primary);
+}
+
+.onb-step.is-current .onb-step-dot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-primary) 18%, transparent);
+}
+
+.onb-step-label {
+  overflow-wrap: anywhere;
+}
+
+.onb-step.is-current .onb-step-label {
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+
+.onb-step.is-done .onb-step-label {
+  color: var(--ui-ink);
+}
+
+/* Điện thoại: chỉ hiện nhãn bước hiện tại, các nhãn khác vẫn đọc được bằng trình đọc màn hình. */
+@media (max-width: 479px) {
+  .onb-step:not(.is-current) .onb-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* Bước 5: hướng dẫn nhanh. Danh sách dòng sổ (.ui-list). */
+.auth-welcome {
+  display: grid;
+  gap: var(--ui-s3);
+  min-width: 0;
+}
+
+h2.auth-tour-title {
+  margin: 0;
+  font-size: inherit;
+}
+
+/* Chuyển bước nhẹ: mờ dần và trượt 8px trong 200ms. */
+.auth-enter {
+  animation: auth-enter 200ms ease-out both;
+}
+
+@keyframes auth-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Bước 4: tạo nhân vật (AvatarCreator). */
+.onb-av {
+  display: grid;
+  gap: var(--ui-s4);
+  min-width: 0;
+}
+
+.onb-av-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--ui-s4);
+  align-items: start;
+}
+
+.onb-av-grid > * {
+  min-width: 0;
+}
+
+.onb-av-preview {
+  position: sticky;
+  top: 0;
+  order: 2;
+  display: grid;
+  gap: var(--ui-s2);
+}
+
+.onb-av-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-ground);
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.onb-av-canvas:active {
+  cursor: grabbing;
+}
+
+.onb-av-fallback {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--ui-s2);
+  height: 100%;
+  margin: 0;
+  padding: var(--ui-s4);
+  box-sizing: border-box;
+  text-align: center;
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink-2);
+}
+
+.onb-av-fallback p {
+  margin: 0;
+}
+
+.onb-av-panel {
+  display: grid;
+  gap: var(--ui-s3);
+  min-width: 0;
+}
+
+.onb-av-panel .ui-tabs {
+  margin-bottom: 0;
+}
+
+/* Ô chọn mục thay cho tab trên điện thoại. */
+.onb-av-select {
+  display: none;
+  gap: 6px;
+}
+
+.onb-av-body {
+  display: grid;
+  gap: var(--ui-s4);
+  min-width: 0;
+}
+
+.onb-av-group {
+  display: grid;
+  gap: var(--ui-s2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.onb-av-group legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: var(--ui-fs-sm);
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.onb-av-cards,
+.onb-av-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--ui-s2);
+}
+
+.onb-av-choice {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--ui-touch);
+  padding: 10px var(--ui-s3);
+  border: 1px solid var(--ui-field-line);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-surface);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.onb-av-choice:hover {
+  border-color: var(--ui-primary);
+}
+
+.onb-av-choice.is-selected {
+  padding: 9px 11px;
+  border: 2px solid var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 7%, var(--ui-surface));
+}
+
+.onb-av-choice.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.onb-av-choice:focus-within {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.onb-av-choice--swatch {
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+}
+
+.onb-av-name {
+  font-size: var(--ui-fs-sm);
+  font-weight: 600;
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink);
+}
+
+.onb-av-desc {
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  color: var(--ui-ink-2);
+}
+
+.onb-av-dot {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--ui-ink) 30%, transparent);
+  border-radius: 50%;
+}
+
+.onb-av-review {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onb-av-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ui-s2);
+  min-width: 0;
+  padding: var(--ui-s1) 0;
+  border-bottom: 1px solid var(--ui-rule);
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  overflow-wrap: anywhere;
+}
+
+.onb-av-key {
+  color: var(--ui-ink-2);
+}
+
+.onb-av-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-s2) var(--ui-s3);
+  min-width: 0;
+}
+
+.onb-av-inline .auth-live {
+  flex: 1 1 220px;
+}
+
+.onb-av-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--ui-s2);
+}
+
+/* Màn rộng: hai cột. Giới thiệu bên trái, tờ phiếu bên phải. */
+@media (min-width: 768px) {
+  .auth-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .auth-split--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth-brand {
+    padding: 48px 32px 32px 48px;
+  }
+
+  .auth-brand-name {
+    font-size: var(--ui-fs-2xl);
+  }
+
+  .auth-brand-desc {
+    display: block;
+    max-width: 40ch;
+  }
+
+  .auth-main {
+    padding: 40px 48px 40px 32px;
+  }
+
+  .auth-split--wide .auth-main {
+    padding: 40px 48px;
+  }
+}
+
+/* Điện thoại: xem trước nằm trên, các tab đổi thành ô chọn. */
+@media (max-width: 759px) {
+  .onb-av-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onb-av-preview {
+    position: static;
+    order: -1;
+  }
+
+  .onb-av-canvas {
+    aspect-ratio: auto;
+    height: 230px;
+    max-height: none;
+  }
+
+  .auth-page .onb-av-tabs {
+    display: none;
+  }
+
+  .auth-page .onb-av-select {
+    display: grid;
+  }
+}
+
+@media (max-width: 399px) {
+  .onb-av-cards,
+  .onb-av-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tôn trọng prefers-reduced-motion: tắt chuyển bước. Spinner đứng yên do ui-system.css xử lý. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-enter {
+    animation: none;
+  }
+}

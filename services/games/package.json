@@ -1,0 +1,18 @@
+{
+  "name": "gpb-games-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservice trò chơi văn phòng ảo: cờ caro, đố vui theo lượt, bảng xếp hạng",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "11.7.0",
+    "express": "4.21.2"
+  }
+}

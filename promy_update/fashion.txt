@@ -1,0 +1,110 @@
+Cập nhật dự án văn phòng 3D hiện có, bổ sung hệ thống thiết kế nhân vật và thời trang với chủ đề **“Văn phòng — Chibi — Cool ngầu — Boy phố”**. Triển khai trực tiếp vào dự án, đồng bộ với chế độ tham quan và điều khiển nhân vật.
+
+### 1. Định hướng hình ảnh
+
+- Nhân vật 3D chibi có đầu lớn, cơ thể gọn, đường nét rõ, biểu cảm tự tin và cá tính.
+- Kết hợp thời trang công sở với streetwear: sơ mi, polo, blazer, áo khoác bomber, hoodie, quần âu, jeans, cargo, sneaker và giày da.
+- Tạo hình thống nhất, chất liệu đẹp, chi tiết đủ nhìn ở khoảng cách camera tham quan văn phòng.
+- Trang phục cần có phom dáng, độ dày và các lớp riêng; không chỉ tô màu quần áo lên cơ thể.
+- Cho phép phối phong cách lịch sự, tối giản, năng động hoặc nổi bật.
+
+### 2. Tùy chỉnh cơ thể và diện mạo
+
+Tạo trình chỉnh sửa nhân vật gồm:
+
+- **Tổng thể:** màu da, chiều cao, vóc dáng, tỷ lệ đầu và cơ thể, độ rộng vai, kích thước tay chân trong giới hạn chibi.
+- **Khuôn mặt:** dáng mặt, mắt, lông mày, mũi, miệng, tai, màu mắt, râu và biểu cảm mặc định.
+- **Tóc:** kiểu tóc, màu tóc, màu highlight; có các kiểu như side part, undercut, buzz cut, tóc xoăn và tóc dài.
+- **Bộ phận cơ thể:** chỉnh riêng đầu, thân, cánh tay, bàn tay, chân và bàn chân; có tùy chọn đối xứng hoặc chỉnh từng bên.
+- Giới hạn thông số hợp lý để nhân vật vẫn dùng được bộ xương và animation chung.
+- Các thay đổi hình dáng phải tác động lên mô hình thật bằng morph target hoặc hệ thống biến thể tương thích rig.
+
+### 3. Hình xăm, sẹo và chi tiết da
+
+- Cho phép thêm nhiều hình xăm hoặc sẹo trên mặt, cổ, thân, tay và chân.
+- Có thư viện hình xăm: chữ, hình học, hoa văn, biểu tượng, line art và các mẫu minh họa nguyên bản.
+- Chỉnh vị trí, kích thước, góc xoay, màu và độ đậm; có thể chọn trái/phải hoặc đối xứng.
+- Hỗ trợ tải ảnh PNG nền trong suốt làm hình xăm.
+- Sẹo có kiểu dáng, chiều dài, màu và mức độ nổi nhẹ; phong cách hoạt hình, không máu me.
+- Hình xăm bám theo bề mặt và chuyển động cơ thể, được quần áo che đúng cách.
+- Có danh sách từng lớp để chọn, chỉnh sửa, ẩn hoặc xóa; tránh nhấp nháy bề mặt và kéo giãn quá mức.
+
+### 4. Thiết kế và phối trang phục
+
+Chia tủ đồ thành các nhóm:
+
+- Áo trong, áo ngoài, quần, bộ liền, tất, giày và mũ.
+- Áo sơ mi dài/ngắn tay, polo, áo phông, hoodie, blazer, bomber và áo khoác denim.
+- Quần âu, chinos, jeans, cargo và quần short phù hợp phong cách.
+- Sneaker, loafer, giày da và boots.
+
+Với mỗi món đồ, cho phép:
+
+- Thay màu theo từng vùng như thân áo, tay áo, cổ áo, viền và đế giày.
+- Chọn chất liệu: cotton, denim, da, vải dệt hoặc kim loại tại chi tiết phù hợp.
+- Thêm họa tiết, chữ hoặc ảnh tải lên ở vùng cho phép.
+- Chỉnh vị trí, tỷ lệ, góc xoay và màu họa tiết; có xem trước trực tiếp trên mô hình.
+- Chọn các biến thể phom đã chuẩn bị: regular, slim, oversized; sơ vin hoặc thả áo nếu mẫu hỗ trợ.
+- Phối nhiều lớp với quy tắc tương thích rõ ràng; tự xử lý các món xung đột.
+- Giữ thiết kế của từng món khi thay đổi cơ thể trong phạm vi được hỗ trợ.
+
+### 5. Phụ kiện
+
+Bổ sung các vị trí gắn phụ kiện theo bộ xương:
+
+- **Đầu và mặt:** kính cận, kính râm, khuyên tai, mũ, khẩu trang và tai nghe.
+- **Cổ và thân:** dây chuyền, cà vạt, thẻ nhân viên, túi đeo chéo và balo.
+- **Tay:** đồng hồ, vòng tay, nhẫn và điện thoại.
+- **Trang phục:** thắt lưng, móc khóa và chi tiết kim loại.
+
+Cho phép chỉnh màu, vật liệu và kích thước trong giới hạn phù hợp. Phụ kiện phải đi theo đúng bộ phận cơ thể, không trôi khi nhân vật chạy hoặc tương tác.
+
+Điện thoại có các trạng thái cất, cầm và sử dụng; kèm animation nhìn điện thoại hoặc chụp ảnh nếu đã có asset phù hợp.
+
+### 6. Các bộ phối mẫu
+
+Tạo sẵn ít nhất sáu bộ để người dùng chọn nhanh rồi chỉnh tiếp:
+
+1. **Office Cool:** sơ mi sáng, quần âu, sneaker trắng, kính và đồng hồ.
+2. **Boy Phố:** áo phông oversized, bomber, cargo, sneaker, dây chuyền và hình xăm.
+3. **Tech Developer:** hoodie, jeans, tai nghe, kính và thẻ nhân viên.
+4. **Young Boss:** blazer, áo thun trơn, quần tối màu, loafer và đồng hồ.
+5. **Street Minimal:** trang phục đen/xám, ít họa tiết, phụ kiện kim loại.
+6. **Creative Office:** áo có họa tiết, quần rộng, sneaker màu và túi đeo chéo.
+
+Không phụ thuộc vào logo thương hiệu; dùng thiết kế nguyên bản, màu sắc và chất liệu để tạo cá tính.
+
+### 7. Giao diện phòng thay đồ
+
+- Hiển thị nhân vật 3D ở giữa, có xoay 360°, zoom và nút trở về góc nhìn chuẩn.
+- Các tab: Cơ thể, Khuôn mặt, Tóc, Hình xăm & Sẹo, Trang phục, Phụ kiện và Bộ đã lưu.
+- Tự chuyển camera đến vùng đang chỉnh: mặt, thân, tay hoặc chân.
+- Có bảng màu, thanh chỉnh thông số, danh sách mẫu và công cụ đặt họa tiết.
+- Có hoàn tác/làm lại, đặt lại từng mục, ngẫu nhiên theo chủ đề và so sánh trước/sau.
+- Lọc đồ theo phong cách, loại, màu và khả năng phối cùng món đang mặc.
+- Nút “Lưu bộ phối” và “Vào văn phòng” phải hoạt động thật.
+- Hỗ trợ chuột và thao tác cảm ứng.
+
+### 8. Tích hợp với văn phòng
+
+- Nhân vật sau khi thiết kế phải được dùng trực tiếp trong cảnh văn phòng, giữ nguyên cơ thể, trang phục, hình xăm và phụ kiện.
+- Tương thích với animation đứng, đi, chạy, nhảy, ngồi và tương tác.
+- Khi mở trình chỉnh sửa, tạm dừng điều khiển di chuyển; khi đóng, khôi phục nhân vật ở vị trí trước đó.
+- Giảm xuyên cơ thể/quần áo bằng các vùng che cơ thể, biến thể trang phục và quy tắc phối lớp.
+- Kiểm tra trang phục ở các tư thế vận động và ngồi, đặc biệt tại vai, khuỷu tay, hông và đầu gối.
+
+### 9. Kỹ thuật và dữ liệu
+
+- Kiểm tra stack, rig và hệ thống animation hiện có trước khi triển khai.
+- Dùng một bộ xương chuẩn; các mesh cơ thể và trang phục phải tương thích cùng rig.
+- Tách dữ liệu nhân vật, danh mục đồ, vùng gắn phụ kiện và quy tắc tương thích khỏi giao diện.
+- Lưu cấu hình nhân vật và bộ phối bằng JSON; hỗ trợ lưu cục bộ, xuất và nhập cấu hình. Nếu dùng ảnh tải lên, lưu asset tương ứng để khôi phục đúng.
+- Tối ưu số lượng polygon, texture và material; tải đồ khi cần, tái sử dụng tài nguyên.
+- Không dựng tính năng giả: mỗi tùy chọn được hiển thị phải thực sự thay đổi mô hình hoặc trạng thái nhân vật.
+- Nếu thiếu asset, xác định rõ asset cần bổ sung; không dùng khối hộp làm trang phục hoàn thiện.
+
+### 10. Tiêu chí hoàn thành
+
+Người dùng có thể tạo một nhân vật chibi riêng, chỉnh từng vùng cơ thể, thêm hình xăm hoặc sẹo, thiết kế họa tiết quần áo, phối phụ kiện, lưu bộ đồ và đưa nhân vật vào tham quan văn phòng.
+
+Hãy trực tiếp triển khai, chạy kiểm tra và cung cấp ảnh chụp một số bộ phối cùng hướng dẫn sử dụng ngắn. Ưu tiên hệ thống hoạt động đầy đủ, tạo hình đồng nhất và cảm giác tùy biến rõ ràng.

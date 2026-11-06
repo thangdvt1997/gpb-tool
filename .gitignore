@@ -1,0 +1,26 @@
+# Dependencies và bản build
+node_modules/
+dist/
+
+# Dữ liệu runtime (SQLite, file tải lên). Neo vào gốc repo bằng dấu / đầu,
+# để không chặn nhầm mã nguồn như src/data/.
+/data/
+services/*/data/
+services/*/node_modules/
+
+# Secret: chỉ giữ .env.example trong git
+.env
+.env.*
+!.env.example
+
+# Log
+*.log
+
+# Tài liệu lớn, ảnh tham chiếu và file cá nhân (không đưa lên git)
+IMG_6977.MOV
+*.mov
+/ảnh văn phòng/
+promy_update/ảnh văn phòng/
+*.bak*
+Stored_Passwords*
+/scratchpad/

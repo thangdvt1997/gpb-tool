@@ -1,0 +1,15 @@
+# Dockerfile-specific ignore cho docker/layout.Dockerfile.
+# BuildKit dùng file này thay cho .dockerignore của context (services/layout).
+# Không loại thư mục data ở gốc context: services/layout/data/zone.json là dữ liệu bố cục cần có trong image.
+# Dữ liệu runtime (layout.db) nằm ở DATA_DIR=/data (volume), không đi kèm image.
+node_modules
+**/node_modules
+local-data
+**/*.db
+**/*.db-*
+**/*.sqlite*
+*.log
+.env
+.env.*
+!.env.example
+.git

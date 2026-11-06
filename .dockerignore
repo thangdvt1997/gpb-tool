@@ -1,0 +1,13 @@
+# Build context gốc, dùng cho web và gateway. Auth và it có context riêng trong services/.
+.git
+node_modules
+**/node_modules
+dist
+data
+*.log
+.env
+.env.*
+!.env.example
+docs
+services
+server

@@ -1,0 +1,85 @@
+Cập nhật hệ thống nhân vật 3D trên web thành **nhân vật có ngoại hình và tỷ lệ giống người thật**, có thể tùy chỉnh hình thể bằng cách kéo trực tiếp trên cơ thể hoặc sử dụng thanh thông số. Thay thế phong cách chibi bằng tạo hình người trưởng thành chân thực.
+
+Hãy trực tiếp triển khai vào dự án hiện có.
+
+### 1. Ngoại hình tổng thể
+
+- Nhân vật có cấu trúc giải phẫu, tỷ lệ đầu, thân, tay chân và khuôn mặt tự nhiên.
+- Có nhiều mẫu hình thể ban đầu, màu da và đặc điểm khuôn mặt để lựa chọn.
+- Da có chi tiết lỗ chân lông, sắc độ không đồng đều nhẹ, nếp gấp và phản ứng ánh sáng tự nhiên.
+- Mắt có chiều sâu, giác mạc, mí mắt; tóc, lông mày và râu có chất liệu phù hợp.
+- Sử dụng vật liệu PBR, normal map, roughness map và hiệu ứng tán xạ dưới da nếu nền tảng hỗ trợ.
+- Tránh da bóng như nhựa, cơ bắp phồng bất thường, khuôn mặt hoạt hình và tỷ lệ giống búp bê.
+
+### 2. Co kéo hình thể trực tiếp
+
+Cho phép người dùng chọn một vùng trên mô hình, sau đó kéo để thay đổi hình dáng. Khi rê chuột, làm nổi nhẹ vùng có thể chỉnh; khi chọn, hiển thị hướng kéo và thông số liên quan.
+
+Các vùng tùy chỉnh gồm:
+
+- **Tổng thể:** chiều cao, cân nặng biểu kiến, lượng mỡ và độ phát triển cơ bắp.
+- **Đầu và mặt:** kích thước đầu, trán, gò má, má, hàm, cằm, tai.
+- **Chi tiết mặt:** khoảng cách và hình dáng mắt, độ cao sống mũi, độ rộng cánh mũi, độ đầy môi.
+- **Thân:** độ rộng vai, chiều dài cổ, ngực, eo, bụng, lưng và hông.
+- **Tay:** bắp tay, cẳng tay, chiều dài tay và kích thước bàn tay.
+- **Chân:** đùi, bắp chân, chiều dài chân và kích thước bàn chân.
+
+Yêu cầu thao tác:
+
+- Kéo theo phương phù hợp để tăng/giảm chiều rộng, chiều dài hoặc độ đầy của vùng đang chọn.
+- Có chế độ chỉnh đối xứng hai bên và chỉnh riêng từng bên.
+- Có thanh thông số để điều chỉnh chính xác, hoàn tác/làm lại và đặt lại từng vùng.
+- Giới hạn biến dạng theo giải phẫu để khớp, cơ và tỷ lệ vẫn tự nhiên.
+- Những vùng liền kề phải chuyển tiếp mượt, không xuất hiện vết lõm, đường gãy hoặc khe hở.
+- Tách thao tác xoay camera khỏi thao tác kéo cơ thể, tránh chỉnh nhầm khi quan sát.
+
+### 3. Cơ chế biến dạng
+
+- Dùng mesh người có topology phù hợp, rig đầy đủ và bộ morph target/blendshape cho các thay đổi hình thể.
+- Phối hợp nhiều morph có kiểm soát; bổ sung corrective morph tại khớp hoặc khi kết hợp các thông số gây biến dạng.
+- Với thay đổi chiều dài và tỷ lệ xương, cập nhật skeleton, skinning, vị trí gắn phụ kiện và collider tương ứng.
+- Không chỉ phóng to/thu nhỏ toàn bộ mesh hoặc kéo vertex tùy ý làm sai giải phẫu.
+- Giữ nhân vật tương thích với animation sau khi chỉnh.
+
+### 4. Hình xăm và chi tiết da
+
+Tạo trình thiết kế hình xăm trực tiếp trên cơ thể:
+
+- Chọn vị trí bằng cách bấm lên bề mặt nhân vật.
+- Thêm hình xăm từ thư viện hoặc tải PNG nền trong suốt.
+- Di chuyển, xoay, đổi kích thước, màu và độ đậm.
+- Hỗ trợ nhiều lớp hình xăm, quản lý từng lớp, nhân bản và xóa.
+- Cho phép xăm ở mặt, cổ, ngực, lưng, bụng, tay và chân; hỗ trợ mẫu bao quanh cánh tay hoặc chân.
+- Hình xăm bám theo da khi thay đổi hình thể hoặc thực hiện animation, không nổi khỏi da và không xuyên sang vùng cơ thể khác.
+- Có công cụ chữ với nội dung, phông, kích thước và khoảng cách ký tự.
+- Bổ sung sẹo đã lành, tàn nhang, nốt ruồi và vết rạn với mức độ tự nhiên, có thể chỉnh vị trí và cường độ.
+- Quần áo phải che hình xăm đúng theo hình học.
+
+### 5. Trang phục và phụ kiện
+
+- Giữ hệ thống phối đồ, kính, đồng hồ, trang sức, giày và điện thoại của dự án.
+- Trang phục thích nghi với hình thể trong phạm vi hỗ trợ bằng morph tương ứng hoặc giải pháp fitting phù hợp.
+- Không làm quần áo xuyên da, phụ kiện trôi khỏi cơ thể hoặc giày lệch chân khi thay đổi tỷ lệ.
+- Có chế độ xem cơ thể với đồ lót kín đáo để chỉnh hình thể và hình xăm; có nút bật lại trang phục.
+- Nếu một món đồ không hỗ trợ hình thể đang chọn, thông báo rõ và đưa ra lựa chọn tương thích.
+
+### 6. Giao diện chỉnh sửa
+
+- Nhân vật ở giữa, nền studio trung tính, ánh sáng đủ rõ để đánh giá hình dáng và vật liệu.
+- Xoay 360°, zoom, di chuyển camera; có góc trước, sau, trái, phải và cận mặt.
+- Các tab: Tổng thể, Khuôn mặt, Hình thể, Da, Tóc & Râu, Hình xăm & Sẹo, Trang phục, Phụ kiện.
+- Camera tự căn tới vùng đang chỉnh.
+- Có bật/tắt đối xứng, so sánh trước/sau, lưu phiên bản và khôi phục mặc định.
+- Lưu cấu hình nhân vật để tiếp tục chỉnh và dùng ngay trong cảnh văn phòng.
+
+### 7. Tích hợp và kiểm tra
+
+- Nhân vật đã tùy chỉnh phải đi, chạy, ngồi và tương tác được trong văn phòng.
+- Cập nhật chiều cao camera, khoảng cách camera, collider và vị trí tiếp xúc sàn theo hình thể.
+- Kiểm tra ở hình thể mặc định và các tổ hợp giới hạn: cao/thấp, gầy/đầy, ít cơ/nhiều cơ.
+- Kiểm tra vai, khuỷu tay, hông và đầu gối khi vận động.
+- Tối ưu bằng LOD, texture có độ phân giải phù hợp và tải tài nguyên theo nhu cầu.
+
+Trước khi triển khai, kiểm tra mô hình hiện có có đủ topology, rig và morph target hay không. Nếu thiếu, nêu rõ tài nguyên cần bổ sung; không tạo các thanh chỉnh giả hoặc tuyên bố đạt độ chân thực khi asset chưa đáp ứng.
+
+Kết quả cần là một trình tạo người 3D chân thực hoạt động trên web: người dùng kéo chỉnh hình thể, sửa khuôn mặt, thêm hình xăm và chi tiết da, phối đồ, lưu nhân vật và đưa vào văn phòng. Cung cấp cách chạy cùng ảnh chụp chứng minh các thay đổi thực sự hoạt động.

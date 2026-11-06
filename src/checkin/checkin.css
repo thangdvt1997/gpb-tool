@@ -1,0 +1,146 @@
+/* Ghi danh cổng tầng 7. Hình thức dùng class ui-* (src/ui/ui-system.css).
+   File này chỉ giữ định vị lớp phủ, thanh phòng ban và bố cục riêng. */
+
+/* ---------- Lớp phủ ghi danh ---------- */
+
+.ci-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-start;
+  /* Lề tối thiểu 16px kể cả màn hình hẹp và tai thỏ. */
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  pointer-events: none; /* vùng trống không chặn thao tác với cảnh */
+}
+
+.ui-banner.ci-card {
+  pointer-events: auto;
+  width: min(380px, 100%);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ui-s3);
+  margin: 0;
+  padding: var(--ui-s3) var(--ui-s4);
+  box-shadow: var(--ui-float-shadow);
+}
+
+.ci-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-s3);
+  min-width: 0;
+}
+
+.ci-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--ui-banner-tone);
+  border-radius: 50%;
+  font-size: var(--ui-fs-md);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ui-banner-tone);
+}
+
+.ci-text {
+  min-width: 0;
+}
+
+.ci-title {
+  margin: 0;
+  font-size: var(--ui-fs-md);
+  font-weight: 600;
+  line-height: var(--ui-lh-title);
+  overflow-wrap: anywhere;
+}
+
+.ci-detail {
+  margin: var(--ui-s1) 0 0;
+  color: var(--ui-ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Bảng ghi danh ---------- */
+
+/* Bảng nằm trong khung Panel có sẵn, không vẽ thêm khung thứ hai. */
+.ui-panel.ci-board {
+  display: grid;
+  gap: var(--ui-s4);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ci-board .ui-subhead {
+  margin: 0;
+}
+
+.ci-board-total {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ui-s2);
+  margin: 0;
+}
+
+.ci-dept-list {
+  display: grid;
+  gap: var(--ui-s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ci-dept {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--ui-s3);
+  align-items: baseline;
+}
+
+.ci-dept-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ci-bar {
+  grid-column: 1 / -1;
+  display: block;
+  height: 6px;
+  border-radius: var(--ui-r-xs);
+  background: var(--ui-rule);
+  overflow: hidden;
+}
+
+.ci-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--ui-primary);
+  transition: width 200ms ease;
+}
+
+/* ---------- Chuyển động ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ci-card .ui-spinner {
+    animation: none; /* vòng tĩnh; chữ "Đang ghi danh…" vẫn báo trạng thái */
+  }
+
+  .ci-bar-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .ci-card .ui-actions .ui-btn {
+    flex: 1 1 100%;
+  }
+}

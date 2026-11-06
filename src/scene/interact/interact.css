@@ -1,0 +1,207 @@
+/* Thẻ gợi ý tương tác, bảng phím, menu tạm dừng, điều khiển cảm ứng. Chỉ dùng token của ui-system.css. */
+
+/* Đặt trên footer .hint (cao khoảng 36px) để không bị che. */
+.interact-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.interact-prompt > .ui-hud-chip {
+  pointer-events: auto;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  /* Nền đặc để chữ đạt tương phản trên mọi màu cảnh. */
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+}
+
+.interact-prompt-label {
+  color: var(--ui-ink-2);
+}
+
+/* ui-system.css thu chip HUD thành nút vuông ở màn hình hẹp; thẻ này cần giữ chữ. */
+@media (max-width: 480px) {
+  .interact-prompt > .ui-hud-chip,
+  .ctl-touch-buttons > .ui-hud-chip,
+  .ctl-help-collapsed > .ui-hud-chip {
+    width: auto;
+    padding: var(--ui-s2) 14px;
+  }
+}
+
+/* ---- Bảng hướng dẫn phím (góc dưới trái, trên footer .hint; màn cảm ứng: góc trên phải) ---- */
+.ctl-help {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  box-sizing: border-box;
+  width: min(300px, calc(100% - 32px));
+  padding: var(--ui-s2) var(--ui-s3);
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font-family: var(--ui-font);
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+}
+
+.ctl-help-collapsed {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.ctl-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-s2);
+  margin-bottom: var(--ui-s1);
+}
+
+.ctl-link {
+  min-height: 32px;
+  padding: 0 var(--ui-s2);
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-xs);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ctl-link:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.ctl-keys {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ui-ink-2);
+}
+
+.ctl-keys > li + li {
+  margin-top: 2px;
+}
+
+.ctl-keys strong {
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+
+/* ---- Thanh trượt cài đặt ---- */
+.ctl-settings {
+  display: grid;
+  gap: var(--ui-s1);
+  margin-top: var(--ui-s2);
+  padding-top: var(--ui-s2);
+  border-top: 1px solid var(--ui-rule);
+}
+
+.ctl-slider {
+  display: grid;
+  grid-template-columns: minmax(7em, auto) 1fr 3.2em;
+  align-items: center;
+  gap: var(--ui-s2);
+  color: var(--ui-ink);
+  font-size: var(--ui-fs-sm);
+}
+
+.ctl-slider > input {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--ui-primary);
+}
+
+.ctl-slider > output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-ink-2);
+}
+
+/* ---- Menu tạm dừng ---- */
+.ctl-pause-backdrop {
+  z-index: 120;
+}
+
+.ctl-pause .ctl-settings {
+  margin-top: var(--ui-s3);
+}
+
+/* ---- Điều khiển cảm ứng ---- */
+.ctl-joystick {
+  position: absolute;
+  left: max(24px, env(safe-area-inset-left, 0px));
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 7;
+  width: 128px;
+  height: 128px;
+  border: 1px solid var(--ui-rule);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-surface) 55%, transparent);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ctl-joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border: 1px solid var(--ui-rule);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-float-shadow);
+  pointer-events: none;
+}
+
+.ctl-touch-buttons {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ui-s2);
+  touch-action: manipulation;
+}
+
+.ctl-touch-buttons > .ui-hud-chip {
+  min-width: 96px;
+  justify-content: center;
+  background: var(--ui-surface);
+}
+
+.ctl-touch-buttons > .ui-hud-chip:disabled {
+  opacity: 0.55;
+}
+
+/* Màn hình cảm ứng: thẻ gợi ý lên cao hơn joystick và cụm nút; bảng phím nhường góc dưới trái cho joystick. */
+@media (pointer: coarse) {
+  .interact-prompt {
+    bottom: calc(200px + env(safe-area-inset-bottom, 0px));
+  }
+  .ctl-help {
+    left: auto;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    top: 72px;
+    max-height: calc(100% - 300px);
+    overflow-y: auto;
+  }
+}

@@ -1,0 +1,226 @@
+/* Minimap: góc dưới-trái, trên thanh gợi ý (.hint, cao ~36 px). Bản đồ lớn: lớp phủ toàn màn hình. */
+.mm-root {
+  position: absolute;
+  left: 16px;
+  bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+  z-index: 7;
+  width: 184px;
+  display: grid;
+  gap: 6px;
+  color: #e8eefb;
+  font-size: 12px;
+}
+.mm-mini {
+  width: 184px;
+  height: 184px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(156, 201, 255, 0.6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  background: #0d1220;
+}
+.mm-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.mm-tools,
+.mm-big-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mm-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(156, 201, 255, 0.45);
+  background: rgba(15, 20, 36, 0.9);
+  color: #e8eefb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mm-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.mm-btn:focus-visible,
+.mm-result:focus-visible,
+.mm-big-canvas:focus-visible,
+.mm-search input:focus-visible {
+  outline: 2px solid #ffd166;
+  outline-offset: 2px;
+}
+.mm-btn-wide {
+  flex: 1 1 auto;
+}
+.mm-route-line {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(15, 20, 36, 0.9);
+  line-height: 1.35;
+}
+.mm-route-compact {
+  font-size: 11px;
+}
+.mm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(5, 8, 16, 0.6);
+  display: grid;
+  place-items: center;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.mm-dialog {
+  width: min(1100px, 100%);
+  height: min(720px, 100%);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: #121829;
+  border: 1px solid rgba(156, 201, 255, 0.35);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mm-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(156, 201, 255, 0.2);
+}
+.mm-dialog-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.mm-dialog-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 0;
+}
+.mm-side {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  overflow: auto;
+  border-right: 1px solid rgba(156, 201, 255, 0.2);
+}
+.mm-search {
+  display: grid;
+  gap: 4px;
+}
+.mm-search input {
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(156, 201, 255, 0.45);
+  background: #0d1220;
+  color: inherit;
+  font: inherit;
+}
+.mm-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.mm-result {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.mm-result.is-selected {
+  border-color: #ffd166;
+}
+.mm-result-meta,
+.mm-empty,
+.mm-note {
+  opacity: 0.75;
+  font-size: 12px;
+  margin: 0;
+}
+.mm-route {
+  display: grid;
+  gap: 6px;
+}
+.mm-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+.mm-big {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 6px;
+  padding: 8px;
+  min-height: 0;
+}
+.mm-big-canvas-wrap {
+  min-height: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mm-big-canvas {
+  touch-action: none;
+  cursor: crosshair;
+}
+.mm-legend {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.85;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.mm-key {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.mm-key-walk { background: rgba(120, 190, 140, 0.5); }
+.mm-key-room { background: rgba(156, 201, 255, 0.5); }
+.mm-key-door { background: #2fbf71; }
+.mm-key-bound { border: 1.5px dashed rgba(140, 200, 255, 0.85); }
+.mm-key-wall { background: #c9d3e6; }
+
+@media (max-width: 760px) {
+  .mm-root {
+    width: 132px;
+    top: calc(64px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+  }
+  .mm-mini {
+    width: 132px;
+    height: 132px;
+  }
+  .mm-route-compact {
+    display: none;
+  }
+  .mm-dialog-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .mm-side {
+    max-height: 40vh;
+    border-right: 0;
+    border-bottom: 1px solid rgba(156, 201, 255, 0.2);
+  }
+}

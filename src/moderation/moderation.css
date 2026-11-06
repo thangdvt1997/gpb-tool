@@ -1,0 +1,45 @@
+/*
+ * Kiểm duyệt: chỉ còn bố cục riêng. Hình thức (màu, chữ, nút, ô nhập, hộp thoại, danh sách)
+ * do src/ui/ui-system.css đảm nhiệm qua class ui-*. Đặc tả: docs/design/UI_SYSTEM.md mục 3.3.
+ */
+
+.mod-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+.mod-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+
+.mod-form { display: grid; gap: 12px; margin-top: 8px; }
+.mod-indent { margin-left: 26px; }
+
+/* Dòng báo cáo: vạch ngăn dòng nằm dưới phần chi tiết khi mở rộng. */
+.mod-report-row > .ui-list-item[aria-current="true"] { border-bottom-color: transparent; }
+.mod-report-row > .mod-detail {
+  padding: 0 0 12px 15px;
+  border-bottom: 1px solid var(--ui-rule);
+}
+.mod-dl { display: grid; gap: 2px; margin: 0; }
+.mod-dl dt { margin-top: 6px; color: var(--ui-ink-2); }
+.mod-dl dd { margin: 0; overflow-wrap: anywhere; }
+
+.mod-user-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+.mod-snapshot-preview { max-height: 120px; overflow-y: auto; }
+
+/* Nhật ký: bảng cuộn ngang trong .ui-scroll-x, không làm tràn trang. */
+.mod-table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  font-size: var(--ui-fs-sm);
+  line-height: var(--ui-lh-sm);
+  font-variant-numeric: tabular-nums;
+}
+.mod-table th,
+.mod-table td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--ui-rule);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.mod-table th { font-weight: 600; color: var(--ui-ink); }
+.mod-table td { color: var(--ui-ink); }

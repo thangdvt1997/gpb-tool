@@ -1,0 +1,14 @@
+# Dockerfile-specific ignore cho docker/display.Dockerfile.
+# BuildKit dùng file này thay cho .dockerignore của context (services/display).
+# Loại thư mục data ở gốc context: đây là dữ liệu SQLite của máy host, không phải mã nguồn.
+node_modules
+**/node_modules
+data
+*.db
+*.db-*
+*.sqlite*
+*.log
+.env
+.env.*
+!.env.example
+.git

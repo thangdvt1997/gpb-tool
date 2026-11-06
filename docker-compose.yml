@@ -1,0 +1,181 @@
+# Mười container, mỗi module một container: web, auth, it, games, karaoke, events, display, plants, layout, gateway.
+# Tất cả dùng network_mode: host và chỉ bind 127.0.0.1, vì máy chủ đã cạn dải mạng Docker
+# và mạng bridge mặc định không có DNS giữa container. Không có ports: và không tạo network mới.
+#
+# Giá trị đọc từ file .env cạnh file này khi deploy (Compose tự nạp). Không ghi secret thật vào đây.
+# Các port 3001 (auth), 3002 (it), 3003 (games), 3004 (karaoke), 3015 (events), 3016 (display), 3007 (plants), 3008 (layout), 18081 (web) được cố định. Events và display không dùng 3005 và 3006 vì hai cổng này đã có container tool-301-dev trên máy chủ
+# vì deploy/nginx/gateway.conf và web.conf cũng dùng đúng các giá trị này.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: gpb-tool/web:local
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:18081/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: ../../docker/auth.Dockerfile
+    image: gpb-tool/auth:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      DATA_DIR: /data
+      # Chế độ gửi mail: log (chỉ ghi ra log, không gửi thật) hoặc smtp.
+      MAIL_MODE: ${MAIL_MODE:-log}
+      # Đặt true khi truy cập qua HTTPS (cookie sid chỉ gửi qua kết nối an toàn).
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # URL công khai mà người dùng thấy, dùng cho link trong email và callback OAuth.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:18080}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # Đăng nhập Google và Microsoft. Để trống thì nút tương ứng bị vô hiệu hóa.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      # common (cả tài khoản công ty lẫn cá nhân), organizations, consumers, hoặc GUID tenant.
+      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
+    volumes:
+      - auth-data:/data
+
+  it:
+    build:
+      context: ./services/it
+      dockerfile: ../../docker/it.Dockerfile
+    image: gpb-tool/it:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3002"
+      DATA_DIR: /data
+      # it gọi auth để kiểm tra phiên qua /api/auth/me. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - it-data:/data
+
+  games:
+    build:
+      context: ./services/games
+      dockerfile: ../../docker/games.Dockerfile
+    image: gpb-tool/games:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3003"
+      DATA_DIR: /data
+      # Địa chỉ auth để kiểm tra phiên, cùng cách với it. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - games-data:/data
+
+  karaoke:
+    build:
+      context: ./services/karaoke
+      dockerfile: ../../docker/karaoke.Dockerfile
+    image: gpb-tool/karaoke:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3004"
+      DATA_DIR: /data
+      # Địa chỉ auth để kiểm tra phiên, cùng cách với it. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - karaoke-data:/data
+
+  events:
+    build:
+      context: ./services/events
+      dockerfile: ../../docker/events.Dockerfile
+    image: gpb-tool/events:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3015"
+      DATA_DIR: /data
+      # Địa chỉ auth để kiểm tra phiên, cùng cách với it. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - events-data:/data
+
+  display:
+    build:
+      context: ./services/display
+      dockerfile: ../../docker/display.Dockerfile
+    image: gpb-tool/display:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3016"
+      DATA_DIR: /data
+      # Địa chỉ auth để kiểm tra phiên, cùng cách với it. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - display-data:/data
+
+  plants:
+    build:
+      context: ./services/plants
+      dockerfile: ../../docker/plants.Dockerfile
+    image: gpb-tool/plants:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3007"
+      DATA_DIR: /data
+      # Địa chỉ auth để kiểm tra phiên, cùng cách với it. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - plants-data:/data
+
+  layout:
+    build:
+      context: ./services/layout
+      dockerfile: ../../docker/layout.Dockerfile
+    image: gpb-tool/layout:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3008"
+      DATA_DIR: /data
+      # layout gọi auth để kiểm tra phiên qua /api/auth/me. Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+    volumes:
+      - layout-data:/data
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    image: gpb-tool/gateway:local
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:18080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  auth-data:
+  it-data:
+  games-data:
+  karaoke-data:
+  events-data:
+  display-data:
+  plants-data:
+  layout-data:

@@ -1,0 +1,14 @@
+# Dockerfile-specific ignore cho docker/events.Dockerfile.
+# BuildKit dùng file này thay cho .dockerignore của context (services/events).
+# Chỉ loại thư mục data ở gốc context: services/events/src/data là mã nguồn, phải được copy.
+node_modules
+**/node_modules
+data
+*.db
+*.db-*
+*.sqlite*
+*.log
+.env
+.env.*
+!.env.example
+.git

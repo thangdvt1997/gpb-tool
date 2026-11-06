@@ -1,0 +1,113 @@
+/* Thi đấu có đồng thuận. Hình thức dùng class ui-* (src/ui/ui-system.css).
+   File này chỉ giữ định vị, bố cục riêng của thi đấu và thanh máu. */
+
+.duel-panel,
+.duel-banner {
+  width: 100%;
+}
+
+.duel-lead {
+  margin: 0;
+}
+
+/* Vùng thông báo: giữ vùng aria-live luôn có trong cây, banner chỉ hiện khi có chữ. */
+.duel-notices {
+  display: grid;
+  gap: 0;
+}
+
+.duel-status {
+  min-height: 1.45em;
+  margin-top: var(--ui-s2);
+}
+
+/* Chế độ: nhãn có ô chọn bên trái, tên và mô tả bên phải. */
+.ui-list-item.duel-mode {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--ui-s3);
+}
+.duel-mode input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--ui-primary);
+}
+.duel-mode:focus-within {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+/* Danh sách lời mời và kết quả tìm: mục có hành động ở bên phải, tự xuống dòng khi hẹp. */
+.duel-list .ui-list-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+@media (max-width: 360px) {
+  .duel-list .ui-list-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .duel-list .ui-list-item-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Banner trận */
+.duel-banner .ui-panel-header {
+  margin-bottom: var(--ui-s2);
+}
+.duel-hp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ui-s3);
+  margin-top: var(--ui-s3);
+}
+@media (max-width: 480px) {
+  .duel-hp-row {
+    grid-template-columns: 1fr;
+  }
+}
+.duel-hp {
+  min-width: 0;
+}
+.duel-hp-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-s2);
+  margin-bottom: var(--ui-s1);
+  font-size: var(--ui-fs-sm);
+}
+.duel-hp-num {
+  font-variant-numeric: tabular-nums;
+}
+.duel-hp-track {
+  height: 14px;
+  overflow: hidden;
+  background: var(--ui-ground);
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-xs);
+}
+.duel-hp-fill {
+  height: 100%;
+  background: var(--ui-ok);
+  transition: width 200ms ease;
+}
+.duel-hp-foe .duel-hp-fill {
+  background: var(--ui-warn);
+}
+.duel-hp-down .duel-hp-fill {
+  background: var(--ui-danger);
+}
+.duel-down strong {
+  font-variant-numeric: tabular-nums;
+}
+.duel-actions {
+  margin-top: var(--ui-s3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duel-panel *,
+  .duel-banner *,
+  .duel-hp-fill {
+    transition: none !important;
+    animation: none !important;
+  }
+}

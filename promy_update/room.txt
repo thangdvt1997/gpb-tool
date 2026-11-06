@@ -1,0 +1,121 @@
+Hãy xây dựng văn phòng 3D trên web dựa trên mặt bằng và các ảnh thực tế tôi đính kèm. Tôi muốn không gian giống văn phòng trong ảnh về bố cục, bàn ghế, vật liệu, màu sắc, ánh sáng và mật độ chỗ ngồi.
+
+Hãy trực tiếp triển khai vào dự án hiện có, hoàn thiện cảnh 3D có thể chạy và tham quan được.
+
+### 1. Phạm vi và nguyên tắc tham chiếu
+
+- Chỉ dựng khu vực hình chữ L nằm trong đường khoanh xanh trên mặt bằng: nhánh dọc bên trái và nhánh ngang phía dưới.
+- Giữ hướng mặt bằng, tỷ lệ các nhánh, vị trí tường, cột, cửa, hành lang, các cụm bàn và phòng riêng theo bản vẽ.
+- Không đưa khu vực dự phòng ở giữa phía trên hoặc khu trống lớn bên phải vào không gian sử dụng.
+- Đường xanh chỉ đánh dấu phạm vi, không phải tường; không dựng đường xanh thành vật thể.
+- Mặt bằng quyết định bố trí và ranh giới phòng. Ảnh chụp quyết định hình dáng đồ nội thất, chất liệu, màu sắc và không khí thực tế.
+- Chỉ lấy kích thước đọc rõ từ bản vẽ. Nếu không đọc được, dùng kích thước đồ nội thất tiêu chuẩn để ước lượng tỷ lệ và tập trung các giá trị này trong cấu hình để chỉnh sau.
+- Không sao chép góc nghiêng hoặc biến dạng phối cảnh của ảnh chụp vào hình học công trình.
+
+### 2. Diện mạo cần tái hiện
+
+Đây là văn phòng làm việc đông người, thực dụng, sử dụng bàn gỗ sáng màu, màn hình đen, ghế lưới đen, sàn gạch xám bóng và trần thả trắng. Bám sát những đặc điểm này, không tự chuyển sang phong cách văn phòng cao cấp, tối giản ít bàn hoặc không gian coworking trang trí nhiều.
+
+**Sàn**
+- Gạch vuông khổ lớn màu xám trung tính, có vân đá trắng mảnh, biến thiên nhẹ giữa các viên.
+- Có đường ron mảnh, bố trí đều và đúng tỷ lệ.
+- Bề mặt bóng vừa đủ để thấy phản chiếu mờ của đèn trần và đồ nội thất.
+- Những ô sáng trắng trên sàn trong ảnh là phản chiếu đèn trần, không phải hoa văn hoặc miếng gạch trắng. Không vẽ chúng cố định lên texture.
+- Không dùng thảm hoặc sàn gỗ cho khu làm việc trong ảnh.
+
+**Tường và cột**
+- Tường trắng hoặc trắng ngà, cột vuông trắng, hình thức đơn giản.
+- Có một số tranh slogan hình chữ nhật như ảnh, phân bố tiết chế.
+- Cửa sổ và rèm cuốn xám đặt theo mặt bằng và các vị trí có bằng chứng từ ảnh.
+
+**Trần**
+- Trần thả tấm vuông trắng, có hệ khung chia ô mảnh rõ ràng.
+- Đèn LED panel vuông lắp âm, phân bố theo lưới trần.
+- Bổ sung cửa gió điều hòa dạng vuông hoặc chữ nhật và thiết bị trần ở mức vừa phải, theo ảnh.
+- Một số bảng tên bộ phận màu cam/đỏ treo dưới trần dọc các dãy bàn; nội dung để cấu hình được.
+- Trần phải hiện diện khi đi tham quan bên trong.
+
+### 3. Bàn làm việc và thiết bị
+
+Dựng một bộ bàn mẫu thật giống ảnh, sau đó tái sử dụng theo các cụm trên mặt bằng.
+
+**Bàn**
+- Mặt bàn chữ nhật, vân gỗ màu kem vàng nhạt, cạnh thẳng và độ dày thực tế.
+- Chân khung thép hộp màu xám bạc; một số bàn có tấm chắn phía trước bằng gỗ đồng màu.
+- Bàn xếp thành các dãy dài, nhiều vị trí ngồi đối diện nhau, giữ mật độ theo bản vẽ.
+- Không tự thêm vách ngăn cao giữa các chỗ ngồi.
+- Kích thước khởi tạo có thể khoảng rộng 1,2 m, sâu 0,6–0,7 m, cao 0,74–0,75 m nếu bản vẽ không cung cấp; đây là giá trị ước lượng có thể chỉnh.
+
+**Hộc tủ**
+- Hộc tủ di động bằng gỗ cùng màu bàn, có bánh xe nhỏ.
+- Mặt ngăn kéo, khe ngăn, tay kéo và ổ khóa thể hiện vừa đủ để nhận diện.
+- Đặt dưới hoặc cạnh bàn như ảnh, không chặn khoảng để chân và lối đi.
+
+**Ghế**
+- Ghế xoay văn phòng màu đen, lưng lưới có khung cong, đệm ngồi đen, tay vịn và chân năm cánh có bánh xe.
+- Tỷ lệ ghế phù hợp bàn; có biến thiên nhỏ về góc xoay và vị trí kéo ghế.
+- Không thay bằng ghế gaming hoặc ghế trang trí.
+
+**Thiết bị và đồ dùng**
+- Phần lớn vị trí có màn hình đen, bàn phím và chuột; một số có laptop hoặc hai màn hình.
+- Màn hình có độ dày, chân đế hoặc tay đỡ; không chỉ là mặt phẳng đen.
+- Một số bàn có bình nước, cốc, giấy tờ, tai nghe, quạt mini và cây nhỏ.
+- Tạo vài biến thể bàn để tránh mọi chỗ ngồi giống hệt nhau.
+- Giữ cảm giác văn phòng đang sử dụng nhưng đồ lặt vặt không lấn át không gian.
+- Nội dung màn hình dùng giao diện giả lập chung, không sao chép dữ liệu cá nhân, tin nhắn hoặc thông tin nhạy cảm trong ảnh.
+
+### 4. Nội thất sát tường và khu phụ trợ
+
+- Tủ hồ sơ cao bằng gỗ sáng, phần trên có cửa kính và các đợt chứa tài liệu, phần dưới là cánh kín.
+- TV lớn màu đen gắn tường ở khu vực phù hợp với ảnh tham chiếu.
+- Cây xanh lá lớn, cây nước uống có bình xanh, tủ thấp và bình chữa cháy ở những vị trí có căn cứ từ ảnh hoặc phù hợp khu phụ trợ.
+- Phòng họp, phòng riêng, khu ngồi trao đổi và lõi cầu thang/thang máy bám theo mặt bằng.
+- Chỉ dùng vách kính ở nơi bản vẽ hoặc ảnh thể hiện; không tự biến toàn bộ vách ngăn thành kính.
+- Không cần tái tạo người thật trong ảnh. Hoàn thiện cảnh kiến trúc và nội thất trước.
+
+### 5. Bố trí không gian
+
+- Nhánh trái: tái hiện các cụm bàn, khu phụ trợ phía trên, khu ngồi trao đổi và phòng họp theo vị trí trên bản vẽ.
+- Nhánh dưới: giữ chuỗi cụm bàn làm việc và các phòng dọc cạnh dưới, đúng hướng bàn và ranh giới từng phòng.
+- Giữ các trục hành lang liên tục và cửa ra vào thông thoáng.
+- Bàn ghế, cột, tủ và cánh cửa không xuyên nhau.
+- Đối chiếu số lượng và hướng các cụm bàn với mặt bằng; không rải bàn ngẫu nhiên để lấp diện tích.
+
+### 6. Ánh sáng và vật liệu
+
+- Tái hiện ánh sáng trắng trung tính từ các panel trần như ảnh, kết hợp ánh sáng tự nhiên tại cửa sổ.
+- Không gian sáng đều, đủ nhìn rõ bàn ghế, không ám vàng mạnh hoặc dùng ánh sáng điện ảnh tối.
+- Dùng vật liệu PBR: vân gỗ nhẹ, kim loại xám, nhựa đen, lưới ghế, kính và gạch bóng có mức phản xạ khác nhau.
+- Bóng tiếp xúc dưới bàn, ghế và tủ phải đủ rõ để đồ vật có cảm giác đặt trên sàn.
+- Tránh sàn như gương, gỗ quá cam, bề mặt nhựa bóng và texture lặp quá rõ.
+
+### 7. Chế độ xem trên web
+
+Tạo hai chế độ dùng chung một cảnh 3D:
+
+1. **Xem tổng thể:** camera từ trên xuống hoặc isometric, nhìn rõ toàn bộ chữ L; có thể ẩn trần và hạ/ẩn tường che khuất.
+2. **Tham quan:** nhìn ở tầm mắt người, hiện đầy đủ tường và trần; tích hợp điều khiển nhân vật góc nhìn thứ ba theo yêu cầu đã thống nhất nếu dự án đã có.
+
+Bổ sung các điểm camera đặt sẵn: toàn cảnh chữ L, hành lang nhánh trái, hành lang nhánh dưới, cận cảnh cụm bàn và phòng họp.
+
+### 8. Triển khai
+
+- Kiểm tra stack và mã nguồn hiện có trước khi sửa; tái sử dụng hệ thống scene, camera và điều khiển đang có.
+- Nếu dự án chưa có nền tảng 3D, sử dụng Three.js hoặc React Three Fiber phù hợp với stack.
+- Tách dữ liệu bố trí khỏi mã dựng hình: đường bao sàn, tường, cửa, cột, phòng, cụm bàn, đèn và vật liệu đều chỉnh được qua cấu hình.
+- Dùng component dùng lại cho bàn, ghế, màn hình, hộc tủ, tủ hồ sơ và đèn trần.
+- Dùng instancing hoặc chia sẻ geometry/material cho đồ vật lặp lại; tránh mỗi chiếc ghế có vật liệu và texture riêng.
+- Nếu có mô hình GLB phù hợp, sử dụng để tăng độ giống. Với đồ nội thất chính, không dùng một khối hộp đơn giản làm kết quả cuối.
+- Tối ưu ánh sáng, bóng đổ và phản chiếu để cảnh vận hành mượt trên web.
+- Không thay cả không gian bằng ảnh nền hoặc panorama; người dùng phải di chuyển và quan sát được các vật thể 3D từ nhiều hướng.
+
+### 9. Kiểm tra trước khi hoàn tất
+
+Tự chạy dự án và kiểm tra:
+- Toàn cảnh nhận ra đúng hình chữ L và các cụm phòng/bàn trong bản vẽ.
+- Góc nhìn hành lang có cảm giác giống ảnh: dãy bàn gỗ sáng, màn hình đen, ghế lưới đen, tủ hồ sơ, nền gạch xám bóng và trần ô vuông.
+- Đồ vật đúng tỷ lệ, không nổi trên sàn hoặc xuyên nhau.
+- Chế độ tham quan có trần và ánh sáng đầy đủ.
+- Không có lỗi console ảnh hưởng chức năng.
+
+Hãy triển khai hoàn chỉnh, cung cấp cách chạy và ảnh chụp kết quả ở các góc đối chiếu. Nếu chi tiết không thể xác định từ ảnh, ghi rõ giả định đã dùng. Ưu tiên độ giống ảnh thực tế và độ đúng mặt bằng.

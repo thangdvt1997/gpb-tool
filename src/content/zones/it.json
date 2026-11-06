@@ -1,0 +1,460 @@
+{
+  "id": "it",
+  "name": "Phòng CNTT & Ngân hàng số",
+  "objects": [
+    {
+      "id": "core_st1",
+      "kind": "core",
+      "label": "Thang bộ (Tây-Bắc)",
+      "description": "Thang bộ, góc Tây-Bắc, cạnh kho thiết bị IT. Chỉ thông tin.",
+      "position": [-21.95, 1.6, -12.45],
+      "size": [2.9, 3.2, 2.7],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "core_st2",
+      "kind": "core",
+      "label": "Thang bộ (Đông-Bắc)",
+      "description": "Thang bộ, góc Đông-Bắc. Chỉ thông tin.",
+      "position": [19.5, 1.6, -13],
+      "size": [6, 3.2, 3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "core_lift1",
+      "kind": "core",
+      "label": "Thang máy 1 và thang bộ",
+      "description": "Thang máy và thang bộ, lõi giữa-Nam. Chỉ thông tin.",
+      "position": [-11, 1.6, 2],
+      "size": [5, 3.2, 3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "core_lift2",
+      "kind": "core",
+      "label": "Thang máy 2",
+      "description": "Thang máy, lõi giữa. Chỉ thông tin.",
+      "position": [4.2, 1.6, 2],
+      "size": [5.4, 3.2, 3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "core_st3",
+      "kind": "core",
+      "label": "Thang bộ (Đông-Nam)",
+      "description": "Thang bộ, lõi Đông-Nam. Chỉ thông tin.",
+      "position": [12.5, 1.6, 2],
+      "size": [6, 3.2, 3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "core_lift3",
+      "kind": "core",
+      "label": "Thang máy phụ",
+      "description": "Thang máy phụ, cạnh khối WC. Chỉ thông tin.",
+      "position": [8.9, 1.6, -2.6],
+      "size": [4, 3.2, 2.6],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "wc_block",
+      "kind": "wc",
+      "label": "Nhà vệ sinh",
+      "description": "Nhà vệ sinh: Nam, Nữ và khuyết tật. Chỉ thông tin.",
+      "position": [11.5, 1.2, -6.1],
+      "size": [9.2, 2.4, 6],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "pantry",
+      "kind": "pantry",
+      "label": "Pantry và khu nghỉ",
+      "description": "Pantry và khu nghỉ, góc Đông-Nam. Chỉ thông tin.",
+      "position": [25, 0.5, 10.25],
+      "size": [6, 1, 6.5],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "util_coffee",
+      "kind": "pantry",
+      "label": "Coffee corner",
+      "description": "Coffee corner cạnh lõi Đông. Chỉ thông tin.",
+      "position": [13.5, 0.5, -1.6],
+      "size": [4, 1, 2.4],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "lounge",
+      "kind": "lounge",
+      "label": "Sảnh mở, lounge",
+      "description": "Khu Đông lớn: sảnh mở và lounge. Có bảng vinh danh.",
+      "position": [23.2, 0.025, -2.15],
+      "size": [11.4, 0.02, 16.3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "kudos_board",
+      "kind": "board",
+      "label": "Bảng vinh danh",
+      "description": "Vinh danh đồng nghiệp bằng lời nhắn ngắn, tối đa 140 ký tự. Không có giá trị tiền.",
+      "position": [28.55, 1.4, -2],
+      "size": [0.2, 2, 3],
+      "action": "kudos",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "util_health",
+      "kind": "amenity",
+      "label": "Phòng y tế, mẹ và bé",
+      "description": "Phòng y tế và phòng mẹ và bé, nằm trong lounge. Đặt phòng như phòng họp.",
+      "position": [25.5, 1.2, -7.25],
+      "size": [4, 2.4, 3.5],
+      "action": "booking",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "reserved",
+      "kind": "reserved",
+      "label": "Dự phòng",
+      "description": "Diện tích dự phòng phát triển 227.2 m². Không đặt bàn làm việc.",
+      "position": [-6.8, 0.02, -7.3],
+      "size": [15.4, 0.02, 15],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "open_north",
+      "kind": "desk",
+      "label": "Khu làm việc phía Bắc",
+      "description": "Khu làm việc chung phía Bắc, mục tiêu khoảng 40 chỗ. Tường NOC ở mép Bắc.",
+      "position": [8.8, 0.375, -12.15],
+      "size": [14.6, 0.75, 4.7],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "noc_wall",
+      "kind": "wall",
+      "label": "Tường NOC",
+      "description": "Trạng thái dịch vụ GP.DigiPlus và hạ tầng. Chỉ đọc, làm mới mỗi 30 giây.",
+      "position": [8.8, 1.9, -14.6],
+      "size": [13.5, 2.4, 0.2],
+      "action": "noc",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_L1",
+      "kind": "desk",
+      "label": "Squad Core integration",
+      "description": "Tích hợp với hệ thống lõi. Vai trò: trưởng squad, lập trình viên tích hợp, on-call hệ thống lõi (mẫu, cần xác nhận).",
+      "position": [-23.5, 0.375, -7.8],
+      "size": [6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Core integration",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_L2",
+      "kind": "desk",
+      "label": "Squad Data & BI",
+      "description": "Dữ liệu và báo cáo. Vai trò: data engineer, BI analyst (mẫu, cần xác nhận).",
+      "position": [-23.5, 0.375, -2.8],
+      "size": [6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Data & BI",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_L3",
+      "kind": "desk",
+      "label": "Squad Security (SOC)",
+      "description": "An ninh thông tin, phối hợp với SOC. Vai trò: security engineer, analyst SOC (mẫu, cần xác nhận).",
+      "position": [-23.5, 0.375, 2.4],
+      "size": [6, 0.75, 3],
+      "action": "squad",
+      "squad": "Squad Security (SOC)",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B1",
+      "kind": "desk",
+      "label": "Squad Mobile (GP.DigiPlus)",
+      "description": "Ứng dụng di động GP.DigiPlus. Vai trò: Product Owner, lập trình viên iOS và Android, QA (mẫu, cần xác nhận).",
+      "position": [-23.8, 0.375, 7.2],
+      "size": [5.4, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Mobile (GP.DigiPlus)",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B2",
+      "kind": "desk",
+      "label": "Squad Backend & API",
+      "description": "API và dịch vụ nền. Vai trò: tech lead, lập trình viên backend, DBA (mẫu, cần xác nhận).",
+      "position": [-17.8, 0.375, 7.2],
+      "size": [5.4, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Backend & API",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B3",
+      "kind": "desk",
+      "label": "Squad Core integration",
+      "description": "Tích hợp với hệ thống lõi. Vai trò: trưởng squad, lập trình viên tích hợp, on-call hệ thống lõi (mẫu, cần xác nhận).",
+      "position": [-11.45, 0.375, 7.2],
+      "size": [4.7, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Core integration",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B4",
+      "kind": "desk",
+      "label": "Squad Data & BI",
+      "description": "Dữ liệu và báo cáo. Vai trò: data engineer, BI analyst (mẫu, cần xác nhận).",
+      "position": [-6.2, 0.375, 7.2],
+      "size": [4.6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Data & BI",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B5",
+      "kind": "desk",
+      "label": "Squad Hạ tầng",
+      "description": "Cụm máy chủ, mạng và cơ sở dữ liệu. Vai trò: SRE, quản trị hệ thống, quản trị mạng (mẫu, cần xác nhận).",
+      "position": [-0.2, 0.375, 7.2],
+      "size": [4.6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Hạ tầng",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B6",
+      "kind": "desk",
+      "label": "Squad Vận hành",
+      "description": "Vận hành hệ thống hằng ngày và ghi nhận sự cố. Vai trò: vận hành viên, trực ca (mẫu, cần xác nhận).",
+      "position": [5.8, 0.375, 7.2],
+      "size": [4.6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Vận hành",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "desk_B7",
+      "kind": "desk",
+      "label": "Squad Product / QA",
+      "description": "Sản phẩm và kiểm thử chất lượng. Vai trò: Product Owner, BA, QA (mẫu, cần xác nhận).",
+      "position": [12.5, 0.375, 7.2],
+      "size": [6, 0.75, 4.6],
+      "action": "squad",
+      "squad": "Squad Product / QA",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "util_quiet",
+      "kind": "amenity",
+      "label": "Phòng nghỉ yên tĩnh",
+      "description": "Phòng nghỉ yên tĩnh cạnh khu L1. Đặt phòng như phòng họp.",
+      "position": [-19.5, 1.2, -8.8],
+      "size": [2, 2.4, 2.6],
+      "action": "booking",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "util_print",
+      "kind": "amenity",
+      "label": "In ấn, văn phòng phẩm",
+      "description": "In ấn và văn phòng phẩm, sát lõi giữa, mép khu dự phòng. Chỉ thông tin.",
+      "position": [-12, 1.2, -2.6],
+      "size": [3, 2.4, 2.8],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "util_store",
+      "kind": "amenity",
+      "label": "Kho thiết bị IT",
+      "description": "Kho thiết bị IT, góc Tây-Bắc. Chỉ IT và admin.",
+      "position": [-25.05, 1.2, -12.45],
+      "size": [2.9, 2.4, 2.7],
+      "action": "info",
+      "roles": ["it", "admin"]
+    },
+    {
+      "id": "notice_board",
+      "kind": "board",
+      "label": "Bảng thông báo",
+      "description": "Lịch bảo trì, thay đổi và quy định IT. Dán sát tường lõi giữa.",
+      "position": [-11, 1.1, -0.15],
+      "size": [5, 2.2, 0.7],
+      "action": "notice",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "service_desk",
+      "kind": "counter",
+      "label": "Service Desk",
+      "description": "Gửi yêu cầu hỗ trợ IT (tạo ticket). Đặt trong sảnh thang máy, sát lối vào chính.",
+      "position": [-3.75, 0.55, 1.6],
+      "size": [4.5, 1.1, 1.2],
+      "action": "service_desk",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "entrance",
+      "kind": "amenity",
+      "label": "Lối vào chính",
+      "description": "Lối vào chính, cửa rộng 3 m, mép Nam của sảnh giữa.",
+      "position": [-4, 0.02, 3.6],
+      "size": [3, 0.04, 0.4],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "mr1",
+      "kind": "meeting",
+      "label": "Phòng họp 1 (8 chỗ)",
+      "description": "Phòng họp 8 chỗ. Đặt phòng qua hệ thống.",
+      "position": [-18, 1.4, -2.15],
+      "size": [5, 2.8, 4.7],
+      "action": "booking",
+      "capacity": 8,
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "mr2",
+      "kind": "meeting",
+      "label": "Phòng họp 2 (10 chỗ)",
+      "description": "Phòng họp 10 chỗ. Đặt phòng qua hệ thống.",
+      "position": [-21.95, 1.4, 12],
+      "size": [4.3, 2.8, 3],
+      "action": "booking",
+      "capacity": 10,
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "mr3",
+      "kind": "meeting",
+      "label": "Phòng họp 3 (12 chỗ)",
+      "description": "Phòng họp 12 chỗ. Đặt phòng qua hệ thống.",
+      "position": [-17.3, 1.4, 12],
+      "size": [4.4, 2.8, 3],
+      "action": "booking",
+      "capacity": 12,
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "server_room",
+      "kind": "server",
+      "label": "Phòng máy chủ",
+      "description": "Phòng máy chủ, kính, hạn chế truy cập. Chỉ IT và admin xem sơ đồ. Không có nút điều khiển.",
+      "position": [-6.3, 1.4, 12],
+      "size": [2.8, 2.8, 3],
+      "action": "server_room",
+      "roles": ["it", "admin"]
+    },
+    {
+      "id": "soc_room",
+      "kind": "room",
+      "label": "Phòng SOC",
+      "description": "Chỉ hiển thị số lượng cảnh báo theo mức độ. Không có log chi tiết.",
+      "position": [-0.2, 1.4, 12],
+      "size": [4.6, 2.8, 3],
+      "action": "soc",
+      "roles": ["it", "admin"]
+    },
+    {
+      "id": "games_corner",
+      "kind": "amenity",
+      "label": "Góc trò chơi",
+      "description": "Cờ caro và đố vui theo lượt với đồng nghiệp.",
+      "position": [20.6, 0.4, -3.4],
+      "size": [3.2, 0.8, 2.2],
+      "action": "games",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "karaoke_room",
+      "kind": "room",
+      "label": "Phòng karaoke",
+      "description": "Hát theo giai điệu, micro chấm cao độ ngay trên trình duyệt.",
+      "position": [20.0, 1.4, -7.7],
+      "size": [4.4, 2.8, 3.2],
+      "action": "karaoke",
+      "capacity": 6,
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "events_board",
+      "kind": "board",
+      "label": "Bảng giao lưu văn nghệ",
+      "description": "Lịch chương trình, đăng ký tiết mục và bình chọn.",
+      "position": [-4.8, 1.1, 0.0],
+      "size": [2.0, 2.2, 0.2],
+      "action": "events",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "lift7_east",
+      "kind": "elevator",
+      "label": "Thang máy tầng 7 (Đông)",
+      "description": "Cửa thang máy phía Đông, mặt Bắc của lõi thang máy 2. Ra khỏi thang là tới bàn an ninh ghi danh.",
+      "position": [5.6, 1.3, 0.35],
+      "size": [2.4, 2.6, 0.3],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "lift7_west",
+      "kind": "elevator",
+      "label": "Thang máy tầng 7 (Tây)",
+      "description": "Cửa thang máy phía Tây, mặt Đông của lõi thang máy 1, nhìn ra sảnh. Cửa mở kèm chuông khi có đồng nghiệp ghi danh vào tầng.",
+      "position": [-8.35, 1.3, 1.9],
+      "size": [0.3, 2.6, 2.4],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "security_gate",
+      "kind": "security_gate",
+      "label": "Bàn an ninh",
+      "description": "Bàn an ninh và cổng xoay ngay sau cửa thang máy Đông. Quét huy hiệu tên để ghi danh. Không dùng camera.",
+      "position": [3.15, 0.6, -2.425],
+      "size": [2.5, 1.2, 3.05],
+      "action": "info",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "checkin_board",
+      "kind": "checkin_board",
+      "label": "Bảng ghi danh",
+      "description": "Số người đã ghi danh hôm nay theo phòng ban. IT và admin xem được danh sách.",
+      "position": [1.44, 1.55, 2.0],
+      "size": [0.12, 1.2, 1.8],
+      "action": "checkin_board",
+      "roles": ["employee", "it", "admin"]
+    },
+    {
+      "id": "moderation_desk",
+      "kind": "counter",
+      "label": "Bàn kiểm duyệt",
+      "description": "Bàn kiểm duyệt nội dung trong khu an ninh, sau bàn ghi danh. Chỉ moderator và admin.",
+      "position": [3.15, 0.55, -5.5],
+      "size": [2.0, 1.1, 0.8],
+      "action": "moderation",
+      "roles": ["moderator", "admin"]
+    }
+  ]
+}

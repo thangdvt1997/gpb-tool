@@ -1,0 +1,19 @@
+{
+  "name": "gpb-world-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservice world: presence và đồng bộ vị trí nhân vật realtime qua WebSocket (ws) (lát cắt đầu của TASK 23)",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "ws": "8.18.0"
+  }
+}

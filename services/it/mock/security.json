@@ -1,0 +1,8 @@
+{
+  "critical": 0,
+  "high": 2,
+  "medium": 14,
+  "low": 37,
+  "updatedAt": "2026-11-06T07:30:00Z",
+  "note": "Dữ liệu mẫu (mock). Chỉ tóm tắt số lượng, không có log chi tiết."
+}

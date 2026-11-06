@@ -1,0 +1,14 @@
+# Dockerfile-specific ignore cho docker/plants.Dockerfile.
+# BuildKit dùng file này thay cho .dockerignore của context (services/plants).
+# Chỉ loại thư mục data ở gốc context (dữ liệu SQLite của máy host), không loại mã nguồn.
+node_modules
+**/node_modules
+data
+*.db
+*.db-*
+*.sqlite*
+*.log
+.env
+.env.*
+!.env.example
+.git

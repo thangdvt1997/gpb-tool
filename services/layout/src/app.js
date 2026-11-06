@@ -1,0 +1,42 @@
+import express from 'express';
+import { createAuthMiddleware } from './auth.js';
+import { createLayoutRouter } from './routes/layout.js';
+
+export function createApp({ config, store, model, hub, fetchImpl }) {
+  const app = express();
+  app.disable('x-powered-by');
+
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
+  // Mọi route còn lại phải đăng nhập. Auth chạy trước khi đọc body.
+  app.use(createAuthMiddleware({ authUrl: config.authUrl, fetchImpl }));
+  // Body chỉ gồm id, x, z, rotation: 4kb là đủ.
+  app.use(express.json({ limit: '4kb' }));
+
+  app.use('/api/layout', createLayoutRouter({ store, model, hub }));
+
+  app.use((req, res) => {
+    res.status(404).json({ ok: false, error: 'Không tìm thấy' });
+  });
+
+  // Chỉ trả message đã được kiểm soát cho client, không trả stack trace.
+  app.use((err, req, res, _next) => {
+    if (err && err.type === 'entity.parse.failed') {
+      return res.status(400).json({ ok: false, error: 'Dữ liệu JSON không hợp lệ' });
+    }
+    if (err && err.type === 'entity.too.large') {
+      return res.status(413).json({ ok: false, error: 'Dữ liệu gửi lên quá lớn' });
+    }
+    console.error(`[layout] lỗi không xử lý được (${err && err.name ? err.name : 'Error'})`);
+    return res.status(500).json({ ok: false, error: 'Lỗi máy chủ' });
+  });
+
+  return app;
+}

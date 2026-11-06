@@ -1,0 +1,21 @@
+{
+  "name": "test-app-auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "admin": "node scripts/admin.js"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "better-sqlite3": "11.7.0",
+    "express": "4.21.2",
+    "nodemailer": "6.9.16",
+    "openid-client": "5.7.1"
+  }
+}

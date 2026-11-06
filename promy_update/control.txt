@@ -1,0 +1,31 @@
+Xây dựng chế độ tham quan văn phòng 3D trên web bằng nhân vật góc nhìn thứ ba, có cách điều khiển tương tự GTA V.
+
+**Di chuyển nhân vật**
+- W/A/S/D hoặc phím mũi tên để di chuyển theo hướng camera.
+- Giữ Shift để chạy, Space để nhảy, E để tương tác.
+- Nhân vật xoay mượt theo hướng di chuyển, có tăng tốc và giảm tốc tự nhiên.
+- Chuyển animation mượt giữa đứng yên, đi bộ, chạy và nhảy; tốc độ animation khớp tốc độ di chuyển.
+- Có trọng lực và va chạm với sàn, tường, bàn ghế, cửa, cầu thang; không xuyên vật thể. Có thể bước qua bậc thấp và đi trên mặt dốc.
+
+**Camera**
+- Camera đặt phía sau, cao hơn vai nhân vật; chuột điều khiển hướng nhìn ngang và dọc.
+- Camera bám theo mượt, cho phép nhìn quanh khi nhân vật đứng yên, giới hạn góc dọc để tránh lật camera.
+- Cuộn chuột để thay đổi khoảng cách camera.
+- Khi gặp tường hoặc vật cản, camera tự tiến gần nhân vật và trở lại khoảng cách cũ khi hết vướng.
+- Nhấn V để chuyển giữa góc nhìn thứ ba và thứ nhất.
+
+**Tương tác trong văn phòng**
+- Khi đến gần đối tượng có thể tương tác, hiển thị gợi ý như “E — Mở cửa”, “E — Ngồi xuống” hoặc “E — Xem thông tin phòng”.
+- Chỉ tương tác với đối tượng ở trong tầm với và trước mặt nhân vật.
+- Khi ngồi xuống, khóa di chuyển và căn nhân vật đúng vị trí ghế; nhấn E để đứng dậy.
+
+**Trải nghiệm trên web**
+- Nhấn Esc để mở menu tạm dừng, giải phóng con trỏ và xóa trạng thái phím đang giữ. Nhấn “Tiếp tục” để quay lại.
+- Không để trang cuộn khi đang điều khiển nhân vật. Khi mất focus tab, dừng nhận điều khiển để tránh nhân vật tự chạy.
+- Hiển thị bảng hướng dẫn phím nhỏ, có thể ẩn; bổ sung tùy chỉnh độ nhạy chuột và âm lượng.
+- Trên điện thoại: joystick trái để di chuyển, kéo vùng bên phải để xoay camera; có nút chạy, nhảy và tương tác.
+
+**Yêu cầu kỹ thuật**
+Sử dụng Three.js hoặc React Three Fiber, kết hợp Rapier cho vật lý và capsule collider cho nhân vật. Tách riêng các phần xử lý input, di chuyển, camera, animation và tương tác. Di chuyển độc lập với FPS, vật lý chạy theo bước thời gian cố định. Tối ưu mô hình, bóng đổ và va chạm để thao tác mượt trên trình duyệt.
+
+Ưu tiên cảm giác điều khiển tự nhiên, camera ổn định và thuận tiện khi đi qua hành lang, cửa hẹp và các dãy bàn trong văn phòng. Dùng nhân vật và tài nguyên được phép sử dụng; chỉ tham khảo cơ chế điều khiển của GTA V.

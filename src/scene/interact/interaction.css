@@ -1,0 +1,181 @@
+/* Giao diện hệ tương tác dùng chung (InteractionHud). Chỉ dùng token của ui-system.css. Tiền tố ix-. */
+
+/* Gợi ý và menu: giữa đáy, trên footer .hint (cao khoảng 36px). */
+.ix-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.ix-chip,
+.ix-menu {
+  pointer-events: auto;
+  /* Nền đặc để chữ đạt tương phản trên mọi màu cảnh. */
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  border: 1px solid var(--ui-rule);
+  box-shadow: var(--ui-float-shadow);
+}
+
+.ix-chip {
+  display: block;
+  max-width: 100%;
+  min-height: 36px;
+  padding: var(--ui-s2) 14px;
+  border-radius: var(--ui-r-md);
+  font: inherit;
+  font-size: var(--ui-fs-md);
+  line-height: var(--ui-lh-sm);
+  text-align: center;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.ix-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: min(240px, calc(100vw - 32px));
+  padding: var(--ui-s2);
+  border-radius: var(--ui-r-md);
+}
+
+.ix-menu-title {
+  margin: 0 0 var(--ui-s1);
+  padding: 0 var(--ui-s2);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-sm);
+}
+
+.ix-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-s2);
+  min-height: 36px;
+  padding: var(--ui-s1) var(--ui-s2);
+  border: 0;
+  border-radius: var(--ui-r-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ix-menu-item:hover {
+  background: var(--ui-ground);
+}
+
+.ix-menu-close {
+  color: var(--ui-ink-2);
+}
+
+.ix-chip:focus-visible,
+.ix-menu-item:focus-visible,
+.ix-touch:focus-visible,
+.ix-toggle:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.ix-key {
+  min-width: 1.6em;
+  padding: 0 4px;
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-xs);
+  color: var(--ui-ink-2);
+  font: inherit;
+  font-size: var(--ui-fs-sm);
+  text-align: center;
+}
+
+/* Nút cảm ứng: góc dưới phải, tránh joystick bên trái. Cỡ chạm tối thiểu theo --ui-touch. */
+.ix-touch {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 72px;
+  min-height: max(72px, var(--ui-touch, 44px));
+  padding: var(--ui-s1);
+  border: 2px solid var(--ui-primary);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-float-shadow);
+  font: inherit;
+  font-size: 22px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.ix-touch-label {
+  max-width: 64px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ix-touch:active {
+  transform: scale(0.94);
+}
+
+/* Hướng dẫn phím và công tắc: góc dưới trái, trên footer. */
+.ix-help {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-s1) var(--ui-s2);
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.ix-help-text {
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-xs);
+  /* --ui-ink-2 trên --ui-surface là cặp chữ phụ chuẩn của hệ UI. */
+  background: var(--ui-surface);
+  color: var(--ui-ink-2);
+  font-size: var(--ui-fs-sm);
+}
+
+.ix-toggles {
+  display: flex;
+  gap: var(--ui-s1);
+  pointer-events: auto;
+}
+
+.ix-toggle {
+  min-height: 28px;
+  padding: 2px 8px;
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-r-xs);
+  background: var(--ui-surface);
+  color: var(--ui-ink-2);
+  font: inherit;
+  font-size: var(--ui-fs-sm);
+  cursor: pointer;
+}
+
+.ix-toggle[aria-pressed='true'] {
+  color: var(--ui-ink);
+  border-color: var(--ui-primary);
+}

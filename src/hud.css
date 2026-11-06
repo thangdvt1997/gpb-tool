@@ -1,0 +1,12 @@
+/* Định vị banner và panel thi đấu. Thanh HUD (nút Thi đấu, Biểu cảm) dùng .ui-hud và .ui-hud-chip trong src/ui/ui-system.css. */
+.hud-duel {
+  position: absolute; top: 72px; right: 16px; z-index: 6; width: min(360px, calc(100% - 32px));
+}
+.hud-duel-panel {
+  position: absolute; top: 124px; left: 16px; z-index: 20; width: min(380px, calc(100% - 32px));
+  max-height: calc(100% - 180px); overflow-y: auto;
+}
+@media (max-width: 480px) {
+  .hud-duel { top: 72px; left: 72px; right: 16px; width: auto; }
+  .hud-duel-panel { top: 72px; left: 72px; width: auto; right: 16px; max-height: calc(100% - 130px); }
+}
