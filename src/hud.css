@@ -20,3 +20,21 @@
 .photo-panel select { margin-left: 4px; }
 .photo-actions { display: flex; gap: 8px; }
 .photo-msg { margin: 0; font-size: 13px; }
+
+/* Công cụ: chọn chất lượng đồ họa, thư viện, trình biên tập bố trí (TASK 13, 17, 18). */
+.hud-tools {
+  position: absolute;
+  top: 64px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: min(360px, 90vw);
+  z-index: 5;
+}
+.hud-tools .layout-editor-panel {
+  background: var(--surface, rgba(20, 24, 32, 0.92));
+  padding: 8px;
+  border-radius: 8px;
+}

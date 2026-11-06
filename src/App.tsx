@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud } from './scene/interact';
 import { HelpLayer, HelpReplayButton } from './help';
 import { Minimap } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
+import { QualityPicker, clampDpr, useQuality } from './quality';
+import { PerfOverlay, PerfProbe } from './perf';
+import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
@@ -41,6 +44,8 @@ import { useEmoteHotkeys } from './emotes/useEmoteHotkeys';
 import './hud.css';
 
 const zone = itZone as unknown as ZoneDef;
+// Thư viện asset (TASK 18) nạp lười: AssetViewer kéo theo GLTFLoader.
+const LibraryPanel = lazy(() => import('./library').then((m) => ({ default: m.LibraryPanel })));
 const audioRects = audioZoneRects(zone.objects);
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -236,6 +241,10 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const { theme } = useTheme();
   useEmoteHotkeys(!emoteOpen && !duelOpen);
   const getQuickContext = useQuickHost();
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  // Chất lượng đồ họa (TASK 13) + đo khung (TASK 08): PerfProbe đẩy mẫu vào bộ tự thích nghi.
+  const quality = useQuality();
+  const dprCap = clampDpr(typeof window === 'undefined' ? 1 : window.devicePixelRatio, quality.config.dprCap);
 
   // Look của nhân vật: suy ra từ ngoại hình trên máy chủ, rồi bị bản lưu cục bộ (src/persist) ghi đè nếu có.
   const [look, setLook] = useState<CharacterLook>(() => appearanceToLook(appearance ?? DEFAULT_APPEARANCE).look);
@@ -348,6 +357,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   return (
     <DisplayProvider>
       <LayoutProvider>
+        <LayoutEditorHost objects={zone.objects} role={user.role}>
+        {(editor) => (
         <div className="app">
           <header className="topbar">
             <div className="topbar-title">
@@ -373,11 +384,26 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             </div>
           </header>
 
-          <Canvas shadows camera={{ position: [0, 7, 16], fov: 50 }} onPointerMissed={() => setSelected(null)}>
+          <Canvas
+            shadows={quality.config.shadows}
+            dpr={[1, dprCap]}
+            camera={{ position: [0, 7, 16], fov: 50 }}
+            onPointerMissed={() => setSelected(null)}
+          >
             <ITOffice
               zone={zone}
-              selected={selected}
-              onSelect={setSelected}
+              selected={editor.state.active ? editor.state.selectedId : selected}
+              onSelect={(id) => {
+                // Chế độ sắp xếp (TASK 17): bấm vào vật để nhấc lên, vật theo con trỏ tới lần thả.
+                if (editor.state.active) {
+                  if (id !== null) {
+                    editor.dispatch({ type: 'select', id });
+                    editor.dispatch({ type: 'dragStart' });
+                  }
+                  return;
+                }
+                setSelected(id);
+              }}
               lightTheme={theme}
               theme={partyOf(theme)}
               appearance={appearance ?? undefined}
@@ -391,7 +417,10 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             />
             <PhotoScene />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
+            <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
+            <EditorLayer state={editor.state} dispatch={editor.dispatch} />
           </Canvas>
+          <PerfOverlay />
           <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
           <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>
@@ -461,7 +490,23 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             />
           )}
           {canCare && <PlantToolbar tool={plantTool} onToolChange={setPlantTool} />}
+          <aside className="hud-tools" aria-label="Công cụ">
+            <QualityPicker settings={quality.settings} onChange={quality.setSettings} level={quality.level} />
+            <button type="button" className="btn btn-ghost" aria-expanded={libraryOpen} onClick={() => setLibraryOpen((v) => !v)}>
+              Thư viện
+            </button>
+            {(user.role === 'it' || user.role === 'admin') && (
+              <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
+            )}
+          </aside>
+          {libraryOpen && (
+            <Suspense fallback={null}>
+              <LibraryPanel onClose={() => setLibraryOpen(false)} />
+            </Suspense>
+          )}
         </div>
+        )}
+        </LayoutEditorHost>
       </LayoutProvider>
     </DisplayProvider>
   );
