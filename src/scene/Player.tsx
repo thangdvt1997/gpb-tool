@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Avatar } from '../avatar/Avatar';
+import { getSpatialAudio } from '../audio/spatial';
 import type { CharacterLook } from '../fashion/types';
 import { DEFAULT_APPEARANCE, type Appearance } from '../avatar/appearance';
 import { isInternalEmote } from '../emotes/library';
@@ -205,9 +206,11 @@ export function Player({
   }, [world, selfId, positionRef]);
 
   // Đăng ký sau useFrame của useGtaPlayer nên chạy sau bước chuyển động và camera trong cùng khung.
-  useFrame(() => {
+  useFrame((_, dt) => {
     const p = positionRef.current;
     const g = group.current;
+    // Bước chân (TASK 14): không phát gì khi AudioContext chưa mở khóa.
+    getSpatialAudio().updateFootsteps(motion.speed, dt, motion.grounded);
     if (g) {
       g.position.set(p.x, p.y, p.z);
       g.rotation.y = yawRef.current;

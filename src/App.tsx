@@ -3,6 +3,9 @@ import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud } from './scene/interact';
 import { HelpLayer, HelpReplayButton } from './help';
+import { Minimap } from './minimap';
+import { SpatialAudioListener } from './audio/spatial';
+import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
 import { PhotoPanel, PhotoScene } from './photo/PhotoMode';
@@ -38,6 +41,7 @@ import { useEmoteHotkeys } from './emotes/useEmoteHotkeys';
 import './hud.css';
 
 const zone = itZone as unknown as ZoneDef;
+const audioRects = audioZoneRects(zone.objects);
 
 const ROLE_LABEL: Record<Role, string> = {
   employee: 'Nhân viên',
@@ -386,7 +390,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               reactBump={reactBump}
             />
             <PhotoScene />
+            <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
           </Canvas>
+          <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
           <footer className="hint">W S A D di chuyển · Giữ chuột phải để xoay · Chuột trái để đi tới · E để dùng vật · Esc đóng · Dữ liệu là mẫu (mock)</footer>
           <InteractionHelp />
