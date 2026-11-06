@@ -227,6 +227,16 @@ export function WardrobeRoom({ initialLook, appearance = DEFAULT_APPEARANCE, onC
   const focus = focusFor(s.tab, s.slot);
   const draftRef = useRef(s);
   draftRef.current = s;
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Mở: đưa focus vào hộp thoại. Đóng (unmount): trả focus về nơi mở (thường là nút "Phòng thay đồ").
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    rootRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus();
+    return () => {
+      if (prev && prev.isConnected) prev.focus();
+    };
+  }, []);
 
   // Phím tắt: Esc hủy, Ctrl+Enter xác nhận, Ctrl+Z/Y hoàn tác, 1-5 chuyển tab, V về góc chuẩn.
   useEffect(() => {
@@ -250,7 +260,7 @@ export function WardrobeRoom({ initialLook, appearance = DEFAULT_APPEARANCE, onC
   }, [onCancel, onConfirm]);
 
   return (
-    <div style={S.root} role="dialog" aria-modal="true" aria-label="Phòng thay đồ">
+    <div ref={rootRef} style={S.root} role="dialog" aria-modal="true" aria-label="Phòng thay đồ">
       <div style={S.stage}>
         <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.2, 4], fov: 32 }}>
           <Preview look={shown} appearance={appearance} animation={pose} focus={focus} resetToken={resetToken.current} />

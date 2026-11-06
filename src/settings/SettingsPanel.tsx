@@ -48,6 +48,22 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
 
   const setBindings = useCallback((b: Bindings) => update({ bindings: b }), [update]);
 
+  /** Mũi tên trái/phải đổi tab (vòng tròn), Home/End về đầu/cuối (mẫu WAI-ARIA tabs). */
+  const onTabKey = (e: ReactKeyboardEvent<HTMLDivElement>): void => {
+    const i = TABS.findIndex((t) => t.id === tab);
+    let n = -1;
+    if (e.key === 'ArrowRight') n = (i + 1) % TABS.length;
+    else if (e.key === 'ArrowLeft') n = (i - 1 + TABS.length) % TABS.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = TABS.length - 1;
+    const next = TABS[n];
+    if (!next) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setTab(next.id);
+    dialogRef.current?.querySelector<HTMLElement>(`#sp-tab-${next.id}`)?.focus();
+  };
+
   // Đưa focus vào hộp thoại khi mở, trả lại nơi cũ khi đóng.
   useEffect(() => {
     if (!open) return undefined;
@@ -125,9 +141,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
           <h2 id="sp-title" style={{ margin: 0, fontSize: 18 }}>Cài đặt</h2>
           <button type="button" onClick={onClose} aria-label="Đóng cài đặt">Đóng</button>
         </div>
-        <div className="sp-tabs" role="tablist" aria-label="Nhóm cài đặt">
+        <div className="sp-tabs" role="tablist" aria-label="Nhóm cài đặt" onKeyDown={onTabKey}>
           {TABS.map((t) => (
-            <button key={t.id} type="button" role="tab" id={`sp-tab-${t.id}`} aria-selected={tab === t.id} aria-controls="sp-body" onClick={() => setTab(t.id)}>{t.label}</button>
+            <button key={t.id} type="button" role="tab" id={`sp-tab-${t.id}`} aria-selected={tab === t.id} tabIndex={tab === t.id ? 0 : -1} aria-controls="sp-body" onClick={() => setTab(t.id)}>{t.label}</button>
           ))}
         </div>
         <div id="sp-body" role="tabpanel" aria-labelledby={`sp-tab-${tab}`}>
