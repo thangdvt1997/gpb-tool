@@ -20,6 +20,7 @@ import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { FallbackAvatar } from './FallbackAvatar';
+import { useLimbIK, type GroundSampler } from './ik';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Tệp mô hình (xuất từ MPFB, rig game_engine 53 xương, 18 morph trên mesh thân).
@@ -52,6 +53,23 @@ export function targetHeightM(style: BodyStyle, frame: BodyFrame, heightCm: numb
   const cm = typeof heightCm === 'number' && Number.isFinite(heightCm) ? heightCm : fallback;
   return Math.min(range.max, Math.max(range.min, cm)) / 100;
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// IK chân (TASK 03). Sàn văn phòng phẳng y = 0. Bật bằng ?ik=1 cho tới khi xem được trên trình duyệt
+// (docs/design/IK.md, mục chưa kiểm chứng).
+
+const FLAT_FLOOR: GroundSampler = (_x, _z, out) => {
+  out.y = 0;
+  out.nx = 0;
+  out.ny = 1;
+  out.nz = 0;
+  return true;
+};
+
+export function ikEnabledFromUrl(search: string): boolean {
+  return new URLSearchParams(search).get('ik') === '1';
+}
+const IK_ON = typeof window !== 'undefined' && ikEnabledFromUrl(window.location.search);
 
 // ---------------------------------------------------------------------------------------------------------------
 // Morph thân. Chỉ nối morph có thật trong GLB; trọng số kẹp [0, 1].
@@ -468,6 +486,13 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     setMorph(infl, idx.browUp_R, Math.min(BROW_MAX, f.browUp));
     setMorph(infl, idx.browDown_L, Math.min(BROW_MAX, f.browDown));
     setMorph(infl, idx.browDown_R, Math.min(BROW_MAX, f.browDown));
+  });
+
+  // Chạy sau useFrame ghi tư thế ở trên (cùng priority, thứ tự đăng ký).
+  useLimbIK(IK_ON ? rig.root : null, (ctrl) => {
+    if (ctrl.ground === null) {
+      ctrl.ground = { sampler: FLAT_FLOOR, maxPelvisDrop: 0.15, maxPelvisRaise: 0.05, maxFootTilt: 0, smoothRate: 12 };
+    }
   });
 
   return (
