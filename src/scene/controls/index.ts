@@ -32,6 +32,7 @@ export {
   getControls,
   subscribeControls,
   setPaused,
+  holdPause,
   setFirstPerson,
   toggleFirstPerson,
   updateSettings,
@@ -180,7 +181,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     const pos = positionRef.current;
     // positionRef và yawRef là nguồn sự thật, bên ngoài có thể ghi vào.
     motion.yaw = yawRef.current;
-    // Chế độ chụp ảnh (TASK 16) khóa nhân vật qua setPaused, nên ctl.paused đã bao gồm.
+    // Chế độ chụp ảnh (TASK 16) khóa nhân vật qua holdPause, nên ctl.paused đã bao gồm.
     const live = enabled && !ctl.paused && !(isLocked !== undefined && isLocked());
 
     // Ngồi, đứng dậy (yêu cầu từ InteractTracker).

@@ -25,8 +25,10 @@ export function useQuality(maxDrawCalls = 200) {
     saveQualitySettings(s);
     setSettingsState(s);
     const r = resolveQuality(s, hints);
+    // Cùng chế độ thì useMemo không tạo lại bộ thích nghi: đặt mức cho nó để HUD và bộ điều khiển không lệch.
+    adaptive.setLevel(r.level);
     setLevel(r.level);
-  }, [hints]);
+  }, [hints, adaptive]);
   const onChange = useCallback((c: Change) => {
     setLevel(c.to);
     setLastChange(c);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { announce } from '../a11y';
-import { setPaused } from '../scene/controls';
+import { holdPause } from '../scene/controls';
 import { playerPose } from '../scene/controls/playerPose';
 import { OFFICE_L_RECTS } from '../scene/officeBounds';
 import { stepFreeCamera, type Bounds, type FollowParams } from './cameraModes';
@@ -75,7 +75,7 @@ export function setPhotoActive(active: boolean): void {
 
 /**
  * Cờ cho App/scene: true khi photo mode đang bật. Khi true, điều khiển nhân vật phải bị khóa
- * (PhotoPanel đã gọi setPaused(true) của scene/controls; App có thể đọc cờ này nếu cần khóa thêm đầu vào khác).
+ * (PhotoPanel giữ holdPause('photo') của scene/controls; App có thể đọc cờ này nếu cần khóa thêm đầu vào khác).
  */
 export function isPhotoControlLocked(): boolean {
   return state.active;
@@ -267,8 +267,7 @@ export function PhotoPanel(): JSX.Element {
 
   useEffect(() => {
     if (!s.active) return undefined;
-    setPaused(true);
-    return () => setPaused(false);
+    return holdPause('photo');
   }, [s.active]);
 
   useEffect(() => {

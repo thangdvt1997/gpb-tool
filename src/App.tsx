@@ -15,8 +15,8 @@ import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
 import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
 import { SettingsPanel } from './settings';
-import { createContextRecovery, useContextLoss, type ContextPhase } from './loading';
-import { setPaused } from './scene/controls';
+import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
+import { holdPause } from './scene/controls';
 import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, useWorld, worldEnabled } from './net';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
@@ -261,8 +261,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const [tattooOpen, setTattooOpen] = useState(false);
   useEffect(() => {
     if (!wardrobeOpen) return undefined;
-    setPaused(true);
-    return () => setPaused(false);
+    return holdPause('wardrobe');
   }, [wardrobeOpen]);
   // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
   const world = useWorld({ enabled: WORLD_ON });
@@ -319,25 +318,40 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const [canvasKey, setCanvasKey] = useState(0);
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
   const [gpuPhase, setGpuPhase] = useState<ContextPhase>('ok');
-  const recovery = useMemo(
-    () =>
-      createContextRecovery({
-        pause: () => setPaused(true),
-        resume: () => setPaused(false),
-        remount: () => setCanvasKey((k) => k + 1),
-        saveState: async () => {
-          await persist.saveSnapshot();
-        },
-        reload: () => window.location.reload(),
-        onPhase: (p) => {
-          setGpuPhase(p);
-          if (p === 'lost') announce('Mất kết nối đồ họa, đang khôi phục…', 'assertive');
-          if (p === 'failed') announce('Không khôi phục được đồ họa, đang lưu và tải lại trang.', 'assertive');
-        },
-      }),
-    [persist],
-  );
-  useEffect(() => () => recovery.dispose(), [recovery]);
+  // Tạo trong effect (không useMemo) để StrictMode dựng lại được sau cleanup dispose.
+  const [recovery, setRecovery] = useState<ContextRecovery | null>(null);
+  useEffect(() => {
+    let release: (() => void) | null = null;
+    let stableTimer: number | undefined;
+    const r = createContextRecovery({
+      pause: () => {
+        release ??= holdPause('webgl-context');
+      },
+      resume: () => {
+        release?.();
+        release = null;
+      },
+      remount: () => setCanvasKey((k) => k + 1),
+      saveState: async () => {
+        await persist.saveSnapshot();
+      },
+      reload: () => window.location.reload(),
+      onPhase: (p) => {
+        setGpuPhase(p);
+        window.clearTimeout(stableTimer);
+        // Ổn định 60 giây thì đếm lại số lần remount: hai lần mất ngữ cảnh cách xa nhau không dẫn tới tải lại.
+        if (p === 'ok') stableTimer = window.setTimeout(() => r.resetCounter(), 60_000);
+        if (p === 'lost') announce('Mất kết nối đồ họa, đang khôi phục…', 'assertive');
+        if (p === 'failed') announce('Không khôi phục được đồ họa, đang lưu và tải lại trang.', 'assertive');
+      },
+    });
+    setRecovery(r);
+    return () => {
+      window.clearTimeout(stableTimer);
+      r.dispose();
+      release?.();
+    };
+  }, [persist]);
   useContextLoss(canvasEl, recovery);
   useEffect(() => {
     const off = persist.attach();
@@ -460,7 +474,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             onCreated={({ gl }) => {
               setCanvasEl(gl.domElement);
               // Canvas mới (sau remount) đã có renderer: báo phục hồi xong.
-              requestAnimationFrame(() => recovery.onReady());
+              requestAnimationFrame(() => recovery?.onReady());
             }}
             shadows={quality.config.shadows}
             dpr={[1, dprCap]}
@@ -491,6 +505,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               userId={user.id}
               duel={activeDuel}
               reactBump={reactBump}
+              interactions={!editor.state.active}
             />
             <PhotoScene />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />

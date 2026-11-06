@@ -80,6 +80,8 @@ interface Props {
   duel?: Duel | null;
   /** Tùy chọn phản ứng khi bị va của chính người dùng. Không truyền thì mặc định bật. */
   reactBump?: boolean;
+  /** false: tắt phím E và gợi ý tương tác (ví dụ khi đang ở chế độ sắp xếp nội thất). Mặc định true. */
+  interactions?: boolean;
 }
 
 /**
@@ -203,6 +205,7 @@ export function ITOffice({
   userId,
   duel,
   reactBump,
+  interactions = true,
 }: Props) {
   // Ẩn vật thể chỉ dành cho vai trò khác (bàn kiểm duyệt chỉ moderator và admin thấy).
   // Chỉ dựng vật thể có footprint nằm trọn trong chữ L (officeBounds.ts, isObjectInOffice); vật khác không dựng,
@@ -506,7 +509,7 @@ export function ITOffice({
           selfId={selfId ?? 'self'}
         />
       )}
-      <InteractionLayer objects={zone.objects} enabled={entry.kind === 'done'} hovered={hovered} onUse={onSelect} />
+      <InteractionLayer objects={zone.objects} enabled={entry.kind === 'done' && interactions} hovered={hovered} onUse={onSelect} />
       {/* Vật tương tác (tuongtac.txt): ngăn kéo, cây nước, máy in, công tắc, đồ nhỏ, TV, ghế. */}
       <InteractObjects objects={zone.objects} blocked={isBlockedAt} />
       <DuelLayer world={world} myId={selfId} duel={duel} />

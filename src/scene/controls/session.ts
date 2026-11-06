@@ -66,10 +66,35 @@ export function useControlSnapshot(): ControlSnapshot {
   return useSyncExternalStore(subscribeControls, getControls, getControls);
 }
 
-export function setPaused(paused: boolean): void {
+/** Tạm dừng do menu Esc (bật/tắt trực tiếp). */
+let menuPaused = false;
+/** Các lý do tạm dừng đang giữ (chụp ảnh, phòng thay đồ, mất ngữ cảnh WebGL...). */
+const pauseHolds = new Set<symbol>();
+
+function syncPaused(): void {
+  const paused = menuPaused || pauseHolds.size > 0;
   if (snap.paused === paused) return;
   if (paused) resetTouchInput();
   emit({ ...snap, paused });
+}
+
+/** Menu tạm dừng (Esc). Không gỡ các lý do khác đang giữ: đóng menu khi phòng thay đồ mở vẫn giữ dừng. */
+export function setPaused(paused: boolean): void {
+  menuPaused = paused;
+  syncPaused();
+}
+
+/**
+ * Giữ trạng thái tạm dừng cho tới khi gọi hàm trả về. Nhiều nơi cùng giữ thì chỉ hết dừng khi mọi nơi nhả,
+ * nên đóng chế độ chụp ảnh khi phòng thay đồ còn mở không mở khóa nhân vật. Gọi hàm nhả nhiều lần vô hại.
+ */
+export function holdPause(reason: string): () => void {
+  const token = Symbol(reason);
+  pauseHolds.add(token);
+  syncPaused();
+  return () => {
+    if (pauseHolds.delete(token)) syncPaused();
+  };
 }
 
 export function setFirstPerson(firstPerson: boolean): void {

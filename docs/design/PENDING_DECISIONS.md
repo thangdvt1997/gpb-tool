@@ -22,7 +22,7 @@ Hiện trạng: các hàng bàn song song, một hướng (`src/scene/interact/g
 
 ## 3. Trần draw call
 
-Hiện trạng: khoảng 208 draw call (đo tĩnh bằng `scripts/perf/static-census.mjs`), trần ngân sách 200. Module `src/perf` chỉ cảnh báo khi vượt, không cắt nội dung.
+Hiện trạng: khoảng 208 draw call (đo tĩnh bằng `scripts/perf/static-census.mjs`), trần ngân sách 200. Module `src/perf` chỉ cảnh báo khi vượt, không cắt nội dung. Phiên 2026-11-06 thêm: khu vật tương tác mẫu khoảng 12 đến 14 draw call (ước lượng, trừ đi tủ hồ sơ và cây nước tĩnh đã ẩn nằm trong lô gộp nên không giảm draw call), vỏ trang phục một draw call mỗi món đang mặc (thêm pass bóng). Số thật cần đo bằng `?perf=1` trên trình duyệt.
 
 | Phương án | Làm gì | Ảnh hưởng |
 |---|---|---|

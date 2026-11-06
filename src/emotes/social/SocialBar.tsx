@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { announce } from '../../a11y';
 import { playInternalEmote } from '../player';
 import { playerPose } from '../../scene/controls/playerPose';
@@ -36,19 +36,23 @@ export interface SocialBarProps {
  * Transport mặc định là bus cục bộ; khi có world thì truyền transport mạng (docs/design/EMOTES_SOCIAL.md).
  */
 export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProps) {
-  const session = useMemo(() => {
+  // Tạo trong effect: dispose() gỡ đăng ký transport, StrictMode chạy cleanup rồi effect lại nên cần phiên mới.
+  const [session, setSession] = useState<SocialSession | null>(null);
+  useEffect(() => {
     const t = transport ?? createLocalBus().endpoint(selfId);
-    return new SocialSession({
+    const s = new SocialSession({
       transport: t,
       now: () => performance.now(),
       getPosition: (id) => (id === selfId ? { x: playerPose.x, z: playerPose.z } : getPeers().find((p) => p.id === id)),
       play: (id) => playInternalEmote(id),
       face: (yaw) => requestWalk({ x: playerPose.x, z: playerPose.z, facingYaw: yaw }),
     });
+    setSession(s);
+    return () => s.dispose();
   }, [selfId, transport, getPeers]);
-  useEffect(() => () => session.dispose(), [session]);
 
   const start = (id: (typeof SOCIAL_ACTIONS)[number]['id']) => {
+    if (!session) return;
     const ctl = getControls();
     const r = session.start(
       id,
@@ -69,7 +73,7 @@ export function SocialBar({ selfId, getPeers, nameOf, transport }: SocialBarProp
           </button>
         ))}
       </div>
-      <SocialPrompt session={session} nameOf={nameOf} />
+      {session && <SocialPrompt session={session} nameOf={nameOf} />}
     </>
   );
 }
