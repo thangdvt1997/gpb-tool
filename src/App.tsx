@@ -13,6 +13,7 @@ import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
 import { PhotoPanel, PhotoScene } from './photo/PhotoMode';
 import { createPersistManager } from './persist';
+import { BackupPanel, createDefaultBackupService } from './backup';
 import { appearanceToLook } from './fashion/migrate';
 import { DEFAULT_APPEARANCE } from './avatar/appearance';
 import type { CharacterLook } from './fashion/types';
@@ -268,6 +269,12 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
       ),
     [],
   );
+  // Xuất/nhập và sao lưu (TASK 20): look, cài đặt, snapshot persist.
+  const backup = useMemo(
+    () => createDefaultBackupService({ getLook: () => lookRef.current, applyLook: setLook, persist }),
+    [persist],
+  );
+  const [backupOpen, setBackupOpen] = useState(false);
   useEffect(() => {
     const off = persist.attach();
     void persist.loadSnapshot().then((r) => {
@@ -495,10 +502,14 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-expanded={libraryOpen} onClick={() => setLibraryOpen((v) => !v)}>
               Thư viện
             </button>
+            <button type="button" className="btn btn-ghost" aria-expanded={backupOpen} onClick={() => setBackupOpen((v) => !v)}>
+              Sao lưu
+            </button>
             {(user.role === 'it' || user.role === 'admin') && (
               <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
             )}
           </aside>
+          {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (
             <Suspense fallback={null}>
               <LibraryPanel onClose={() => setLibraryOpen(false)} />

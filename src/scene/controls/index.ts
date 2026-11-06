@@ -9,6 +9,7 @@ import { CAM, createCameraRig, useGtaCamera, type CameraFrame, type CameraRig } 
 import { createMotionInput, createMotionState, haltMotion, stepMotion, type MotionState } from './gtaMotion';
 import { getControls, setFirstPerson, setSeated, takeSeatRequest, type SeatSpot } from './session';
 import { useGtaControls, useSessionHotkeys, type MoveInput } from './useGtaControls';
+import { advanceFixedStep, createFixedStepper, lerpAngle } from '../motion/fixedStep';
 
 export { useGtaControls, useSessionHotkeys, isTypingTarget, type GtaControls, type MoveInput } from './useGtaControls';
 export {
@@ -91,6 +92,11 @@ export interface GtaPlayer {
   /** Có thể ghi yaw vào đây (ví dụ khi tới đích của walkRequest), hook sẽ đọc lại. */
   motion: MotionState;
   rig: CameraRig;
+  /**
+   * Tư thế để vẽ (TASK 02): nội suy giữa hai bước mô phỏng cố định 60 Hz theo alpha, nên màn hình 120/144 Hz
+   * không giật. Chỉ đọc. positionRef vẫn là trạng thái mô phỏng.
+   */
+  renderPose: { x: number; y: number; z: number; yaw: number };
   /** Đổi giá trị mới re-render, không phải mỗi khung. */
   isMoving: boolean;
   isRunning: boolean;
@@ -135,6 +141,12 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   const isRunningPrev = useRef(false);
   const autopilotRef = useRef(autopilot);
   autopilotRef.current = autopilot;
+  // Bước thời gian cố định (TASK 02, docs/design/MOTION.md): stepMotion luôn chạy với h = 1/60 s.
+  const stepper = useRef(createFixedStepper()).current;
+  const prevPose = useRef({ x: start.x, y: 0, z: start.z, yaw: yawRef.current }).current;
+  const renderPose = useRef({ x: start.x, y: 0, z: start.z, yaw: yawRef.current }).current;
+  /** Nhảy bấm ở khung không có bước mô phỏng nào thì giữ tới bước kế tiếp. */
+  const pendingJump = useRef(false);
 
   // Đổi enabled sang false giữa chừng: dừng hẳn.
   useEffect(() => {
@@ -181,7 +193,8 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     const f = live ? mv.forward : 0;
     const st = live ? mv.strafe : 0;
     const keyMove = f !== 0 || st !== 0;
-    const jump = controls.consumeJump() && live;
+    if (controls.consumeJump() && live) pendingJump.current = true;
+    if (!live) pendingJump.current = false;
 
     const seat = seated.current;
     if (seat !== null) {
@@ -196,7 +209,6 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       input.dirX = sinA * f - cosA * st;
       input.dirZ = cosA * f + sinA * st;
       input.run = live && controls.isRunning();
-      input.jump = jump;
       input.faceYaw = ctl.firstPerson ? rig.azimuth : null;
 
       const ap = autopilotRef.current;
@@ -208,8 +220,20 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
         input.run = false;
         input.faceYaw = null;
       }
-      stepMotion(motion, input, dt, PLAYER_RADIUS, obstacles, ROOM_BOUNDS);
-      if (auto && ap !== undefined) ap.after(motion, dt);
+      let jumped = false;
+      advanceFixedStep(stepper, dt, (h) => {
+        prevPose.x = pos.x;
+        prevPose.y = pos.y;
+        prevPose.z = pos.z;
+        prevPose.yaw = motion.yaw;
+        // Nhảy chỉ tiêu ở bước đầu tiên của khung.
+        input.jump = pendingJump.current;
+        pendingJump.current = false;
+        stepMotion(motion, input, h, PLAYER_RADIUS, obstacles, ROOM_BOUNDS);
+        jumped ||= motion.jumped;
+        if (auto && ap !== undefined) ap.after(motion, h);
+      });
+      motion.jumped = jumped;
 
       // Emote nội bộ (apologize, startle, hit, down) do cảnh phát, không bị phím di chuyển hủy.
       const intent = keyMove || motion.jumped;
@@ -217,6 +241,19 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       if (intent && es.phase !== 'idle' && !(es.id !== null && isInternalEmote(es.id))) notifyMovement();
     }
     yawRef.current = motion.yaw;
+
+    // Tư thế vẽ: nội suy prev -> hiện tại. Dịch chuyển lớn (ngồi, đứng dậy, hồi vị trí) thì nhảy thẳng.
+    const a = stepper.alpha;
+    if (Math.hypot(pos.x - prevPose.x, pos.z - prevPose.z) > 1 || seat !== null) {
+      prevPose.x = pos.x;
+      prevPose.y = pos.y;
+      prevPose.z = pos.z;
+      prevPose.yaw = motion.yaw;
+    }
+    renderPose.x = prevPose.x + (pos.x - prevPose.x) * a;
+    renderPose.y = prevPose.y + (pos.y - prevPose.y) * a;
+    renderPose.z = prevPose.z + (pos.z - prevPose.z) * a;
+    renderPose.yaw = lerpAngle(prevPose.yaw, motion.yaw, a);
 
     stepLocomotion(playerLocomotion, motion.speed, motion.grounded, seat !== null, dt);
     const sitW = playerLocomotion.sit;
@@ -238,5 +275,5 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   // Đăng ký sau useFrame chuyển động để camera dùng vị trí của chính khung này.
   useGtaCamera({ rig, positionRef, obstacles, bounds: ROOM_BOUNDS, getFrame: () => camFrame });
 
-  return { positionRef, yawRef, motion, rig, isMoving, isRunning };
+  return { positionRef, yawRef, motion, rig, renderPose, isMoving, isRunning };
 }

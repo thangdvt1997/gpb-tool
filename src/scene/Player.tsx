@@ -136,7 +136,7 @@ export function Player({
     };
   }, [setTarget]);
 
-  const { positionRef, yawRef, motion, rig } = useGtaPlayer({
+  const { positionRef, yawRef, motion, rig, renderPose } = useGtaPlayer({
     start: initial,
     obstacles,
     enabled,
@@ -212,8 +212,9 @@ export function Player({
     // Bước chân (TASK 14): không phát gì khi AudioContext chưa mở khóa.
     getSpatialAudio().updateFootsteps(motion.speed, dt, motion.grounded);
     if (g) {
-      g.position.set(p.x, p.y, p.z);
-      g.rotation.y = yawRef.current;
+      // Vẽ theo tư thế nội suy giữa hai bước cố định (TASK 02).
+      g.position.set(renderPose.x, renderPose.y, renderPose.z);
+      g.rotation.y = renderPose.yaw;
     }
     // Hợp đồng playerPose: ghi sau mọi bước di chuyển của khung này.
     playerPose.x = p.x;
