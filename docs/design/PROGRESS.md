@@ -39,7 +39,9 @@ Gộp kết quả agent, chạy lại tsc/test/build, rồi các task còn lại
 
 Lần chạy đầu (6fff85f): mọi bước 0 trừ `t_auth=1` — Node 24 coi `node --test test/` là module, không tìm thấy. Sửa: thêm `services/auth/test/index.js` import các file test.
 
-KET_QUA_CUOI (điền bên dưới).
+Kết quả cuối (commit 9eb4365, chạy bản sao script ra `/tmp/gpbacc/gpb-acceptance.txt`): tsc=0, build=0, t_persist=0, t_quick=0, t_photo=0, t_manifest=0, v_manifest=0, t_sceneqa=0, v_sceneqa=0, t_auth=0 (35 test), t_world=0 (66 test), t_vitest=0 (35 file, 625 test). **RESULT=PASS.** Thêm ngoài script: `node --test src/minimap/core/test/*.test.mjs` 32/32.
+
+Rà soát: một agent chỉ đọc rà phần nối module, tìm 5 lỗi thật và đã sửa ở 9eb4365 (canvas cũ phát mất ngữ cảnh sau remount gây vòng tải lại; cờ tạm dừng bị tranh chấp giữa chụp ảnh, phòng thay đồ, mất ngữ cảnh — thay bằng `holdPause`; StrictMode làm hỏng bộ phục hồi và phiên xã hội; phím E nhấc vật khi đang sắp xếp; mức chất lượng lệch sau khi đổi cài đặt). Agent cũng sửa một lỗi dữ liệu do agent con tạo: chibi bị đánh dấu `deprecated` trong manifest dù là lựa chọn chính thức.
 
 ### Đã làm (mỗi mục có test và đã nối vào app, trừ khi ghi khác)
 
@@ -82,3 +84,7 @@ Mọi phần giao diện và hình ảnh: nhân vật MPFB với vỏ trang ph�
 ### PENDING (docs/design/PENDING_DECISIONS.md, mỗi mục 2 phương án)
 
 1. 11 khu ngoài hình chữ L. 2. Bàn đối diện. 3. Trần draw call (vật tương tác mới thêm khoảng 12–14 draw call, vỏ trang phục thêm một draw call mỗi món). 4. Múa võ, tập quyền.
+
+### GitHub
+
+**Chưa push.** Điều kiện push là `/home/cc/gpb-acceptance.txt` có RESULT=PASS, nhưng tệp này không tạo được vì `/home/cc` không cho user `cc` ghi. Kết quả PASS chỉ có ở bản sao `/tmp/gpbacc/gpb-acceptance.txt` (cùng nội dung script, đổi đường dẫn đầu ra). TASK_STATUS.csv không còn mục CHƯA LÀM hay ĐANG CHẠY. Khi người dùng sửa quyền (hoặc xác nhận chấp nhận bản sao), chạy lại `bash /home/cc/gpb-acceptance.sh` rồi `git push origin auto/20261106` và `git push origin auto/20261106:main`. Nhánh local có 16 commit mới so với 6fff85f.
