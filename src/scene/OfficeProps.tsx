@@ -343,11 +343,20 @@ function addBannerRigging(solid: Batch): void {
   }
 }
 
+/**
+ * Đạo cụ có bản tương tác riêng (src/scene/interact/objects/InteractObjects.tsx: tủ hồ sơ có ngăn kéo,
+ * cây nước) thì không vẽ bản tĩnh ở đây, tránh hai mesh chồng nhau. Là phần tử đầu tiên của từng loại.
+ */
+export const INTERACTIVE_PROP_SPOTS: ReadonlySet<PropSpot> = new Set(
+  (['cabinet', 'water'] as const).map((k) => PROP_SPOTS.find((s) => s.kind === k)).filter((s): s is PropSpot => s !== undefined),
+);
+
 function build() {
   const solid = new Batch();
   const glass = new Batch();
   const rng = makeRng(20261106);
   for (const s of PROP_SPOTS) {
+    if (INTERACTIVE_PROP_SPOTS.has(s)) continue;
     const f = frameOf(s);
     switch (s.kind) {
       case 'fire':

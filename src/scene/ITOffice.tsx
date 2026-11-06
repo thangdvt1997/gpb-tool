@@ -33,7 +33,11 @@ import { DecorBoxes, InstancedBoxes, ObjectBoxes, type BoxItem } from './Instanc
 import { Floorplan } from './Floorplan';
 import { Player } from './Player';
 import { SceneContext, stateOf, type ObjState, type SceneState } from './context';
-import { collisionRects, labelY, partsOf, toWorldX, toWorldZ, type Part, type V3 } from './layout';
+import { PLAYER_RADIUS, collisionRects, labelY, partsOf, toWorldX, toWorldZ, type Part, type V3 } from './layout';
+import { InteractObjects } from './interact/objects/InteractObjects';
+import { onInteractEvent } from './interact/objects/interactEvents';
+import { bridgeInteractAudio, getSpatialAudio } from '../audio/spatial';
+import { OFFICE_PROP_BLOCKERS } from './officePropsLayout';
 import { isObjectInOffice } from './officeBounds';
 import { BOARD_IDS, TV_IDS, TvScreen, WhiteboardScreen } from '../display';
 import { carePlantAndSync, PlantMesh, TOOL_ACTION, usePlants } from '../plants';
@@ -277,6 +281,19 @@ export function ITOffice({
     [zone, showPlants],
   );
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
+  // Âm thanh khi dùng vật (TASK 14): bus tương tác -> âm tổng hợp có vị trí.
+  useEffect(
+    () => bridgeInteractAudio(onInteractEvent, getSpatialAudio(), (x, z) => audioZoneAt(audioRects, x, z)),
+    [audioRects],
+  );
+  // Chỗ đứng có bị vật cản chiếm không (cùng hộp va chạm của Player, nở thêm bán kính nhân vật).
+  const isBlockedAt = useCallback(
+    (x: number, z: number) =>
+      [...obstacles, ...OFFICE_PROP_BLOCKERS].some(
+        (r) => x > r.minX - PLAYER_RADIUS && x < r.maxX + PLAYER_RADIUS && z > r.minZ - PLAYER_RADIUS && z < r.maxZ + PLAYER_RADIUS,
+      ),
+    [obstacles],
+  );
 
   // Decor của khu. desks: mọi bàn và quầy dịch vụ, vẽ chung một lần. items: decor riêng từng vật thể.
   const decor = useMemo(() => zoneDecorOf(zone.objects, showPlants), [zone, showPlants]);
@@ -490,6 +507,8 @@ export function ITOffice({
         />
       )}
       <InteractionLayer objects={zone.objects} enabled={entry.kind === 'done'} hovered={hovered} onUse={onSelect} />
+      {/* Vật tương tác (tuongtac.txt): ngăn kéo, cây nước, máy in, công tắc, đồ nhỏ, TV, ghế. */}
+      <InteractObjects objects={zone.objects} blocked={isBlockedAt} />
       <DuelLayer world={world} myId={selfId} duel={duel} />
       <AmbientAudio zone={audioZone} enabled={audioEnabled} />
     </SceneContext.Provider>
