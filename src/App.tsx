@@ -5,6 +5,9 @@ import { InteractionHelp, InteractionHud } from './scene/interact';
 import { HelpCenter, HelpLayer, HelpReplayButton } from './help';
 import { ProfilePanel } from './profile';
 import { WardrobeRoom } from './wardrobe';
+import { TattooStudio } from './tattoo/TattooStudio';
+import { createTattooBackupSection } from './tattoo/store';
+import { mpfbModelFor } from './avatar/MpfbAvatar';
 import { SocialBar } from './emotes/social';
 import { Minimap, NavMarkers } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
@@ -255,6 +258,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   // Phòng thay đồ (fashion.txt, user.txt): khóa di chuyển khi mở.
   const [wardrobeOpen, setWardrobeOpen] = useState(false);
+  const [tattooOpen, setTattooOpen] = useState(false);
   useEffect(() => {
     if (!wardrobeOpen) return undefined;
     setPaused(true);
@@ -300,7 +304,13 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   );
   // Xuất/nhập và sao lưu (TASK 20): look, cài đặt, snapshot persist.
   const backup = useMemo(
-    () => createDefaultBackupService({ getLook: () => lookRef.current, applyLook: setLook, persist }),
+    () =>
+      createDefaultBackupService({
+        getLook: () => lookRef.current,
+        applyLook: setLook,
+        persist,
+        extra: [createTattooBackupSection()],
+      }),
     [persist],
   );
   const [backupOpen, setBackupOpen] = useState(false);
@@ -576,6 +586,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={wardrobeOpen} onClick={() => setWardrobeOpen(true)}>
               Phòng thay đồ
             </button>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={tattooOpen} onClick={() => setTattooOpen(true)}>
+              Vẽ xăm
+            </button>
             <button type="button" className="btn btn-ghost" aria-expanded={profileOpen} onClick={() => setProfileOpen((v) => !v)}>
               Hồ sơ
             </button>
@@ -602,6 +615,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               onCancel={() => setWardrobeOpen(false)}
             />
           )}
+          {tattooOpen && <TattooStudio model={mpfbModelFor(look.bodyStyle, look.body.frame)} onClose={() => setTattooOpen(false)} />}
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
           <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

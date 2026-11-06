@@ -22,6 +22,7 @@ import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { FallbackAvatar } from './FallbackAvatar';
 import { useLimbIK, type GroundSampler } from './ik';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
+import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Tệp mô hình (xuất từ MPFB, rig game_engine 53 xương, 18 morph trên mesh thân).
@@ -488,6 +489,9 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     setMorph(infl, idx.browDown_L, Math.min(BROW_MAX, f.browDown));
     setMorph(infl, idx.browDown_R, Math.min(BROW_MAX, f.browDown));
   });
+
+  // Hình xăm vẽ trong app (TASK 19): tài liệu theo kiểu mô hình, áp lên vật liệu thân.
+  useBodyTattoo(rig.root, mpfbModelFor(style, frame), 'medium');
 
   // Chạy sau useFrame ghi tư thế ở trên (cùng priority, thứ tự đăng ký).
   useLimbIK(IK_ON ? rig.root : null, (ctrl) => {
