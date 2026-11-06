@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { validateFile } from './validate-manifest.mjs';
+import { validateFile, postProcess } from './validate-manifest.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { validateManifest } = await import(pathToFileURL(path.join(root, 'src/assets/validate.ts')).href);
@@ -114,7 +114,8 @@ test('validator không sửa dữ liệu đầu vào', () => {
 test('manifest thật public/models/manifest.json: 0 lỗi (đối chiếu hash, bounds, xương, morph với GLB)', async () => {
   const r = await validateFile(path.join(root, 'public/models/manifest.json'));
   assert.deepEqual(r.errors, []);
-  assert.ok(r.warnings.some((w) => w.code === 'CLIP_MISSING'));
+  assert.ok(!r.warnings.some((w) => w.code === 'CLIP_MISSING'), 'clip idle/walk/sit đã khai báo procedural');
+  assert.equal(r.info.filter((x) => x.code === 'CLIP_PROCEDURAL').length, 9);
 });
 
 test('manifest thật sửa hash sai thì báo HASH_MISMATCH', async () => {
@@ -141,4 +142,92 @@ test('migrate: mục cũ dạng SOURCE.json không bị bịa số đo, validato
   const r = validateManifest(rep.manifest);
   assert.equal(r.ok, false);
   assert.ok(r.errors.some((x) => x.assetId === 'furn.old_desk' && x.path.endsWith('bounds')));
+});
+
+function charWithClips(extra = {}) {
+  return desk({
+    assetId: 'char.t', type: 'character', expectedClips: ['idle', 'walk'], rigProfile: 'rig.t',
+    ...extra,
+  });
+}
+const rigM = (a) => ({ ...manifest([a]), rigProfiles: { 'rig.t': { id: 'rig.t', bones: ['Root'], rootBone: 'Root', restPose: 'A', units: 'm', rootMotion: 'in-place', retargetMap: {} } } });
+
+test('procedural: clip khai báo thành info, clip không khai báo vẫn là CLIP_MISSING', () => {
+  const a = charWithClips({ proceduralClips: ['idle'] });
+  const data = rigM(a);
+  const res = postProcess(validateManifest(data), data);
+  assert.ok(res.info.some((x) => x.code === 'CLIP_PROCEDURAL' && /idle/.test(x.message)));
+  assert.ok(!res.warnings.some((w) => w.code === 'CLIP_MISSING' && /"idle"/.test(w.message)));
+  assert.ok(res.warnings.some((w) => w.code === 'CLIP_MISSING' && /"walk"/.test(w.message)), 'walk chưa khai báo vẫn phải cảnh báo');
+});
+
+test('procedural: không khai báo thì mọi CLIP_MISSING giữ nguyên; kiểu sai báo BAD_PROCEDURAL_CLIPS', () => {
+  const data = rigM(charWithClips());
+  const raw = validateManifest(data);
+  const res = postProcess(raw, data);
+  assert.equal(res.warnings.filter((w) => w.code === 'CLIP_MISSING').length, raw.warnings.filter((w) => w.code === 'CLIP_MISSING').length);
+  assert.equal(res.info.length, 0);
+  const bad = rigM(charWithClips({ proceduralClips: 'idle' }));
+  assert.ok(postProcess(validateManifest(bad), bad).errors.some((e) => e.code === 'BAD_PROCEDURAL_CLIPS'));
+});
+
+test('style chibi dùng khoảng chiều cao chibi; người thật thấp vẫn là lỗi; chibi quá thấp vẫn là lỗi', () => {
+  const short = { min: [-0.3, 0, -0.1], max: [0.3, 0.8, 0.1], space: 'rest', measuredBy: 'x' };
+  const chibi = rigM(charWithClips({ bounds: short, style: 'chibi' }));
+  const r1 = postProcess(validateManifest(chibi), chibi);
+  assert.ok(!r1.errors.some((e) => e.code === 'CHARACTER_HEIGHT'));
+  assert.ok(r1.info.some((w) => w.code === 'CHIBI_HEIGHT'));
+  const real = rigM(charWithClips({ bounds: short }));
+  assert.ok(postProcess(validateManifest(real), real).errors.some((e) => e.code === 'CHARACTER_HEIGHT'));
+  const tiny = rigM(charWithClips({ bounds: { ...short, max: [0.3, 0.3, 0.1] }, style: 'chibi' }));
+  assert.ok(postProcess(validateManifest(tiny), tiny).errors.some((e) => e.code === 'CHARACTER_HEIGHT'));
+});
+
+function tmpManifest(mutate) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpb-manifest-'));
+  const m = JSON.parse(fs.readFileSync(path.join(root, 'public/models/manifest.json'), 'utf8'));
+  m.assets = [m.assets.find((a) => a.assetId === 'char.chibi')];
+  fs.copyFileSync(path.join(root, 'public/models/chibi.glb'), path.join(dir, 'chibi.glb'));
+  mutate(m.assets[0], dir);
+  const file = path.join(dir, 'manifest.json');
+  fs.writeFileSync(file, JSON.stringify(m));
+  return { file, dir };
+}
+
+test('manifest thật: mục char.chibi đo thật, 0 lỗi', async () => {
+  const { file, dir } = tmpManifest(() => {});
+  const r = await validateFile(file);
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.deepEqual(r.errors, []);
+});
+
+test('kích thước file lệch manifest báo FILE_SIZE_MISMATCH kể cả --no-glb; dung sai cho qua', async () => {
+  const { file, dir } = tmpManifest((a) => { a.bytes += 1000; });
+  const r = await validateFile(file, { glb: false });
+  assert.ok(r.errors.some((e) => e.code === 'FILE_SIZE_MISMATCH' && e.assetId === 'char.chibi'));
+  const ok = await validateFile(file, { glb: false, sizeTolerance: 0.01 });
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.ok(!ok.errors.some((e) => e.code === 'FILE_SIZE_MISMATCH'));
+});
+
+test('GLB đọc được: bytes và số tam giác lệch báo BYTES_MISMATCH/TRIANGLES_MISMATCH', async () => {
+  const { file, dir } = tmpManifest((a) => { a.bytes += 8; a.lods[0].triangles += 5; });
+  const r = await validateFile(file);
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.ok(r.errors.some((e) => e.code === 'BYTES_MISMATCH'));
+  assert.ok(r.errors.some((e) => e.code === 'TRIANGLES_MISMATCH'));
+});
+
+test('file thiếu báo FILE_MISSING; đường dẫn ra ngoài/tuyệt đối bị chặn, không đọc đĩa', async () => {
+  const miss = tmpManifest((a, dir) => { fs.rmSync(path.join(dir, 'chibi.glb')); });
+  const r = await validateFile(miss.file);
+  fs.rmSync(miss.dir, { recursive: true, force: true });
+  assert.ok(r.errors.some((e) => e.code === 'FILE_MISSING'));
+  for (const [url, code] of [['../chibi.glb', 'URL_ESCAPES'], ['/etc/passwd', 'URL_NOT_RELATIVE'], ['a\\b.glb', 'URL_BACKSLASH']]) {
+    const t = tmpManifest((a) => { a.url = url; a.lods[0].url = url; });
+    const x = await validateFile(t.file);
+    fs.rmSync(t.dir, { recursive: true, force: true });
+    assert.ok(x.errors.some((e) => e.code === code), `${url} -> ${code}`);
+    assert.ok(!x.errors.some((e) => e.code === 'FILE_SIZE_MISMATCH'));
+  }
 });

@@ -8,18 +8,59 @@
     "rig.mpfb_53": {
       "id": "rig.mpfb_53",
       "bones": [
-        "Root", "pelvis", "spine_01", "spine_02", "spine_03",
-        "clavicle_l", "upperarm_l", "lowerarm_l", "hand_l",
-        "index_01_l", "index_02_l", "index_03_l", "middle_01_l", "middle_02_l", "middle_03_l",
-        "pinky_01_l", "pinky_02_l", "pinky_03_l", "ring_01_l", "ring_02_l", "ring_03_l",
-        "thumb_01_l", "thumb_02_l", "thumb_03_l",
-        "clavicle_r", "upperarm_r", "lowerarm_r", "hand_r",
-        "index_01_r", "index_02_r", "index_03_r", "middle_01_r", "middle_02_r", "middle_03_r",
-        "pinky_01_r", "pinky_02_r", "pinky_03_r", "ring_01_r", "ring_02_r", "ring_03_r",
-        "thumb_01_r", "thumb_02_r", "thumb_03_r",
-        "neck_01", "head",
-        "thigh_l", "calf_l", "foot_l", "ball_l",
-        "thigh_r", "calf_r", "foot_r", "ball_r"
+        "Root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "clavicle_r",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r",
+        "neck_01",
+        "head",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "ball_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "ball_r"
       ],
       "rootBone": "Root",
       "restPose": "A",
@@ -87,55 +128,207 @@
       "assetId": "char.male_real",
       "type": "character",
       "version": "0.1.0",
-      "hash": { "algo": "sha256", "value": "d70d62de0443d472508e4c6b131d6bb71dd552d8708317a34beb66e06aed4637" },
+      "hash": {
+        "algo": "sha256",
+        "value": "d70d62de0443d472508e4c6b131d6bb71dd552d8708317a34beb66e06aed4637"
+      },
       "bytes": 5531416,
       "url": "male_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
-        "min": [-0.6154, 0.0261, -0.1014],
-        "max": [0.6154, 1.8916, 0.4037],
+        "min": [
+          -0.6154,
+          0.0261,
+          -0.1014
+        ],
+        "max": [
+          0.6154,
+          1.8916,
+          0.4037
+        ],
         "space": "rest",
         "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
       },
       "pivot": {
         "kind": "feet-center",
-        "offset": [0, 0.0261, 0],
+        "offset": [
+          0,
+          0.0261,
+          0
+        ],
         "note": "y = bounds.min.y đã đo (đáy chân cách origin file 2.6 cm). x, z = 0 theo trục đối xứng và vị trí Root; chưa đo tâm lòng bàn chân."
       },
-      "colliderProfile": { "shape": "capsule", "radius": 0.35, "height": 1.8655 },
-      "lods": [{ "level": 0, "url": "male_real.glb", "triangles": 27120 }],
+      "colliderProfile": {
+        "shape": "capsule",
+        "radius": 0.35,
+        "height": 1.8655
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "male_real.glb",
+          "triangles": 27120
+        }
+      ],
       "materials": [
-        { "name": "male_real.body", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] },
-        { "name": "male_real.eyebrow001", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] },
-        { "name": "male_real.low-poly", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] }
+        {
+          "name": "male_real.body",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "male_real.eyebrow001",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "male_real.low-poly",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        }
       ],
       "sockets": [
-        { "name": "hand_l", "bone": "hand_l", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "hand_r", "bone": "hand_r", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "head", "bone": "head", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "neck", "bone": "neck_01", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "back", "bone": "spine_03", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "foot_l", "bone": "foot_l", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "foot_r", "bone": "foot_r", "offset": [0, 0, 0], "calibrated": false }
+        {
+          "name": "hand_l",
+          "bone": "hand_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "hand_r",
+          "bone": "hand_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "head",
+          "bone": "head",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "neck",
+          "bone": "neck_01",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "back",
+          "bone": "spine_03",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_l",
+          "bone": "foot_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_r",
+          "bone": "foot_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        }
       ],
       "rigProfile": "rig.mpfb_53",
       "morphCapabilities": {
         "targets": [
-          "eyeBlink_L", "eyeBlink_R", "eyeWide_L", "eyeWide_R", "jawOpen", "mouthSmile", "mouthFrown", "mouthPucker",
-          "browUp_L", "browUp_R", "browDown_L", "browDown_R",
-          "bodyBelly", "bodyWaistSlim", "bodyHipsWide", "bodyShouldersV", "headFat", "chestMuscle"
+          "eyeBlink_L",
+          "eyeBlink_R",
+          "eyeWide_L",
+          "eyeWide_R",
+          "jawOpen",
+          "mouthSmile",
+          "mouthFrown",
+          "mouthPucker",
+          "browUp_L",
+          "browUp_R",
+          "browDown_L",
+          "browDown_R",
+          "bodyBelly",
+          "bodyWaistSlim",
+          "bodyHipsWide",
+          "bodyShouldersV",
+          "headFat",
+          "chestMuscle"
         ],
         "groups": {
-          "face": ["eyeBlink_L", "eyeBlink_R", "eyeWide_L", "eyeWide_R", "jawOpen", "mouthSmile", "mouthFrown", "mouthPucker", "browUp_L", "browUp_R", "browDown_L", "browDown_R"],
-          "body": ["bodyBelly", "bodyWaistSlim", "bodyHipsWide", "bodyShouldersV", "headFat", "chestMuscle"]
+          "face": [
+            "eyeBlink_L",
+            "eyeBlink_R",
+            "eyeWide_L",
+            "eyeWide_R",
+            "jawOpen",
+            "mouthSmile",
+            "mouthFrown",
+            "mouthPucker",
+            "browUp_L",
+            "browUp_R",
+            "browDown_L",
+            "browDown_R"
+          ],
+          "body": [
+            "bodyBelly",
+            "bodyWaistSlim",
+            "bodyHipsWide",
+            "bodyShouldersV",
+            "headFat",
+            "chestMuscle"
+          ]
         }
       },
-      "expectedClips": ["idle", "walk", "sit"],
+      "expectedClips": [
+        "idle",
+        "walk",
+        "sit"
+      ],
       "license": {
         "spdx": "CC0-1.0",
         "source": "Dữ liệu MakeHuman (base mesh, target, texture da, lông mày, mắt) xuất bằng MPFB 2 trong Blender 4.2",
-        "tool": { "name": "MPFB 2 (Blender add-on)", "license": "GPL-3.0", "url": "https://github.com/makehumancommunity/mpfb2" },
+        "tool": {
+          "name": "MPFB 2 (Blender add-on)",
+          "license": "GPL-3.0",
+          "url": "https://github.com/makehumancommunity/mpfb2"
+        },
         "attributionRequired": false,
         "originPath": "/opt/gpb-mpfb/out/ (VPS)",
         "checkedAt": "2026-11-06",
@@ -149,61 +342,218 @@
         "Nguồn gốc 6 shape key thân (bodyBelly, bodyWaistSlim, bodyHipsWide, bodyShouldersV, headFat, chestMuscle) do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
         "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds."
+      ],
+      "proceduralClips": [
+        "idle",
+        "walk",
+        "sit"
       ]
     },
     {
       "assetId": "char.female_real",
       "type": "character",
       "version": "0.1.0",
-      "hash": { "algo": "sha256", "value": "f7e9c5d74476cd46e9132e8e9968a4c16bccb8422c8dc0ccd05bf680e513550d" },
+      "hash": {
+        "algo": "sha256",
+        "value": "f7e9c5d74476cd46e9132e8e9968a4c16bccb8422c8dc0ccd05bf680e513550d"
+      },
       "bytes": 6228128,
       "url": "female_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
-        "min": [-0.4823, 0.0269, -0.0899],
-        "max": [0.4823, 1.6009, 0.2871],
+        "min": [
+          -0.4823,
+          0.0269,
+          -0.0899
+        ],
+        "max": [
+          0.4823,
+          1.6009,
+          0.2871
+        ],
         "space": "rest",
         "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
       },
       "pivot": {
         "kind": "feet-center",
-        "offset": [0, 0.0269, 0],
+        "offset": [
+          0,
+          0.0269,
+          0
+        ],
         "note": "y = bounds.min.y đã đo (đáy chân cách origin file 2.7 cm). x, z = 0 theo trục đối xứng và vị trí Root; chưa đo tâm lòng bàn chân."
       },
-      "colliderProfile": { "shape": "capsule", "radius": 0.35, "height": 1.574 },
-      "lods": [{ "level": 0, "url": "female_real.glb", "triangles": 27120 }],
+      "colliderProfile": {
+        "shape": "capsule",
+        "radius": 0.35,
+        "height": 1.574
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "female_real.glb",
+          "triangles": 27120
+        }
+      ],
       "materials": [
-        { "name": "female_real.body", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] },
-        { "name": "female_real.eyebrow001", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] },
-        { "name": "female_real.low-poly", "alphaMode": "BLEND", "doubleSided": true, "maps": ["baseColor"] }
+        {
+          "name": "female_real.body",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "female_real.eyebrow001",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "female_real.low-poly",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        }
       ],
       "sockets": [
-        { "name": "hand_l", "bone": "hand_l", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "hand_r", "bone": "hand_r", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "head", "bone": "head", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "neck", "bone": "neck_01", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "back", "bone": "spine_03", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "foot_l", "bone": "foot_l", "offset": [0, 0, 0], "calibrated": false },
-        { "name": "foot_r", "bone": "foot_r", "offset": [0, 0, 0], "calibrated": false }
+        {
+          "name": "hand_l",
+          "bone": "hand_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "hand_r",
+          "bone": "hand_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "head",
+          "bone": "head",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "neck",
+          "bone": "neck_01",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "back",
+          "bone": "spine_03",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_l",
+          "bone": "foot_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_r",
+          "bone": "foot_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        }
       ],
       "rigProfile": "rig.mpfb_53",
       "morphCapabilities": {
         "targets": [
-          "eyeBlink_L", "eyeBlink_R", "eyeWide_L", "eyeWide_R", "jawOpen", "mouthSmile", "mouthFrown", "mouthPucker",
-          "browUp_L", "browUp_R", "browDown_L", "browDown_R",
-          "bodyBelly", "bodyWaistSlim", "bodyHipsWide", "bodyShouldersV", "headFat", "chestMuscle"
+          "eyeBlink_L",
+          "eyeBlink_R",
+          "eyeWide_L",
+          "eyeWide_R",
+          "jawOpen",
+          "mouthSmile",
+          "mouthFrown",
+          "mouthPucker",
+          "browUp_L",
+          "browUp_R",
+          "browDown_L",
+          "browDown_R",
+          "bodyBelly",
+          "bodyWaistSlim",
+          "bodyHipsWide",
+          "bodyShouldersV",
+          "headFat",
+          "chestMuscle"
         ],
         "groups": {
-          "face": ["eyeBlink_L", "eyeBlink_R", "eyeWide_L", "eyeWide_R", "jawOpen", "mouthSmile", "mouthFrown", "mouthPucker", "browUp_L", "browUp_R", "browDown_L", "browDown_R"],
-          "body": ["bodyBelly", "bodyWaistSlim", "bodyHipsWide", "bodyShouldersV", "headFat", "chestMuscle"]
+          "face": [
+            "eyeBlink_L",
+            "eyeBlink_R",
+            "eyeWide_L",
+            "eyeWide_R",
+            "jawOpen",
+            "mouthSmile",
+            "mouthFrown",
+            "mouthPucker",
+            "browUp_L",
+            "browUp_R",
+            "browDown_L",
+            "browDown_R"
+          ],
+          "body": [
+            "bodyBelly",
+            "bodyWaistSlim",
+            "bodyHipsWide",
+            "bodyShouldersV",
+            "headFat",
+            "chestMuscle"
+          ]
         }
       },
-      "expectedClips": ["idle", "walk", "sit"],
+      "expectedClips": [
+        "idle",
+        "walk",
+        "sit"
+      ],
       "license": {
         "spdx": "CC0-1.0",
         "source": "Dữ liệu MakeHuman (base mesh, target, texture da, lông mày, mắt) xuất bằng MPFB 2 trong Blender 4.2",
-        "tool": { "name": "MPFB 2 (Blender add-on)", "license": "GPL-3.0", "url": "https://github.com/makehumancommunity/mpfb2" },
+        "tool": {
+          "name": "MPFB 2 (Blender add-on)",
+          "license": "GPL-3.0",
+          "url": "https://github.com/makehumancommunity/mpfb2"
+        },
         "attributionRequired": false,
         "originPath": "/opt/gpb-mpfb/out/ (VPS)",
         "checkedAt": "2026-11-06",
@@ -217,7 +567,236 @@
         "Nguồn gốc 6 shape key thân do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
         "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds."
+      ],
+      "proceduralClips": [
+        "idle",
+        "walk",
+        "sit"
       ]
+    },
+    {
+      "assetId": "char.chibi",
+      "type": "character",
+      "version": "0.1.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "499c80dcd29d407401aca0883a935e96d69fdabd5bb6cde21babd923ae0dfb43"
+      },
+      "bytes": 6228208,
+      "url": "chibi.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.2742,
+          0.0244,
+          -0.0584
+        ],
+        "max": [
+          0.2742,
+          0.8984,
+          0.1819
+        ],
+        "space": "rest",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
+      },
+      "pivot": {
+        "kind": "feet-center",
+        "offset": [
+          0,
+          0.0244,
+          0
+        ],
+        "note": "y = bounds.min.y đã đo; x, z = 0 theo trục đối xứng, chưa đo tâm lòng bàn chân."
+      },
+      "colliderProfile": {
+        "shape": "capsule",
+        "radius": 0.35,
+        "height": 0.874
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "chibi.glb",
+          "triangles": 27120
+        }
+      ],
+      "materials": [
+        {
+          "name": "chibi.body",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "chibi.eyebrow001",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        },
+        {
+          "name": "chibi.low-poly",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "maps": [
+            "baseColor"
+          ]
+        }
+      ],
+      "sockets": [
+        {
+          "name": "hand_l",
+          "bone": "hand_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "hand_r",
+          "bone": "hand_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "head",
+          "bone": "head",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "neck",
+          "bone": "neck_01",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "back",
+          "bone": "spine_03",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_l",
+          "bone": "foot_l",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        },
+        {
+          "name": "foot_r",
+          "bone": "foot_r",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "calibrated": false
+        }
+      ],
+      "rigProfile": "rig.mpfb_53",
+      "morphCapabilities": {
+        "targets": [
+          "eyeBlink_L",
+          "eyeBlink_R",
+          "eyeWide_L",
+          "eyeWide_R",
+          "jawOpen",
+          "mouthSmile",
+          "mouthFrown",
+          "mouthPucker",
+          "browUp_L",
+          "browUp_R",
+          "browDown_L",
+          "browDown_R",
+          "bodyBelly",
+          "bodyWaistSlim",
+          "bodyHipsWide",
+          "bodyShouldersV",
+          "headFat",
+          "chestMuscle"
+        ],
+        "groups": {
+          "face": [
+            "eyeBlink_L",
+            "eyeBlink_R",
+            "eyeWide_L",
+            "eyeWide_R",
+            "jawOpen",
+            "mouthSmile",
+            "mouthFrown",
+            "mouthPucker",
+            "browUp_L",
+            "browUp_R",
+            "browDown_L",
+            "browDown_R"
+          ],
+          "body": [
+            "bodyBelly",
+            "bodyWaistSlim",
+            "bodyHipsWide",
+            "bodyShouldersV",
+            "headFat",
+            "chestMuscle"
+          ]
+        }
+      },
+      "expectedClips": [
+        "idle",
+        "walk",
+        "sit"
+      ],
+      "license": {
+        "spdx": "CC0-1.0",
+        "source": "Dữ liệu MakeHuman (base mesh, target, texture da, lông mày, mắt) xuất bằng MPFB 2 trong Blender 4.2",
+        "tool": {
+          "name": "MPFB 2 (Blender add-on)",
+          "license": "GPL-3.0",
+          "url": "https://github.com/makehumancommunity/mpfb2"
+        },
+        "attributionRequired": false,
+        "originPath": "/opt/gpb-mpfb/out/ (VPS)",
+        "checkedAt": "2026-11-06",
+        "verified": false
+      },
+      "knownIssues": [
+        "Tỷ lệ chibi (cao gốc khoảng 0.874 m) là một lựa chọn chính thức cạnh tỷ lệ thật (male_real, female_real); app scale tới 85–130 cm theo BODY_LIMITS_BY_STYLE.chibi.",
+        "File không có animation clip (animations = 0).",
+        "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
+        "Cùng bộ xương 53 xương, 18 morph và 27 120 tam giác với female_real; chưa đối chiếu chi tiết mesh.",
+        "License CC0 theo thông tin pipeline; chưa lưu bằng chứng."
+      ],
+      "proceduralClips": [
+        "idle",
+        "walk",
+        "sit"
+      ],
+      "style": "chibi"
     }
   ]
 }

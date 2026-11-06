@@ -12,6 +12,7 @@ Số liệu ghi "đã đo" lấy từ file thật bằng `--print-facts`. Số l
 |---|---|---|---|---|---|---|---|---|
 | char.male_real | public/models/male_real.glb | 5 531 416 B | 27 120 | 3 / 3 / 3 PNG nhúng | 53 xương, 1 skin | 18 | 0 | Cao 1.866 m (bounds y 0.026–1.892). Material BLEND. Origin thấp hơn đáy chân 2.6 cm |
 | char.female_real | public/models/female_real.glb | 6 228 128 B | 27 120 | 3 / 3 / 3 PNG nhúng | 53 xương, 1 skin | 18 | 0 | Cao 1.574 m (bounds y 0.027–1.601). Như trên |
+| char.chibi | public/models/chibi.glb | 6 228 208 B | 27 120 | 3 / 3 / 3 PNG nhúng | 53 xương, 1 skin (cùng danh sách với hai file trên) | 18 | 0 | Cao 0.874 m (bounds y 0.024–0.898). `style: chibi`: tỷ lệ chibi là lựa chọn chính thức cạnh tỷ lệ thật; validator dùng khoảng chiều cao chibi 0,6–1,4 m. sha256 499c80dc… |
 
 - Generator: Khronos glTF Blender I/O v4.2.83, không dùng extension (không Draco, không KTX2, không meshopt).
 - Material: `*.body`, `*.eyebrow001`, `*.low-poly` (mắt), cả ba `alphaMode BLEND`, `doubleSided true`, chỉ có baseColor, không normal map.
@@ -61,6 +62,7 @@ Socket gắn theo `bone` (asset có rig) hoặc `node` (empty trong file), khôn
 
 - Hồ sơ rig (`rigProfiles`) ghi đủ tên xương theo thứ tự `skin.joints`, `rootBone`, `restPose`, `rootMotion`, `retargetMap` (tên humanoid VRM → tên xương).
 - `rig.mpfb_53`: 53 xương, root `Root`, rest pose A (đo: cánh tay chếch xuống khoảng 49°), `rootMotion: unknown` vì chưa có clip. retargetMap chưa kiểm chứng bằng clip thật.
+- Clip procedural: GLB hiện không có clip nào; idle, walk, sit... do mã tạo (`src/avatar/animation.ts`). Khai báo bằng `proceduralClips: ["idle","walk","sit"]` trên mục asset. Validator chuyển `CLIP_MISSING` của đúng các clip này thành ghi chú `CLIP_PROCEDURAL` (mức info, vẫn in ra); clip trong `expectedClips` mà không khai báo vẫn là cảnh báo `CLIP_MISSING`. Khi có clip thật trong GLB, bỏ tên khỏi `proceduralClips`.
 - Clip mặc định in-place; clip có root motion ghi `rootMotion: "root-motion"`.
 - Không đổi tên xương hàng loạt trước khi rà mọi clip và socket phụ thuộc. Nếu cần đổi, thêm rigProfile mới và mapping, giữ hồ sơ cũ.
 
@@ -106,7 +108,7 @@ node scripts/assets/validate-manifest.mjs --print-facts <file.glb>
 node --test scripts/assets/validate-manifest.test.mjs
 ```
 
-Cần Node có type stripping (đã chạy với Node 24.19). Validator chỉ đọc, không sửa file. Mỗi lỗi có mã, assetId, đường dẫn trường và hướng sửa. Kiểm tra: schema, ID trùng, giá trị không hữu hạn (kể cả `null` do NaN bị JSON.stringify), URL và file tồn tại, transform bất thường (scale, bounds, đáy lệch sàn, chiều cao nhân vật), pivot theo loại, socket thiếu/trùng/sai xương, clip thiếu, license không cho phép. Với GLB: đối chiếu hash, bytes, bounds, số tam giác, xương, morph, clip, node, material với file.
+Cần Node có type stripping (đã chạy với Node 24.19). Validator chỉ đọc, không sửa file. Mỗi lỗi có mã, assetId, đường dẫn trường và hướng sửa. Kiểm tra: schema, ID trùng, giá trị không hữu hạn (kể cả `null` do NaN bị JSON.stringify), URL và file tồn tại, transform bất thường (scale, bounds, đáy lệch sàn, chiều cao nhân vật), pivot theo loại, socket thiếu/trùng/sai xương, clip thiếu, license không cho phép. Lớp script thêm: `FILE_SIZE_MISMATCH` (kích thước tệp thật khác `bytes`, dung sai tương đối `sizeTolerance`, mặc định 0, chạy cả khi `--no-glb`), `BAD_PROCEDURAL_CLIPS`, và `style: "chibi"` dùng khoảng chiều cao chibi 0,6–1,4 m thay cho khoảng người thật (ngoài khoảng vẫn là lỗi). Đường dẫn không an toàn (tuyệt đối, `..`, `\`) bị chặn, script không đọc đĩa theo đường dẫn đó. Số đo manifest hiện tại: 0 lỗi, 37 cảnh báo, 9 ghi chú procedural. Với GLB: đối chiếu hash, bytes, bounds, số tam giác, xương, morph, clip, node, material với file.
 
 ## 10. Chuyển manifest cũ
 
@@ -116,6 +118,6 @@ Repo chưa có manifest asset cũ. `src/assets/migrate.ts` chuyển mục dạng
 
 - Scene xem asset (grid 1 m, bounds, pivot, socket) chưa làm: nằm trong `src/scene/**` đang do agent khác sửa.
 - Chưa có GLB bàn, ghế, tủ, cửa, ngăn kéo, phụ kiện, animation; chưa nạp thử để chứng minh tỷ lệ và vị trí gắn.
-- Clip `idle`, `walk`, `sit` chưa có cho `rig.mpfb_53`.
+- Clip `idle`, `walk`, `sit` chưa có trong GLB cho `rig.mpfb_53`; đang chạy procedural (khai báo `proceduralClips`).
 - Offset socket chưa hiệu chỉnh; material nhân vật còn BLEND; origin nhân vật lệch 2.6–2.7 cm.
-- Chưa có bằng chứng license MakeHuman lưu trong repo; THIRD_PARTY.md chưa có dòng cho hai GLB.
+- Chưa có bằng chứng license MakeHuman lưu trong repo; THIRD_PARTY.md đã có dòng cho ba GLB nhưng ghi "chưa xác minh".

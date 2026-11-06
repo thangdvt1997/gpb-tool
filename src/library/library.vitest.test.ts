@@ -86,7 +86,8 @@ describe('query', () => {
   });
   it('lọc loại, tag, giấy phép', () => {
     expect(filterItems(lib, { kinds: ['character'] }).every((i) => i.kind === 'character')).toBe(true);
-    expect(filterItems(lib, { licenses: ['cc0-1.0'] }).length).toBe(2);
+    // Ba nhân vật MPFB trong manifest (nam, nữ, chibi) là CC0.
+    expect(filterItems(lib, { licenses: ['cc0-1.0'] }).length).toBe(3);
     expect(filterItems(lib, { tags: ['fire'] }).map((i) => i.id)).toEqual(['prop.fire']);
   });
   it('onlyUsable loại mục hỏng', () => {

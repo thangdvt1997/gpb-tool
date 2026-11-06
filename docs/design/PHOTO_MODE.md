@@ -1,6 +1,6 @@
 # Chế độ chụp ảnh (TASK 16, phần lõi)
 
-Trạng thái: lõi tính toán và component chụp đã viết; CHƯA mount, CHƯA chạy trên trình duyệt, CHƯA chạy tsc.
+Trạng thái: lõi + UI (camera tự do, preset, FOV/nghiêng, lưới, hẹn giờ, 1x/2x) đã viết và qua tsc/vitest; CHƯA chạy trên trình duyệt thật.
 
 ## Thành phần (src/photo)
 - `framing.ts`: tỷ lệ, vùng cắt giữa khung, kích thước ra có chặn giới hạn, lưới bố cục, tiêu cự <-> FOV, phát hiện ảnh trống. Thuần.
@@ -22,3 +22,19 @@ Trạng thái: lõi tính toán và component chụp đã viết; CHƯA mount, C
 
 ## Test
 `node --test src/photo/photo.test.mjs` (11 test phần thuần).
+
+## Bổ sung (hoàn thiện TASK 16)
+- `photoLogic.ts` (thuần, có test vitest): `clampToOfficeBoxes` kẹp camera vào hợp các hộp chữ L (`OFFICE_L_RECTS`) + dải độ cao, có lề 0,3 m; `computePresetPose` (chân dung, toàn thân, góc rộng, từ trên xuống); `lookAngles/applyLook`; `moveFromKeys/scaleMove`; `computeScaledBuffer` (1x/2x chặn theo maxTextureSize và 16 triệu pixel); `nextCountdown`; `tiltToRadians`.
+- Camera tự do: WASD di chuyển, Q/E xuống/lên, Shift nhanh, kéo chuột trên canvas để xoay. "Không xuyên tường" nghĩa là kẹp vào hộp chữ L, KHÔNG raycast mesh nên vẫn có thể xuyên đồ nội thất.
+- Preset đặt camera tự do quanh nhân vật rồi cho phép chỉnh tiếp.
+- Lưới 1/3, khung tỷ lệ là lớp DOM phủ lên canvas nên không lọt vào ảnh; HUD ẩn bằng `usePhotoHudHidden`.
+- Hẹn giờ 3/10 s; Esc khi đang đếm sẽ hủy đếm, Esc lần nữa mới thoát.
+- Cờ cho App: `isPhotoControlLocked()`, `isPhotoFlying()`, `usePhotoControlLocked()` (export từ `src/photo`). `PhotoPanel` đã gọi `setPaused(true)` khi bật.
+
+## Cách chụp đúng với R3F
+R3F tạo WebGLRenderer với `preserveDrawingBuffer: false`, nên buffer bị xóa sau khi trình duyệt hiển thị khung; gọi `toBlob` ở thời điểm tùy ý sẽ ra ảnh đen. Cách làm: trong một tác vụ đồng bộ, (1) nếu 2x thì `gl.setPixelRatio(ratio * k)` (không đổi style CSS), (2) `gl.render(scene, camera)`, (3) `drawImage` vùng cắt sang canvas 2D, (4) khôi phục pixel ratio. Trình duyệt chưa kịp hiển thị khung phóng to. Không bật `preserveDrawingBuffer` để khỏi tốn hiệu năng cả phiên.
+
+## Giới hạn mới
+- Nếu cảnh dùng EffectComposer/hậu kỳ, `gl.render` trực tiếp bỏ qua hậu kỳ (chưa kiểm).
+- Chọn pose task 15, orbit chuột cho chế độ bám nhân vật chưa làm.
+- Chưa kiểm thử trên trình duyệt: bay, kéo chuột, 2x ở màn hình lớn, hẹn giờ.

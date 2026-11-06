@@ -12,6 +12,7 @@ import {
 } from './cameraModes';
 import { buildPhotoFileName, buildPhotoMetadata, formatInfo, type PhotoCameraKind, type PhotoFormat, type PhotoMetadata } from './filename';
 import { aspectRatio, clampFov, computeCropRect, computeOutputSize, isBlankPixels, type AspectId } from './framing';
+import { computeScaledBuffer, type CaptureScale } from './photoLogic';
 
 export interface FreeCam {
   position: Vec3;
@@ -26,6 +27,11 @@ export interface CaptureOptions {
   format: PhotoFormat;
   /** 0..1, chỉ cho JPEG. */
   quality?: number;
+  /**
+   * Hệ số nhân độ phân giải so với buffer hiện tại (1x/2x). Có giá trị này thì `longEdge` bị bỏ qua:
+   * buffer được vẽ lại ở kích thước lớn (bị chặn bởi giới hạn GPU/bộ nhớ) rồi cắt đúng tỷ lệ.
+   */
+  scale?: CaptureScale;
   hudHidden: boolean;
 }
 
@@ -48,6 +54,8 @@ export interface PhotoCaptureProps {
   bounds: Bounds;
   /** FOV dọc (độ) khi chụp. Bỏ trống thì giữ FOV hiện tại. */
   fov?: number;
+  /** Độ nghiêng khung (roll, rad). Chỉ ảnh hưởng camera trong chế độ chụp. */
+  roll?: number;
   apiRef: MutableRefObject<PhotoCaptureApi | null>;
 }
 
@@ -58,7 +66,7 @@ const tmp = new Vector3();
  * Đặt BÊN TRONG <Canvas>, SAU component điều khiển camera chính (useFrame cùng ưu tiên chạy theo thứ tự đăng ký).
  * Không ghi vào playerPose hay trạng thái nhân vật. Không dùng useFrame ưu tiên dương (tránh tắt render tự động của R3F).
  */
-export function PhotoCapture({ active, mode, follow, fixed, free, bounds, fov, apiRef }: PhotoCaptureProps): null {
+export function PhotoCapture({ active, mode, follow, fixed, free, bounds, fov, roll = 0, apiRef }: PhotoCaptureProps): null {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -102,6 +110,7 @@ export function PhotoCapture({ active, mode, follow, fixed, free, bounds, fov, a
       tmp.set(q.x + Math.sin(free.yaw) * cp, q.y - Math.sin(free.pitch), q.z + Math.cos(free.yaw) * cp);
       camera.lookAt(tmp);
     }
+    if (roll !== 0) camera.rotateZ(roll);
     const f = mode === 'fixed' && fixed ? fixed.fov : fov;
     if (f !== undefined && camera instanceof PerspectiveCamera) {
       const next = clampFov(f);
@@ -118,18 +127,38 @@ export function PhotoCapture({ active, mode, follow, fixed, free, bounds, fov, a
         if (busy.current) return { ok: false, error: 'busy' };
         busy.current = true;
         let out: HTMLCanvasElement | null = null;
+        const prevRatio = gl.getPixelRatio();
+        let resized = false;
         try {
-          // Vẽ lại ngay để buffer còn nội dung (preserveDrawingBuffer mặc định false); toBlob chụp đồng bộ ngay sau đó.
-          gl.render(scene, camera);
           const src = gl.domElement;
+          let reduced = '';
+          if (o.scale) {
+            // Vẽ lại ở độ phân giải lớn: đổi pixel ratio (không đụng style CSS), render, rồi đọc NGAY trong cùng tác vụ
+            // nên trình duyệt chưa kịp hiển thị khung phóng to. Khôi phục ở finally.
+            const sb = computeScaledBuffer(src.width, src.height, o.scale, {
+              maxTexture: gl.capabilities.maxTextureSize,
+              maxPixels: MAX_PIXELS,
+            });
+            if (!sb) return { ok: false, error: 'no-size' };
+            if (Math.abs(sb.scale - 1) > 1e-6) {
+              gl.setPixelRatio(prevRatio * sb.scale);
+              resized = true;
+            }
+            reduced = sb.reduced ? sb.reason : '';
+          }
+          // Vẽ lại ngay để buffer còn nội dung (preserveDrawingBuffer mặc định false); drawImage đọc đồng bộ ngay sau đó.
+          gl.render(scene, camera);
           const ratio = aspectRatio(o.aspect, src.width, src.height);
           const crop = computeCropRect(src.width, src.height, ratio);
           if (!crop) return { ok: false, error: 'no-crop' };
-          const size = computeOutputSize(ratio, o.longEdge, {
-            maxTexture: gl.capabilities.maxTextureSize,
-            maxPixels: MAX_PIXELS,
-            maxLongEdge: Math.max(crop.w, crop.h),
-          });
+          // Chế độ scale: xuất đúng vùng cắt (không lấy mẫu lại); chế độ cũ: theo cạnh dài yêu cầu.
+          const size = o.scale
+            ? { width: crop.w, height: crop.h, reduced: reduced !== '', reason: (reduced || 'none') as 'none' | 'source' | 'texture' | 'pixels' }
+            : computeOutputSize(ratio, o.longEdge, {
+                maxTexture: gl.capabilities.maxTextureSize,
+                maxPixels: MAX_PIXELS,
+                maxLongEdge: Math.max(crop.w, crop.h),
+              });
           if (!size) return { ok: false, error: 'no-size' };
           out = document.createElement('canvas');
           out.width = size.width;
@@ -180,6 +209,7 @@ export function PhotoCapture({ active, mode, follow, fixed, free, bounds, fov, a
           if (e instanceof DOMException && e.name === 'SecurityError') return { ok: false, error: 'tainted' };
           return { ok: false, error: 'encode' };
         } finally {
+          if (resized) gl.setPixelRatio(prevRatio);
           if (out) {
             out.width = 0;
             out.height = 0;

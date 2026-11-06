@@ -5,3 +5,5 @@ export { downloadBlob, createPreview } from './download';
 export { usePhotoHudHidden, DEFAULT_HUD_SELECTORS } from './usePhotoHud';
 export { PhotoCapture } from './PhotoCapture';
 export type { PhotoCaptureApi, PhotoCaptureProps, CaptureOptions, CaptureResult, FreeCam } from './PhotoCapture';
+export * from './photoLogic';
+export { isPhotoControlLocked, isPhotoFlying, usePhotoControlLocked } from './PhotoMode';
