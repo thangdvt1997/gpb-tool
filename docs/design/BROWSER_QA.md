@@ -168,3 +168,7 @@ Mỗi nút: mở bằng chuột (như chủ dự án), đóng bằng Esc và b�
 | Trợ giúp | dialog | ĐẠT | ĐẠT | (không có aria-expanded) | có |
 
 Trước khi sửa, cùng spec trên bản chưa có `useEscapeClose`: Thư viện, Hồ sơ, Sao lưu FAIL ở bước Esc khi mở bằng chuột (panel vẫn hiện). Spec 30-a11y-full 13/13 PASS cùng lượt (27/27). Bản sao spec trong repo: tests/e2e/31-hud-expanded.spec.ts.
+
+## Production 2026-11-07 — commit ed28d05 (deploy 22:22 UTC) và 70715a8 (deploy 23:31 UTC), watcher root
+
+playwright.prod.config.ts (02-scene-mock, 20-controls, prod/30-hanging, 31-hud-expanded): **18/18 PASS** trên cả hai bản. 31-hud-expanded trên production: 7 nút HUD × (Esc, nút đóng), aria-expanded="false" và focus về nút sau khi đóng. Phiên giả lập phía trình duyệt (mockSession), không đăng nhập production. Kiểm lại bằng NVDA thật: chờ chủ dự án.

@@ -191,6 +191,10 @@ Hạ tầng e2e: preview 4173 mồ côi (chạy 8 giờ, thiếu proxy /api/worl
 |---|---|---|---|---|---|
 | 478bdc8 | FAIL (10-panels: Sao lưu đổi role; focus Phòng thay đồ chậm dưới tải; 29-multiplayer do preview mồ côi) | — | — | — | — |
 | ed28d05 | **PASS** 22:00 (e2e 78 + đăng nhập thật) | có | /home/cc/bundles/gpb-ed28d05.bundle | 22:22 UTC (watcher root) | **18/18 PASS** (02-scene-mock, 20-controls, 30-hanging, 31-hud-expanded 14 ca) |
+| aca14c6 | FAIL (29-multiplayer: 33-voice chạy song song cùng hai tài khoản test, world thay phiên 4409) | — | — | — | — |
+| 70715a8 | **PASS** 23:10 (e2e 82, gồm thoại 4 và nhiều người 5, + đăng nhập thật) | có | /home/cc/bundles/gpb-70715a8.bundle | 23:31 UTC (watcher root) | **18/18 PASS** |
+
+70715a8 gồm thoại 25b phía web (nút mic chỉ hiện sau cờ ?world=1; production chưa có service world nên chưa dùng được).
 
 Việc cần root (chủ dự án hoặc root chạy một lần, sau khi commit có scripts/deploy-svc.sh đã PASS):
 `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (sao lưu /root/backup-gpb-svc-<TS>, tag auth/gateway backup, build và up auth, world, gateway, tự kiểm). Thoại cần thêm TURN_SECRET (từ /home/cc/gpb-turn/.env) và TURN_URLS vào env của service world. Rollback: `sudo bash scripts/rollback-svc.sh <TS>`.
