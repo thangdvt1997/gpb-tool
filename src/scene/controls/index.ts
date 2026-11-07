@@ -5,7 +5,7 @@ import { getEmoteState, notifyMovement } from '../../emotes/player';
 import { isInternalEmote } from '../../emotes/library';
 import { playerLocomotion, stepHeadLook, stepLocomotion } from '../../avatar/animation';
 import { FLOOR, OUTER_WALL, PLAYER_RADIUS, type Rect } from '../layout';
-import { CAM, createCameraRig, useGtaCamera, type CameraFrame, type CameraRig } from './gtaCamera';
+import { CAM, cameraProbe, createCameraRig, useGtaCamera, type CameraFrame, type CameraRig } from './gtaCamera';
 import { createMotionInput, createMotionState, haltMotion, stepMotion, wrapAngle, type MotionState } from './gtaMotion';
 import { getControls, setFirstPerson, setSeated, takeSeatRequest, type SeatSpot } from './session';
 import { useGtaControls, useSessionHotkeys, type MoveInput } from './useGtaControls';
@@ -73,11 +73,15 @@ export interface ControlsDebug {
   live: boolean;
   grounded: boolean;
   seatPending: boolean;
+  /** Camera khung trước: điểm nhìn, vị trí, tỷ lệ kéo lại do biển treo (1 = không chặn). */
+  cam: { eyeX: number; eyeY: number; eyeZ: number; x: number; y: number; z: number; hangingPull: number };
+  /** Ghi vào đây để dịch chuyển nhân vật ở khung kế tiếp (chỉ cho Playwright). yaw: hướng thân và camera (rad). */
+  teleport: { x: number; z: number; yaw: number } | null;
 }
 const debugHook: ControlsDebug | null = (() => {
   if (typeof window === 'undefined') return null;
   if (new URLSearchParams(window.location.search).get('debug') !== 'controls') return null;
-  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false };
+  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false, cam: { ...cameraProbe }, teleport: null };
   (window as unknown as { __gpbControls?: ControlsDebug }).__gpbControls = h;
   return h;
 })();
@@ -239,6 +243,14 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       setSeated(true);
     }
 
+    if (debugHook !== null && debugHook.teleport !== null && seated.current === null) {
+      const tp = debugHook.teleport;
+      debugHook.teleport = null;
+      pos.set(tp.x, 0, tp.z);
+      yawRef.current = motion.yaw = tp.yaw;
+      rig.yaw = tp.yaw;
+      haltMotion(motion);
+    }
     const mv = controls.getMoveInput(scratchMove);
     pad.getMoveInput(padMove);
     if (Math.abs(padMove.forward) > Math.abs(mv.forward)) mv.forward = padMove.forward;
@@ -348,6 +360,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       debugHook.live = live;
       debugHook.grounded = motion.grounded;
       debugHook.seatPending = pendingSeat.current !== null;
+      Object.assign(debugHook.cam, cameraProbe);
     }
     const sitW = playerLocomotion.sit;
     camFrame.firstPerson = ctl.firstPerson;

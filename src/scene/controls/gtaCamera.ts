@@ -271,6 +271,12 @@ export function clearRayLength(
 /** Tia nhìn dùng lại mỗi khung hình (không cấp phát). */
 const SIGHT = { baseY: 0, rise: 0, top: 0 };
 
+/**
+ * Số đo camera của khung gần nhất (góc nhìn thứ ba): điểm nhìn, vị trí camera và tỷ lệ kéo lại do biển treo
+ * (1 = không bị biển chặn). Chỉ ghi số, không cấp phát; ?debug=controls đọc để kiểm tra trình duyệt.
+ */
+export const cameraProbe = { eyeX: 0, eyeY: 0, eyeZ: 0, x: 0, y: 0, z: 0, hangingPull: 1 };
+
 export interface CameraFrame {
   /** Góc nhìn thứ nhất. */
   firstPerson: boolean;
@@ -398,6 +404,7 @@ export function updateGtaCamera(
   let pz = fz + hz * h;
   // Biển treo (băng rôn, bảng khu): kéo camera lại trước biển nếu đoạn nhìn cắt qua nó.
   const hs = hangingCameraScale(fx, eyeY, fz, px, py, pz);
+  cameraProbe.hangingPull = hs;
   if (hs < 1) {
     px = fx + (px - fx) * hs;
     py = eyeY + (py - eyeY) * hs;
@@ -413,6 +420,12 @@ export function updateGtaCamera(
   }
   camera.position.set(px, py, pz);
   camera.lookAt(fx, eyeY, fz);
+  cameraProbe.eyeX = fx;
+  cameraProbe.eyeY = eyeY;
+  cameraProbe.eyeZ = fz;
+  cameraProbe.x = px;
+  cameraProbe.y = py;
+  cameraProbe.z = pz;
 }
 
 function isTyping(t: EventTarget | null): boolean {
