@@ -414,7 +414,9 @@ function checkFacts(ctx: Ctx, a: AssetEntry, base: string, f: GlbFacts, rig: Ass
   if (typeof a.bytes === 'number' && f.bytes !== a.bytes) {
     push(ctx, 'error', 'BYTES_MISMATCH', id, `${base}.bytes`, `File ${f.bytes} byte, manifest ghi ${a.bytes}.`, 'Cập nhật bytes cùng hash.');
   }
-  if (a.bounds && Array.isArray(a.bounds.min) && Array.isArray(a.bounds.max)) {
+  // File không có hình học (animation thuần): boundsMin/Max không hữu hạn, không có gì để so với bounds khai báo.
+  const fileHasGeometry = f.boundsMin.every(Number.isFinite) && f.boundsMax.every(Number.isFinite);
+  if (fileHasGeometry && a.bounds && Array.isArray(a.bounds.min) && Array.isArray(a.bounds.max)) {
     for (let k = 0; k < 3; k++) {
       if (!near(a.bounds.min[k], f.boundsMin[k], 0.002) || !near(a.bounds.max[k], f.boundsMax[k], 0.002)) {
         push(ctx, 'error', 'BOUNDS_MISMATCH', id, `${base}.bounds`, `Bounds trục ${'xyz'[k]} khác file (file: ${f.boundsMin[k].toFixed(3)}..${f.boundsMax[k].toFixed(3)}).`, 'Ghi lại bounds theo --print-facts.');

@@ -6,7 +6,10 @@
  *   hand_l / hand_r : giữa xương hand và xương middle_01 cùng bên (tâm lòng bàn tay).
  *   head            : đỉnh sọ = y lớn nhất của đỉnh mesh trong vùng |x|<0.12 phía trên xương head; x, z theo xương head.
  *   back            : mặt lưng = z nhỏ nhất của đỉnh mesh quanh cao độ spine_03 (|dy|<0.04, |x|<0.1); x, y theo xương spine_03.
- * rotationDeg không đo (để 0): chỉ calibrated = true cho vị trí.
+ *   neck            : giữa thân cổ = trung điểm xương neck_01 và head (vòng cổ, khăn, cà vạt).
+ *   foot_l / foot_r : đế chân = giữa xương foot và ball theo x, z; y = đỉnh mesh thấp nhất quanh điểm đó (phụ kiện bàn chân, hiệu ứng bước).
+ * rotationDeg (Euler XYZ, độ, cục bộ theo xương) là phép xoay đưa khung socket về trùng trục mô hình ở tư thế nghỉ
+ * (+Y lên, +Z phía trước): R_cục_bộ = nghịch đảo xoay thế giới của xương. Nhờ vậy phụ kiện dựng thẳng/quay mặt trước khi tay ở tư thế nghỉ.
  *
  *   node scripts/assets/measure-sockets.mjs public/models/male_real.glb [--json]
  */
@@ -66,6 +69,27 @@ const apply = (m, p) => [
   m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14],
 ];
 const round = (v) => v.map((x) => Math.round(x * 10000) / 10000 + 0);
+const roundDeg = (v) => v.map((x) => Math.round(x * 100) / 100 + 0);
+/** Euler XYZ (độ) của nghịch đảo phần xoay trong ma trận thế giới của xương (chuẩn hóa bỏ scale), cùng quy ước three.js Euler 'XYZ'. */
+export function inverseRotationDeg(m) {
+  const cols = [0, 4, 8].map((o) => {
+    const l = Math.hypot(m[o], m[o + 1], m[o + 2]) || 1;
+    return [m[o] / l, m[o + 1] / l, m[o + 2] / l];
+  });
+  // Nghịch đảo của ma trận xoay = chuyển vị: hàng r của R^T là cột r của R.
+  const t = [...cols[0], ...cols[1], ...cols[2]]; // hàng-chính
+  const [m11, m12, m13, , , m23, , , m33] = t;
+  const y = Math.asin(Math.max(-1, Math.min(1, m13)));
+  let x, z;
+  if (Math.abs(m13) < 0.9999999) {
+    x = Math.atan2(-m23, m33);
+    z = Math.atan2(-m12, m11);
+  } else {
+    x = Math.atan2(t[7], t[4]);
+    z = 0;
+  }
+  return roundDeg([x, y, z].map((r) => (r * 180) / Math.PI));
+}
 
 export function measureSockets(file) {
   const { json: j, bin } = parseGlb(file);
@@ -117,6 +141,18 @@ export function measureSockets(file) {
   let backZ = Infinity;
   for (const v of verts) if (Math.abs(v[1] - sp[1]) < 0.04 && Math.abs(v[0]) < 0.1) backZ = Math.min(backZ, v[2]);
   out.back = { bone: 'spine_03', offset: toLocal('spine_03', [sp[0], sp[1], backZ]) };
+  const np = pos('neck_01');
+  out.neck = { bone: 'neck_01', offset: toLocal('neck_01', [(np[0] + hp[0]) / 2, (np[1] + hp[1]) / 2, (np[2] + hp[2]) / 2]) };
+  for (const side of ['l', 'r']) {
+    const f = pos(`foot_${side}`);
+    const b = pos(`ball_${side}`);
+    const cx = (f[0] + b[0]) / 2;
+    const cz = (f[2] + b[2]) / 2;
+    let soleY = Infinity;
+    for (const v of verts) if (Math.abs(v[0] - cx) < 0.04 && Math.abs(v[2] - cz) < 0.08 && v[1] < f[1] + 0.02) soleY = Math.min(soleY, v[1]);
+    out[`foot_${side}`] = { bone: `foot_${side}`, offset: toLocal(`foot_${side}`, [cx, soleY, cz]) };
+  }
+  for (const v of Object.values(out)) v.rotationDeg = inverseRotationDeg(world(bone(v.bone)));
   return out;
 }
 

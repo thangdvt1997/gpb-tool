@@ -68,7 +68,10 @@ export function readGlbFacts(file) {
       nodeTransformsIgnored.push(n.name ?? '(không tên)');
     }
   }
-  const joints = (j.skins?.[0]?.joints ?? []).map((i) => j.nodes[i]?.name ?? `#${i}`);
+  // File chỉ có cây xương + animation (không skin, không mesh): coi mọi node có tên là xương để kiểm rigProfile.
+  const joints = j.skins?.[0]
+    ? j.skins[0].joints.map((i) => j.nodes[i]?.name ?? `#${i}`)
+    : (j.meshes ?? []).length === 0 ? (j.nodes ?? []).map((n) => n.name).filter(Boolean) : [];
   return {
     bytes: buf.length,
     sha256: crypto.createHash('sha256').update(buf).digest('hex'),
