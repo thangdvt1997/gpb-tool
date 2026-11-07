@@ -12,6 +12,10 @@ RUN npm install --omit=dev --no-audit --no-fund \
 
 COPY src ./src
 
+# Thư mục dữ liệu thuộc user node; named volume world-data kế thừa quyền này khi tạo lần đầu.
+RUN mkdir -p /data && chown -R node:node /data
+VOLUME ["/data"]
+
 USER node
 EXPOSE 3011
 
