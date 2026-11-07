@@ -38,6 +38,8 @@ export const TUCK_BELLY_LIMIT = 0.7;
 
 /** Mức hỗ trợ vỏ của một món trên một kiểu tạo hình. */
 export function garmentSupport(def: Pick<GarmentDef, 'group' | 'kind'>, style: BodyStyle): { level: SupportLevel; reason: string } {
+  // Mũ không dùng vỏ từ thân mà là mesh procedural gắn xương head (accessoryBuild.ts).
+  if (def.group === 'hat') return { level: 'supported', reason: '' };
   const spec = shellClassOf(def);
   if (!spec || !spec.part) {
     return { level: 'unsupported', reason: spec?.note || 'Chưa có lớp vỏ cho loại món này, cần bổ sung mesh.' };

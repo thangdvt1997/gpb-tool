@@ -3,11 +3,21 @@
  * không chứa React hay three, nên test được. Mọi thay đổi trang phục đi qua avatar/outfit/compat để giữ bộ hợp lệ
  * trước đó khi tổ hợp không hỗ trợ (TASK 04 mục 7).
  */
-import { GARMENT_GROUP_LABELS, getGarment } from '../fashion/catalog';
-import { cloneLook, DEFAULT_HEIGHT_CM } from '../fashion/defaults';
+import {
+  ACCESSORY_SIZE_MAX,
+  ACCESSORY_SIZE_MIN,
+  GARMENT_GROUP_LABELS,
+  MAX_RINGS,
+  PATTERN_TEXT_MAX,
+  getAccessory,
+  getGarment,
+  getPattern,
+  type AccessoryCatalogSlot,
+} from '../fashion/catalog';
+import { cloneLook, DEFAULT_HEIGHT_CM, wearAcc } from '../fashion/defaults';
 import { GARMENT_PALETTE, snapToPalette } from '../fashion/palette';
 import { getPresetLook } from '../fashion/presets';
-import { validate } from '../fashion/rules';
+import { MAX_PATTERNS_PER_GARMENT, validate } from '../fashion/rules';
 import {
   checkOutfit,
   hasBlockingIssue,
@@ -24,19 +34,27 @@ import {
   type BodyStyle,
   type CharacterLook,
   type Fit,
+  type AccessorySlot,
+  type GarmentPattern,
   type GarmentZone,
+  type HeadphoneWear,
   type Material,
+  type PhoneState,
+  type RingFinger,
+  type Side,
   type OutfitSlot,
 } from '../fashion/types';
 import { convertBodyStyle, convertFrame, resetSliders, setSliderValue } from './shapeSliders';
 
-export type WardrobeTab = 'presets' | 'outfit' | 'color' | 'shape' | 'style';
+export type WardrobeTab = 'presets' | 'outfit' | 'color' | 'shape' | 'style' | 'acc' | 'pattern';
 export const WARDROBE_TABS: readonly { id: WardrobeTab; label: string; key: string }[] = [
   { id: 'presets', label: 'Bộ mẫu', key: '1' },
   { id: 'outfit', label: 'Trang phục', key: '2' },
   { id: 'color', label: 'Màu', key: '3' },
   { id: 'shape', label: 'Hình thể', key: '4' },
   { id: 'style', label: 'Kiểu tạo hình', key: '5' },
+  { id: 'acc', label: 'Phụ kiện', key: '6' },
+  { id: 'pattern', label: 'Họa tiết', key: '7' },
 ];
 
 /** Số bước hoàn tác tối đa. */
@@ -74,6 +92,13 @@ export type WardrobeAction =
   | { type: 'style'; style: BodyStyle }
   | { type: 'frame'; frame: BodyFrame }
   | { type: 'preset'; id: string }
+  | { type: 'acc'; slot: AccessorySlot; itemId: string | null }
+  | { type: 'accOpt'; slot: AccessorySlot; patch: AccessoryPatch }
+  | { type: 'ring'; op: 'add'; itemId: string; hand: Side; finger: RingFinger }
+  | { type: 'ring'; op: 'remove'; index: number }
+  | { type: 'patternAdd'; slot: OutfitSlot; patternId: string }
+  | { type: 'patternSet'; slot: OutfitSlot; index: number; patch: PatternPatch }
+  | { type: 'patternRemove'; slot: OutfitSlot; index: number }
   | { type: 'confirmPending' }
   | { type: 'dismissPending' }
   | { type: 'undo' }
@@ -81,6 +106,31 @@ export type WardrobeAction =
   | { type: 'resetAll' }
   | { type: 'compare'; on: boolean }
   | { type: 'clearNotice' };
+
+export interface AccessoryPatch {
+  color?: string;
+  material?: Material;
+  size?: number;
+  side?: Side | 'both';
+  state?: PhoneState;
+  wear?: HeadphoneWear;
+}
+
+export type PatternPatch = Partial<Pick<GarmentPattern, 'color' | 'scale' | 'rotation' | 'offsetX' | 'offsetY' | 'text' | 'zone'>>;
+
+const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+
+/** Ghi look mới qua validate (bỏ phụ kiện xung đột như cà vạt không sơ mi) rồi vào lịch sử; thông báo lý do nếu có. */
+function commitAccessory(s: WardrobeState, next: CharacterLook): WardrobeState {
+  const v = validate(next);
+  const warns = v.warnings.filter((w) => w.code === 'slot_conflict').map((w) => w.message);
+  const base = pushHistory(s, v.look);
+  return { ...base, notice: warns.length ? { text: warns.join(' '), kind: 'warn', issues: [] } : null };
+}
+
+function fail(s: WardrobeState, text: string): WardrobeState {
+  return { ...s, notice: { text, kind: 'error', issues: [] } };
+}
 
 export function initWardrobe(look: CharacterLook): WardrobeState {
   const clean = validate(look).look;
@@ -243,6 +293,97 @@ function step(s: WardrobeState, a: WardrobeAction): WardrobeState {
       const next = pushHistory(s, r.look);
       return { ...next, notice: r.changes.length ? { text: r.changes.join(' '), kind: 'info', issues: [] } : null };
     }
+    case 'acc': {
+      const next = cloneLook(s.draft);
+      const store = next.accessories as unknown as Record<string, unknown>;
+      if (a.itemId === null) {
+        if (!store[a.slot]) return s;
+        store[a.slot] = null;
+        return commitAccessory(s, next);
+      }
+      const def = getAccessory(a.itemId);
+      if (!def || def.slot !== (a.slot as AccessoryCatalogSlot)) return fail(s, 'Phụ kiện không thuộc ô này.');
+      const base = wearAcc(a.itemId);
+      store[a.slot] = a.slot === 'phone' ? { ...base, state: 'held' } : a.slot === 'headphones' ? { ...base, wear: 'on-ears' } : base;
+      return commitAccessory(s, next);
+    }
+    case 'accOpt': {
+      const next = cloneLook(s.draft);
+      const cur = (next.accessories as unknown as Record<string, Record<string, unknown> | null>)[a.slot];
+      if (!cur) return s;
+      const def = getAccessory(String(cur.itemId));
+      if (!def) return s;
+      const p = a.patch;
+      if (p.material !== undefined) {
+        if (!def.materials.includes(p.material)) return fail(s, `Chất liệu ${p.material} không hợp lệ cho "${def.name}".`);
+        cur.material = p.material;
+      }
+      if (p.color !== undefined) cur.color = snapToPalette(p.color, GARMENT_PALETTE, String(cur.color));
+      if (p.size !== undefined) cur.size = clamp(p.size, ACCESSORY_SIZE_MIN, ACCESSORY_SIZE_MAX);
+      if (p.side !== undefined) {
+        if (!def.sides.includes(p.side)) return fail(s, `"${def.name}" không đeo được bên này.`);
+        cur.side = p.side;
+      }
+      if (p.state !== undefined && a.slot === 'phone') cur.state = p.state;
+      if (p.wear !== undefined && a.slot === 'headphones') cur.wear = p.wear;
+      return { ...pushHistory(s, next), notice: null };
+    }
+    case 'ring': {
+      const next = cloneLook(s.draft);
+      if (a.op === 'remove') {
+        if (a.index < 0 || a.index >= next.accessories.rings.length) return s;
+        next.accessories.rings.splice(a.index, 1);
+        return { ...pushHistory(s, next), notice: null };
+      }
+      const def = getAccessory(a.itemId);
+      if (!def || def.slot !== 'ring') return fail(s, 'Không phải nhẫn.');
+      if (next.accessories.rings.length >= MAX_RINGS) return fail(s, `Tối đa ${MAX_RINGS} nhẫn.`);
+      if (next.accessories.rings.some((r) => r.hand === a.hand && r.finger === a.finger)) return fail(s, 'Ngón này đã có nhẫn.');
+      next.accessories.rings.push({ itemId: a.itemId, color: def.defaultColor, material: def.defaultMaterial, hand: a.hand, finger: a.finger });
+      return { ...pushHistory(s, next), notice: null };
+    }
+    case 'patternAdd': {
+      const worn = s.draft.outfit[a.slot];
+      const def = worn ? getGarment(worn.garmentId) : undefined;
+      const pat = getPattern(a.patternId);
+      if (!worn || !def || !pat) return fail(s, 'Ô này đang trống hoặc họa tiết không có.');
+      if (def.patternZones.length === 0) return fail(s, `"${def.name}" không cho đặt họa tiết.`);
+      if (worn.patterns.length >= MAX_PATTERNS_PER_GARMENT) return fail(s, `Tối đa ${MAX_PATTERNS_PER_GARMENT} họa tiết mỗi món.`);
+      const next = cloneLook(s.draft);
+      const zone = def.patternZones.includes('body') ? 'body' : def.patternZones[0];
+      next.outfit[a.slot]?.patterns.push({ patternId: pat.id, zone, color: '#1f2328', scale: 1, rotation: 0, offsetX: 0, offsetY: 0, text: pat.allowsText ? 'GP' : '' });
+      return { ...pushHistory(s, next), notice: null };
+    }
+    case 'patternSet': {
+      const worn = s.draft.outfit[a.slot];
+      const def = worn ? getGarment(worn.garmentId) : undefined;
+      if (!worn || !def || !worn.patterns[a.index]) return s;
+      const next = cloneLook(s.draft);
+      const w = next.outfit[a.slot];
+      const p = w?.patterns[a.index];
+      if (!w || !p) return s;
+      const q = a.patch;
+      if (q.zone !== undefined) {
+        if (!def.patternZones.includes(q.zone)) return fail(s, 'Vùng này không cho đặt họa tiết.');
+        p.zone = q.zone;
+      }
+      if (q.color !== undefined) p.color = snapToPalette(q.color, GARMENT_PALETTE, p.color);
+      if (q.scale !== undefined) p.scale = clamp(q.scale, 0.3, 3);
+      if (q.rotation !== undefined) p.rotation = clamp(q.rotation, -180, 180);
+      if (q.offsetX !== undefined) p.offsetX = clamp(q.offsetX, -1, 1);
+      if (q.offsetY !== undefined) p.offsetY = clamp(q.offsetY, -1, 1);
+      if (q.text !== undefined) p.text = getPattern(p.patternId)?.allowsText ? q.text.slice(0, PATTERN_TEXT_MAX) : '';
+      const key = `pattern:${a.slot}:${a.index}`;
+      if (s.coalesce === key) return { ...s, draft: next, redoStack: [], pending: null, notice: null };
+      return { ...pushHistory(s, next), notice: null, coalesce: key };
+    }
+    case 'patternRemove': {
+      const worn = s.draft.outfit[a.slot];
+      if (!worn || !worn.patterns[a.index]) return s;
+      const next = cloneLook(s.draft);
+      next.outfit[a.slot]?.patterns.splice(a.index, 1);
+      return { ...pushHistory(s, next), notice: null };
+    }
     case 'confirmPending': {
       if (!s.pending || s.pending.status !== 'needs-confirm') return s;
       return { ...pushHistory(s, s.pending.look), notice: null };
@@ -271,7 +412,7 @@ function step(s: WardrobeState, a: WardrobeAction): WardrobeState {
 /** Reducer: mọi hành động khác thanh trượt ngắt việc gộp lịch sử. */
 export function wardrobeReducer(s: WardrobeState, a: WardrobeAction): WardrobeState {
   const r = step(s, a);
-  if (a.type === 'slider' || r.coalesce === null) return r;
+  if (a.type === 'slider' || a.type === 'patternSet' || r.coalesce === null) return r;
   return { ...r, coalesce: null };
 }
 
@@ -313,7 +454,7 @@ export type KeyIntent =
   | { type: 'cancel' }
   | { type: 'resetView' };
 
-/** Phím tắt phòng thay đồ: Esc hủy, Ctrl+Enter xác nhận, Ctrl+Z/Y hoàn tác, 1-5 chuyển tab, V về góc nhìn chuẩn. */
+/** Phím tắt phòng thay đồ: Esc hủy, Ctrl+Enter xác nhận, Ctrl+Z/Y hoàn tác, 1-7 chuyển tab, V về góc nhìn chuẩn. */
 export function wardrobeKey(k: KeyInfo): KeyIntent | null {
   const mod = !!(k.ctrlKey || k.metaKey);
   const key = k.key.toLowerCase();

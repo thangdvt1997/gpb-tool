@@ -163,7 +163,7 @@ const TABLE: readonly ShellClass[] = [
     support: 'limited',
     note: 'Giày cao gót dùng vỏ bàn chân phẳng; gót cao chưa có hình học.',
   }),
-  // Mũ: chưa có mesh rời nên không dựng vỏ từ thân.
+  // Mũ: không dựng vỏ từ thân; dựng mesh procedural gắn xương head (accessoryBuild.ts).
   cls('hat:cap', null, { layer: 'accessory', order: 80, note: 'Mũ cần mesh rời gắn xương head; vỏ từ thân không dựng được.' }),
   cls('hat:beanie', null, { layer: 'accessory', order: 80, note: 'Mũ cần mesh rời gắn xương head.' }),
   cls('hat:bucket', null, { layer: 'accessory', order: 80, note: 'Mũ cần mesh rời gắn xương head.' }),

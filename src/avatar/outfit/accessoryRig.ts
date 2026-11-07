@@ -13,19 +13,7 @@ import { classifyBody, type BodyData } from './regions';
 
 /** Dữ liệu thân với morph thân đã cộng vào vị trí đỉnh (đo phụ kiện theo hình thể thật của look). */
 export function morphedBodyData(mesh: THREE.SkinnedMesh, weights: Readonly<Record<BodyMorphName, number>> | null): BodyData {
-  const data0 = bodyDataFromMesh(mesh);
-  // bodyDataFromMesh dùng bindMatrixInverse; với bindMode 'attached' ma trận đó bị three cập nhật theo matrixWorld hiện tại
-  // (có scale chiều cao), không còn là nghịch đảo của bindMatrix. Tính lại vị trí xương theo bindMatrix gốc.
-  const bindInv = mesh.bindMatrix.clone().invert();
-  const bonePos: Record<string, [number, number, number]> = {};
-  const m = new THREE.Matrix4();
-  const v = new THREE.Vector3();
-  mesh.skeleton.bones.forEach((b, i) => {
-    m.copy(mesh.skeleton.boneInverses[i]).invert().premultiply(bindInv);
-    v.setFromMatrixPosition(m);
-    bonePos[b.name] = [v.x, v.y, v.z];
-  });
-  const data: BodyData = { ...data0, bonePos };
+  const data = bodyDataFromMesh(mesh);
   const geo = mesh.geometry;
   const dict = mesh.morphTargetDictionary;
   const targets = geo.morphAttributes.position;
