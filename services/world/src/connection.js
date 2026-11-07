@@ -1,6 +1,6 @@
 // Xử lý tin nhắn của một kết nối đã xác thực. Thuần: không import `ws`, test bằng kết nối giả.
 
-import { CLOSE, MAX_FRAME_BYTES, MSG_RATE } from './config.js';
+import { CLOSE, MAX_FRAME_BYTES, MSG_RATE, VOICE_MAX_FRAME_BYTES } from './config.js';
 import { createRateLimiter } from './rateLimit.js';
 
 /**
@@ -24,18 +24,23 @@ export function createConnectionHandler({ world, hub, client, now = Date.now }) 
     if (isBinary) return closeWith(CLOSE.UNSUPPORTED, 'binary_not_supported');
     const size = typeof data === 'string' ? Buffer.byteLength(data) : data.length;
     // `ws` đã chặn bằng maxPayload (đóng 1009); kiểm thêm ở đây để không phụ thuộc cấu hình transport.
-    if (size > MAX_FRAME_BYTES) return closeWith(1009, 'frame_too_large');
+    if (size > VOICE_MAX_FRAME_BYTES) return closeWith(1009, 'frame_too_large');
     if (!msgLimiter.take('c', now()).ok) return closeWith(CLOSE.POLICY, 'flood');
 
     let msg;
     try {
       msg = JSON.parse(typeof data === 'string' ? data : data.toString('utf8'));
     } catch {
+      if (size > MAX_FRAME_BYTES) return closeWith(1009, 'frame_too_large');
       return hub.send(client, { type: 'error', code: 'invalid_json' });
     }
     if (!msg || typeof msg !== 'object' || Array.isArray(msg)) {
+      if (size > MAX_FRAME_BYTES) return closeWith(1009, 'frame_too_large');
       return hub.send(client, { type: 'error', code: 'invalid_message' });
     }
+
+    // Khung 1-8 KB chỉ hợp lệ với tin tín hiệu thoại; mọi loại khác giữ trần 1 KB.
+    if (size > MAX_FRAME_BYTES && msg.type !== 'voice.signal') return closeWith(1009, 'frame_too_large');
 
     switch (msg.type) {
       case 'pose':

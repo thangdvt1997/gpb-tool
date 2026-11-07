@@ -15,6 +15,7 @@ import {
   TICK_MS,
 } from './config.js';
 import { createChat, CHAT } from './chat.js';
+import { createVoice } from './voice.js';
 import { createLeaseStore, parseResource } from './leases.js';
 import { sanitizeAppearance } from './appearance.js';
 import { PoseError, parsePose } from './pose.js';
@@ -39,6 +40,7 @@ export function createWorld({
   sessions = createSessions({ resumeTtlMs: RESUME_TTL_MS }),
   eventLog = createEventLog({ max: EVENT_LOG_MAX }),
   invites = createInviteStore(),
+  voice = createVoice({ now }),
 }) {
   let tick = 0;
   // Định danh lần chạy của server: đổi khi restart để client biết trạng thái cũ không còn giá trị.
@@ -231,6 +233,7 @@ export function createWorld({
       socialLimiter.prune(t);
       appearanceLimiter.prune(t);
       chat.prune();
+      voice.prune();
       sessions.sweep(t);
     }
   }
@@ -450,6 +453,28 @@ export function createWorld({
     return undefined;
   }
 
+  /** Chuyển tín hiệu WebRTC tới đúng một người cùng phòng. `bye` luôn được phép (để dọn kết nối); còn lại cần quyền, không bị mute, đủ gần, không bị chặn. */
+  function handleVoice(user, client, m) {
+    const fail = (code, extra) => hub.send(client, { type: 'error', code, callId: typeof m.callId === 'string' ? m.callId : undefined, ...extra });
+    const r = voice.prepare(user, m);
+    if (!r.ok) return fail(r.error, r.retryAfterMs ? { retryAfterMs: r.retryAfterMs } : undefined);
+    const { tenantId } = user;
+    if (m.kind !== 'bye') {
+      const d = can(roles.actorOf(user), 'voice.use', { tenantId });
+      if (!d.ok) return fail(d.reason);
+    }
+    const peers = hub.clientsOf({ tenantId, id: m.to });
+    if (peers.length === 0) return fail('target_not_found');
+    if (m.kind !== 'bye') {
+      if (chat.isBlockedBy(tenantId, m.to, user.id) || chat.isBlockedBy(tenantId, user.id, m.to)) return fail('blocked');
+      const a = presence.get(tenantId, user.id);
+      const b = presence.get(tenantId, m.to);
+      if (!a || !b || dist(a, b) > voice.signalRadius) return fail('too_far');
+    }
+    for (const c of peers) hub.send(c, { ...r.out, from: user.id });
+    return undefined;
+  }
+
   function handleModeration(user, client, m) {
     const requestId = reqIdOf(m);
     const result = (ok, extra) => hub.send(client, { type: 'mod.result', op: m.type, requestId, ok, ...extra });
@@ -561,6 +586,9 @@ export function createWorld({
         hub.send(client, { type: 'chat.block', requestId: reqIdOf(m), ...r });
         return true;
       }
+      case 'voice.signal':
+        handleVoice(user, client, m);
+        return true;
       case 'mod.kick':
       case 'mod.mute':
       case 'role.set':
