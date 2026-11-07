@@ -19,6 +19,7 @@ import {
 } from './cameraModes';
 import { haltMotion, wrapAngle, type MotionState } from './gtaMotion';
 import { playerPose } from './playerPose';
+import { hangingCameraScale } from './hangingClearance';
 import {
   createFallWatch,
   createSafeTracker,
@@ -395,6 +396,13 @@ export function updateGtaCamera(
   let px = fx + hx * h;
   let py = eyeY + rig.dist * sinP;
   let pz = fz + hz * h;
+  // Biển treo (băng rôn, bảng khu): kéo camera lại trước biển nếu đoạn nhìn cắt qua nó.
+  const hs = hangingCameraScale(fx, eyeY, fz, px, py, pz);
+  if (hs < 1) {
+    px = fx + (px - fx) * hs;
+    py = eyeY + (py - eyeY) * hs;
+    pz = fz + (pz - fz) * hs;
+  }
   if (shake.amp > 1e-4) {
     shake.t += d;
     px += Math.sin(shake.t * 37) * shake.amp;
