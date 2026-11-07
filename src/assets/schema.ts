@@ -96,7 +96,7 @@ export interface Socket {
   offset: Vec3;
   /** Góc Euler XYZ, độ. */
   rotationDeg?: Vec3;
-  /** true = offset/rotation đã chỉnh bằng mắt trong scene. false = mới đặt tại gốc xương. */
+  /** true = offset đã chỉnh bằng mắt trong scene hoặc đo từ xương/mesh thật (scripts/assets/measure-sockets.mjs). false = mới đặt tại gốc xương. */
   calibrated: boolean;
 }
 

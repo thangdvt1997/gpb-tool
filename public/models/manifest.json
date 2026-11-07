@@ -202,31 +202,31 @@
           "name": "hand_l",
           "bone": "hand_l",
           "offset": [
-            0,
-            0,
-            0
+            0.0024,
+            0.0595,
+            -0.0064
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "hand_r",
           "bone": "hand_r",
           "offset": [
-            0,
-            0,
-            0
+            -0.0024,
+            0.0595,
+            -0.0064
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "head",
           "bone": "head",
           "offset": [
             0,
-            0,
-            0
+            0.156,
+            0.0041
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "neck",
@@ -243,10 +243,10 @@
           "bone": "spine_03",
           "offset": [
             0,
-            0,
-            0
+            0.0064,
+            -0.04
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "foot_l",
@@ -341,7 +341,8 @@
         "Origin file thấp hơn đáy chân 2.6 cm (Root y = 0.027).",
         "Nguồn gốc 6 shape key thân (bodyBelly, bodyWaistSlim, bodyHipsWide, bodyShouldersV, headFat, chestMuscle) do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
-        "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds."
+        "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds.",
+        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
       ],
       "proceduralClips": [
         "idle",
@@ -427,31 +428,31 @@
           "name": "hand_l",
           "bone": "hand_l",
           "offset": [
-            0,
-            0,
-            0
+            0.001,
+            0.0444,
+            -0.0051
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "hand_r",
           "bone": "hand_r",
           "offset": [
-            0,
-            0,
-            0
+            -0.001,
+            0.0444,
+            -0.0051
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "head",
           "bone": "head",
           "offset": [
             0,
-            0,
-            0
+            0.1368,
+            0.0066
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "neck",
@@ -468,10 +469,10 @@
           "bone": "spine_03",
           "offset": [
             0,
-            0,
-            0
+            -0.0005,
+            -0.0352
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "foot_l",
@@ -566,7 +567,8 @@
         "Origin file thấp hơn đáy chân 2.7 cm (Root y = 0.027).",
         "Nguồn gốc 6 shape key thân do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
-        "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds."
+        "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds.",
+        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
       ],
       "proceduralClips": [
         "idle",
@@ -652,31 +654,31 @@
           "name": "hand_l",
           "bone": "hand_l",
           "offset": [
-            0,
-            0,
-            0
+            0.0019,
+            0.0288,
+            -0.0026
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "hand_r",
           "bone": "hand_r",
           "offset": [
-            0,
-            0,
-            0
+            -0.0019,
+            0.0288,
+            -0.0026
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "head",
           "bone": "head",
           "offset": [
             0,
-            0,
-            0
+            0.1478,
+            0.0008
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "neck",
@@ -693,10 +695,10 @@
           "bone": "spine_03",
           "offset": [
             0,
-            0,
-            0
+            0.0129,
+            -0.0415
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "foot_l",
@@ -789,7 +791,8 @@
         "File không có animation clip (animations = 0).",
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
         "Cùng bộ xương 53 xương, 18 morph và 27 120 tam giác với female_real; chưa đối chiếu chi tiết mesh.",
-        "License CC0 theo thông tin pipeline; chưa lưu bằng chứng."
+        "License CC0 theo thông tin pipeline; chưa lưu bằng chứng.",
+        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
       ],
       "proceduralClips": [
         "idle",

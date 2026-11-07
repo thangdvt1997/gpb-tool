@@ -40,3 +40,5 @@ Khi thêm asset, ghi nguồn, tác giả và license vào đây.
 | ID | Nguồn | License | Công cụ | Ngày kiểm tra | Trạng thái |
 |---|---|---|---|---|---|
 | char.male_real, char.female_real, char.chibi (`public/models/*.glb`) | Dữ liệu MakeHuman (base mesh, target, texture da, lông mày, mắt) xuất bằng MPFB 2; file gốc trên VPS `/opt/gpb-mpfb/out/` | CC0-1.0 cho dữ liệu (theo thông tin pipeline) | MPFB 2 (add-on Blender, GPL-3.0, https://github.com/makehumancommunity/mpfb2) chạy trên Blender 4.2; GLB xuất bằng Khronos glTF Blender I/O v4.2.83. Phiên bản MPFB chưa ghi nhận | 2026-11-06 | Chưa xác minh: chưa mở lại trang license MakeHuman, chưa lưu bằng chứng. `license.verified = false` trong manifest. GPL của MPFB áp cho mã công cụ, không áp cho dữ liệu xuất. Không cần ghi công theo CC0. 6 shape key thân do pipeline tạo, chưa đối chiếu với target gốc |
+
+Bằng chứng license từng asset (3 GLB MPFB) còn THIẾU: xem `docs/design/ASSET_SOURCES.md` mục 8. Trong repo không có font, âm thanh, texture hay HDRI bên thứ ba.
