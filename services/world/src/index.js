@@ -14,6 +14,7 @@ import { createHub } from './hub.js';
 import { createPresenceStore } from './presence.js';
 import { createRateLimiter } from './rateLimit.js';
 import { createRoleStore } from './roles.js';
+import { createTurnIssuer, loadTurnConfig } from './turn.js';
 import { createWorld } from './world.js';
 import { attachWorldSocket } from './wsServer.js';
 
@@ -34,7 +35,9 @@ const roles = createRoleStore({
 });
 if (!process.env.WORLD_DATA_DIR) console.warn('[world] WORLD_DATA_DIR chưa đặt: vai trò phòng không được lưu bền');
 const world = createWorld({ presence, limiter, hub, roles });
-const app = createApp({ world, hub, presence, authClient });
+const turn = createTurnIssuer(loadTurnConfig());
+if (!turn.enabled) console.warn('[world] TURN_SECRET/TURN_URLS chưa đặt: /api/world/turn trả 503');
+const app = createApp({ world, hub, presence, authClient, turn });
 
 world.start();
 const server = app.listen(config.port, config.host, () => {
