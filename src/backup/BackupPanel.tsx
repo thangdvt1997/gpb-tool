@@ -35,6 +35,7 @@ function download(name: string, text: string): void {
 }
 
 import { useReturnFocus } from '../a11y/useReturnFocus';
+import { useEscapeClose } from '../a11y/useEscapeClose';
 export function BackupPanel({ service, onClose }: Props) {
   useReturnFocus();
   const [backups, setBackups] = useState<MetaBackup[]>(() => service.ring.list());
@@ -47,6 +48,10 @@ export function BackupPanel({ service, onClose }: Props) {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Esc đóng bảng (giống các panel khác), kể cả khi mở bằng chuột và focus còn ở nút "Sao lưu".
+  // Đang hỏi xác nhận khôi phục thì Esc chỉ hủy câu hỏi.
+  useEscapeClose(onClose && (() => (confirmRestore ? setConfirmRestore(null) : onClose())));
 
   const refresh = useCallback(() => setBackups(service.ring.list()), [service]);
   const fail = (e: string) => {
@@ -150,7 +155,7 @@ export function BackupPanel({ service, onClose }: Props) {
   }
 
   return (
-    <section className="panel backup-panel" role="region" aria-label="Xuất, nhập và sao lưu dữ liệu">
+    <section className="panel backup-panel" role="dialog" aria-modal="false" aria-label="Xuất, nhập và sao lưu dữ liệu">
       <header className="panel-head">
         <h2>Sao lưu và chuyển dữ liệu</h2>
         {onClose && (

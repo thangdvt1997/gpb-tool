@@ -1,3 +1,4 @@
+import { restoreFocusLater } from './restoreFocus';
 import { useEffect } from 'react';
 
 /** Quyết định có trả focus không: chỉ khi phần tử mở còn trong DOM và focus hiện không nằm ở chỗ khác có ý nghĩa. */
@@ -21,7 +22,7 @@ export function useReturnFocus(): void {
     return () => {
       const active = document.activeElement as HTMLElement | null;
       // Lúc cleanup, nút đóng đang bị tháo nên activeElement thường đã là body.
-      if (shouldRestoreFocus(opener, active, false)) opener!.focus();
+      if (shouldRestoreFocus(opener, active, false)) restoreFocusLater(opener);
     };
   }, []);
 }

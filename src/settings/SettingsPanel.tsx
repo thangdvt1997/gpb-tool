@@ -1,3 +1,4 @@
+import { restoreFocusLater } from '../a11y/restoreFocus';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import './settings.css';
 import { ACTION_IDS, RANGES, type ActionId, type Bindings } from './schema';
@@ -75,7 +76,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
     if (!open) return undefined;
     const prev = document.activeElement as HTMLElement | null;
     dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
-    return () => prev?.focus?.();
+    return () => restoreFocusLater(prev);
   }, [open]);
 
   // Đang chờ phím: bắt ở pha capture để không lọt xuống useGtaControls hay đóng hộp thoại.

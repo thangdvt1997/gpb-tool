@@ -51,8 +51,10 @@ type Notice = { kind: 'ok' | 'err'; text: string; err?: MappedError } | null;
 
 /** Hồ sơ cá nhân: tên hiển thị, ảnh đại diện và nhân vật lưu trên máy chủ. Dữ liệu nằm trên server, không có localStorage. */
 import { useReturnFocus } from '../a11y/useReturnFocus';
+import { useEscapeClose } from '../a11y/useEscapeClose';
 export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClose }: Props) {
   useReturnFocus();
+  useEscapeClose(onClose);
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [cloud, setCloud] = useState<CloudCharacter | null>(null);
   const [loading, setLoading] = useState(true);

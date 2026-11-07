@@ -1,3 +1,4 @@
+import { restoreFocusLater } from './restoreFocus';
 import {
   createFocusStack,
   initialFocusTarget,
@@ -90,6 +91,6 @@ export function trapFocus(container: HTMLElement, opts: TrapOptions): () => void
     document.removeEventListener('keydown', onKey, true);
     if (!hadTabIndex) container.removeAttribute('tabindex');
     const back = stack.remove(opts.id)?.restoreTo;
-    if (back && back.isConnected) back.focus();
+    if (back && back.isConnected) restoreFocusLater(back);
   };
 }

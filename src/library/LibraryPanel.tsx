@@ -23,6 +23,7 @@ export interface LibraryPanelProps {
 }
 
 import { useReturnFocus } from '../a11y/useReturnFocus';
+import { useEscapeClose } from '../a11y/useEscapeClose';
 export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
   useReturnFocus();
   const lib = useMemo(() => (given ? { items: [...given], duplicates: [] as string[] } : buildDefaultLibrary()), [given]);
@@ -90,17 +91,13 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
     gridRef.current?.querySelectorAll<HTMLElement>('[data-card]')[next]?.focus();
   };
 
-  const onRootKey = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') return;
-    e.stopPropagation();
-    if (selected) setSelected(null);
-    else onClose?.();
-  };
+  // Esc: đang xem chi tiết thì về lưới, không thì đóng thư viện (cả khi focus còn ở nút mở).
+  useEscapeClose(() => (selected ? setSelected(null) : onClose?.()));
 
   const sel = selected ? byId.get(selected) : undefined;
 
   return (
-    <section role="dialog" aria-modal="false" aria-label="Thư viện asset" onKeyDown={onRootKey} style={rootStyle}>
+    <section role="dialog" aria-modal="false" aria-label="Thư viện asset" style={rootStyle}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0, fontSize: 16 }}>Thư viện asset ({lib.items.length})</h2>
         {onClose && <button onClick={onClose} aria-label="Đóng thư viện">Đóng</button>}

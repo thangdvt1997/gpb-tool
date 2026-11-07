@@ -11,6 +11,7 @@ export {
 export { getTabbables, releasePointerLock, trapFocus, type TrapOptions } from './focusTrap';
 export { useFocusTrap } from './useFocusTrap';
 export { useReturnFocus, shouldRestoreFocus } from './useReturnFocus';
+export { restoreFocusLater } from './restoreFocus';
 export {
   announce,
   announcer,
@@ -54,3 +55,4 @@ export {
   type MoveSession,
   type Vec2,
 } from './keyboardMove';
+export { useEscapeClose } from './useEscapeClose';

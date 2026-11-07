@@ -1,3 +1,4 @@
+import { restoreFocusLater } from '../a11y/restoreFocus';
 import { Suspense, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -251,7 +252,7 @@ export function WardrobeRoom({ initialLook, appearance = DEFAULT_APPEARANCE, onC
     const prev = document.activeElement as HTMLElement | null;
     rootRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus();
     return () => {
-      if (prev && prev.isConnected) prev.focus();
+      restoreFocusLater(prev);
     };
   }, []);
 

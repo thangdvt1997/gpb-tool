@@ -9,6 +9,7 @@ import { emptyDoc, type TattooDoc } from './schema';
 export interface TattooStudioProps { model: ModelId; onClose: () => void }
 
 import { useReturnFocus } from '../a11y/useReturnFocus';
+import { useEscapeClose } from '../a11y/useEscapeClose';
 export function TattooStudio({ model, onClose }: TattooStudioProps) {
   useReturnFocus();
   const [masks, setMasks] = useState<RegionMask[] | null>(null);
@@ -27,11 +28,7 @@ export function TattooStudio({ model, onClose }: TattooStudioProps) {
     return () => ac.abort();
   }, [model]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useEscapeClose(onClose);
 
   const clearAll = () => {
     clearTattoo(model);

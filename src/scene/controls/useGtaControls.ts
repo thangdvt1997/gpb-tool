@@ -146,6 +146,8 @@ export function useSessionHotkeys(enabled: boolean): void {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isAction(e.code, 'cancel')) {
+        // Panel đã dùng Esc để đóng (useEscapeClose): không mở menu tạm dừng.
+        if (e.defaultPrevented) return;
         if (isTypingTarget(e.target)) return;
         if (getControls().paused) {
           setPaused(false);
