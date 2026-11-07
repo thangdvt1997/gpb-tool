@@ -17,7 +17,7 @@ import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
 import { SettingsPanel } from './settings';
 import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
 import { holdPause } from './scene/controls';
-import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, useWorld, worldEnabled } from './net';
+import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, createWorldSocialTransport, useAppearanceSync, useWorld, worldEnabled } from './net';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
@@ -267,6 +267,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   }, [wardrobeOpen]);
   // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
   const world = useWorld({ enabled: WORLD_ON });
+  useAppearanceSync(world, WORLD_ON ? appearance : null);
   // Người khác cho hành động xã hội (TASK 15): vị trí nội suy từ world; không có world thì rỗng.
   const remote = world.remote;
   const getPeers = useCallback(
@@ -276,6 +277,14 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
         return p ? [{ id, x: p.x, z: p.z }] : [];
       }),
     [remote],
+  );
+  // Lời mời xã hội qua world khi bật ?world=1; không bật thì SocialBar dùng bus cục bộ.
+  const socialTransport = useMemo(
+    () =>
+      WORLD_ON
+        ? createWorldSocialTransport({ selfId: user.id, send: (m) => world.client.current?.send(m) ?? false, subscribe: world.subscribe })
+        : undefined,
+    [user.id, world.client, world.subscribe],
   );
   // Chất lượng đồ họa (TASK 13) + đo khung (TASK 08): PerfProbe đẩy mẫu vào bộ tự thích nghi.
   const quality = useQuality();
@@ -642,7 +651,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           {tattooOpen && <TattooStudio model={mpfbModelFor(look.bodyStyle, look.body.frame)} onClose={() => setTattooOpen(false)} />}
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
           {/* Đang sắp xếp nội thất: panel trình biên tập chiếm góc phải dưới, ẩn thanh hành động xã hội để không chồng. */}
-          <SocialBar selfId={user.id} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} />
+          <SocialBar selfId={user.id} transport={socialTransport} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} onRemotePlay={(id, emoteId, self) => remote.actions.play(id, emoteId, Date.now(), self)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (

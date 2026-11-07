@@ -88,3 +88,22 @@ Mọi phần giao diện và hình ảnh: nhân vật MPFB với vỏ trang ph�
 ### GitHub
 
 **Chưa push.** Điều kiện push là `/home/cc/gpb-acceptance.txt` có RESULT=PASS, nhưng tệp này không tạo được vì `/home/cc` không cho user `cc` ghi. Kết quả PASS chỉ có ở bản sao `/tmp/gpbacc/gpb-acceptance.txt` (cùng nội dung script, đổi đường dẫn đầu ra). TASK_STATUS.csv không còn mục CHƯA LÀM hay ĐANG CHẠY. Khi người dùng sửa quyền (hoặc xác nhận chấp nhận bản sao), chạy lại `bash /home/cc/gpb-acceptance.sh` rồi `git push origin auto/20261106` và `git push origin auto/20261106:main`. Nhánh local có 16 commit mới so với 6fff85f.
+
+## 2026-11-07 — Lần lặp 2, đợt 1 (tăng tốc, nhiều worktree)
+
+Nhánh làm việc: `main` (đã fast-forward lên 8f3c99f, trùng `origin/main`). Không dùng `auto/20261106` nữa.
+
+Acceptance trên 8f3c99f (11:11 UTC): mọi bước 0 trừ `e2e=1` → **FAIL**. 3 test e2e hỏng: 22-objects (máy tính không mở panel; cửa kho không chuyển sang "Đóng cửa"), 20-controls (góc đầu khi kéo nhanh 25,8° < 30°, nghi do khung chậm khi 8 worker). Chưa deploy, chưa push.
+
+Production: vẫn chạy image `gpb-tool/web:backup-20261107T102845Z` (tag local trùng), gateway trả 200.
+
+| Subagent | Worktree / nhánh | Task | Cổng preview |
+|---|---|---|---|
+| e2efix | /home/cc/wt/e2efix, wt2/e2efix | sửa 3 e2e hỏng (duy nhất được sửa /home/cc/gpb-e2e/tests) | 4181 |
+| world | /home/cc/wt/world, wt2/world | 15 (lời mời xã hội qua WS), 26 (lưu vai trò, chuyển owner), 27 (test mạng chập chờn) | 4182 |
+| interact | /home/cc/wt/interact, wt2/interact | tuongtac: va chạm cửa theo trạng thái, bàn máy tính chặn, cửa sổ sau rèm | 4183 |
+| ik | /home/cc/wt/ik, wt2/ik | 03: neo ghế, grip cốc/điện thoại, cân nhắc bật IK mặc định | 4184 |
+| fashion | /home/cc/wt/fashion, wt2/fashion | 04 + fashion.txt: mũ/phụ kiện, mép cổ áo/hông, họa tiết | 4185 |
+| camera | /home/cc/wt/camera, wt2/camera | 05 (e2e camera trong cảnh, phục hồi khi server ghi đè vị trí), 09 (tự đi qua Player) | 4186 |
+
+Tiếp theo: gộp từng nhánh khi xanh (tsc, vitest, build), chạy acceptance đầy đủ, push `main`, bundle vào /home/cc/handoff-20261107/, deploy production.

@@ -15,7 +15,7 @@ COPY src ./src
 USER node
 EXPOSE 3011
 
-# Trạng thái chỉ nằm trong bộ nhớ: không có volume. Restart container làm mất presence (client tự gửi lại pose).
+# Presence, lease, chat nằm trong bộ nhớ (restart làm mất, client tự gửi lại pose). Riêng vai trò phòng lưu ở WORLD_DATA_DIR (mount volume ghi được bởi user node nếu cần bền).
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/api/health" || exit 1
 

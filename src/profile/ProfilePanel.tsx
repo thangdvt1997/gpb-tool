@@ -4,21 +4,28 @@ import type { FormEvent } from 'react';
 import {
   deleteCloudCharacter,
   getCloudCharacter,
+  getMyAbout,
   getProfile,
+  putMyAbout,
   putCloudCharacter,
   putProfile,
 } from '../auth/api';
-import type { CloudCharacter, MyProfile } from '../auth/api';
+import type { CloudCharacter, MyAbout, MyProfile } from '../auth/api';
 import { validate } from '../fashion/rules';
 import type { CharacterLook } from '../fashion/types';
 import {
   avatarRefToChoice,
+  BIO_MAX,
+  buildAboutPatch,
   buildProfilePatch,
   mapProfileError,
   planSync,
+  PRESENCE_LABELS,
+  STATUS_TEXT_MAX,
   summarizeLook,
+  VISIBILITY_LABELS,
 } from './profileLogic';
-import type { AvatarChoice, MappedError } from './profileLogic';
+import type { AboutForm, AvatarChoice, MappedError, PresenceKey, VisibilityKey } from './profileLogic';
 
 interface Props {
   /** Nhân vật đang dùng trong trình chỉnh sửa (null nếu chưa có). Nút đồng bộ gửi bản này lên máy chủ. */
@@ -28,6 +35,16 @@ interface Props {
   /** Gọi sau khi tên đổi thành công để chỗ khác (HUD) cập nhật. */
   onNameChanged?: (name: string) => void;
   onClose: () => void;
+}
+
+function toAboutForm(a: MyAbout): AboutForm {
+  return {
+    bio: a.bio,
+    presence: a.presence,
+    statusText: a.statusText,
+    profileVisibility: a.profileVisibility,
+    characterVisibility: a.characterVisibility,
+  };
 }
 
 type Notice = { kind: 'ok' | 'err'; text: string; err?: MappedError } | null;
@@ -44,6 +61,19 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
   const [nameError, setNameError] = useState<string | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileNotice, setProfileNotice] = useState<Notice>(null);
+
+  // about === null: máy chủ auth chưa hỗ trợ (404) nên ẩn giới thiệu, trạng thái, quyền riêng tư.
+  const [about, setAbout] = useState<MyAbout | null>(null);
+  const [aboutForm, setAboutForm] = useState<AboutForm>({
+    bio: '',
+    presence: 'free',
+    statusText: '',
+    profileVisibility: 'colleagues',
+    characterVisibility: 'colleagues',
+  });
+  const [aboutErrors, setAboutErrors] = useState<{ bio?: string; statusText?: string }>({});
+  const [aboutBusy, setAboutBusy] = useState(false);
+  const [aboutNotice, setAboutNotice] = useState<Notice>(null);
 
   const [charBusy, setCharBusy] = useState(false);
   const [charNotice, setCharNotice] = useState<Notice>(null);
@@ -71,6 +101,11 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
       setCloud(c);
       setName(p.name);
       setAvatar(avatarRefToChoice(p.avatarRef));
+      // Trường mới là phần phụ: lỗi (kể cả 404 của máy chủ cũ) chỉ làm ẩn mục này, không chặn hồ sơ.
+      const a = await getMyAbout().catch(() => null);
+      if (!alive.current) return;
+      setAbout(a);
+      if (a) setAboutForm(toAboutForm(a));
     } catch (e) {
       if (alive.current) setLoadError(mapProfileError(e));
     } finally {
@@ -129,6 +164,38 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
       startCooldown(m);
     } finally {
       if (alive.current) setProfileBusy(false);
+    }
+  }
+
+  async function saveAbout(ev: FormEvent) {
+    ev.preventDefault();
+    if (!about || aboutBusy) return;
+    const built = buildAboutPatch(about, aboutForm);
+    if ('errors' in built) {
+      setAboutErrors(built.errors);
+      return;
+    }
+    setAboutErrors({});
+    if ('empty' in built) {
+      setAboutNotice({ kind: 'ok', text: 'Không có thay đổi.' });
+      return;
+    }
+    setAboutBusy(true);
+    setAboutNotice(null);
+    try {
+      const next = await putMyAbout(built.patch);
+      if (!alive.current) return;
+      setAbout(next);
+      setAboutForm(toAboutForm(next));
+      setAboutNotice({ kind: 'ok', text: 'Đã lưu giới thiệu và quyền riêng tư.' });
+    } catch (e) {
+      if (!alive.current) return;
+      const m = mapProfileError(e);
+      if (m.field === 'bio' || m.field === 'statusText') setAboutErrors({ [m.field]: m.message });
+      setAboutNotice({ kind: 'err', text: m.message, err: m });
+      startCooldown(m);
+    } finally {
+      if (alive.current) setAboutBusy(false);
     }
   }
 
@@ -195,6 +262,18 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
       if (alive.current) setCharBusy(false);
     }
   }
+
+  const aboutDirty =
+    about !== null &&
+    (aboutForm.bio !== about.bio ||
+      aboutForm.presence !== about.presence ||
+      aboutForm.statusText !== about.statusText ||
+      aboutForm.profileVisibility !== about.profileVisibility ||
+      aboutForm.characterVisibility !== about.characterVisibility);
+  const setAboutField = <K extends keyof AboutForm>(key: K, value: AboutForm[K]) => {
+    setAboutForm((f) => ({ ...f, [key]: value }));
+    setAboutErrors({});
+  };
 
   const summary = cloud?.look ? summarizeLook(cloud.look) : null;
   const dirty = profile !== null && (name !== profile.name || avatar !== avatarRefToChoice(profile.avatarRef));
@@ -286,8 +365,6 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
               {!cloud.look && <span className="ui-hint">Cần đồng bộ nhân vật lên máy chủ trước.</span>}
             </fieldset>
 
-            <p className="ui-hint">Giới thiệu, trạng thái và quyền riêng tư chưa có trên máy chủ nên chưa hiển thị ở đây.</p>
-
             <div role={profileNotice?.kind === 'err' ? 'alert' : 'status'} aria-live="polite" className="profile-notice">
               {profileNotice && <p className={profileNotice.kind === 'err' ? 'profile-error' : 'profile-ok'}>{profileNotice.text}</p>}
               {profileNotice?.err?.kind === 'conflict' && (
@@ -301,6 +378,99 @@ export function ProfilePanel({ currentLook, onUseCloudLook, onNameChanged, onClo
               {profileBusy ? 'Đang lưu…' : waitSeconds > 0 ? `Chờ ${waitSeconds}s` : 'Lưu hồ sơ'}
             </button>
           </form>
+
+          {about && (
+            <form className="profile-form" onSubmit={(e) => void saveAbout(e)} noValidate aria-label="Giới thiệu và quyền riêng tư">
+              <label className="ui-field">
+                <span className="ui-label">Giới thiệu</span>
+                <textarea
+                  className="ui-input"
+                  rows={3}
+                  value={aboutForm.bio}
+                  maxLength={BIO_MAX * 2}
+                  aria-invalid={aboutErrors.bio ? true : undefined}
+                  onChange={(e) => setAboutField('bio', e.target.value)}
+                />
+                <span className={aboutErrors.bio ? 'ui-hint profile-field-error' : 'ui-hint'} role={aboutErrors.bio ? 'alert' : undefined}>
+                  {aboutErrors.bio ?? `${Array.from(aboutForm.bio).length}/${BIO_MAX} ký tự.`}
+                </span>
+              </label>
+
+              <label className="ui-field">
+                <span className="ui-label">Trạng thái</span>
+                <select
+                  className="ui-input"
+                  value={aboutForm.presence}
+                  onChange={(e) => setAboutField('presence', e.target.value as PresenceKey)}
+                >
+                  {(Object.keys(PRESENCE_LABELS) as PresenceKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {PRESENCE_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="ui-field">
+                <span className="ui-label">Câu trạng thái</span>
+                <input
+                  className="ui-input"
+                  type="text"
+                  value={aboutForm.statusText}
+                  maxLength={STATUS_TEXT_MAX * 2}
+                  aria-invalid={aboutErrors.statusText ? true : undefined}
+                  onChange={(e) => setAboutField('statusText', e.target.value)}
+                />
+                <span className={aboutErrors.statusText ? 'ui-hint profile-field-error' : 'ui-hint'} role={aboutErrors.statusText ? 'alert' : undefined}>
+                  {aboutErrors.statusText ?? `Tối đa ${STATUS_TEXT_MAX} ký tự.`}
+                </span>
+              </label>
+
+              <label className="ui-field">
+                <span className="ui-label">Ai xem được hồ sơ</span>
+                <select
+                  className="ui-input"
+                  value={aboutForm.profileVisibility}
+                  onChange={(e) => setAboutField('profileVisibility', e.target.value as VisibilityKey)}
+                >
+                  {(Object.keys(VISIBILITY_LABELS) as VisibilityKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {VISIBILITY_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="ui-field">
+                <span className="ui-label">Ai xem được nhân vật</span>
+                <select
+                  className="ui-input"
+                  value={aboutForm.characterVisibility}
+                  onChange={(e) => setAboutField('characterVisibility', e.target.value as VisibilityKey)}
+                >
+                  {(Object.keys(VISIBILITY_LABELS) as VisibilityKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {VISIBILITY_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+                <span className="ui-hint">Đồng nghiệp là người cùng tổ chức (cùng tên miền email công ty).</span>
+              </label>
+
+              <div role={aboutNotice?.kind === 'err' ? 'alert' : 'status'} aria-live="polite" className="profile-notice">
+                {aboutNotice && <p className={aboutNotice.kind === 'err' ? 'profile-error' : 'profile-ok'}>{aboutNotice.text}</p>}
+                {aboutNotice?.err?.kind === 'conflict' && (
+                  <button type="button" className="ui-btn" onClick={() => void load()}>
+                    Tải lại bản mới nhất
+                  </button>
+                )}
+              </div>
+
+              <button type="submit" className="ui-btn ui-btn-primary" disabled={aboutBusy || !aboutDirty || waitSeconds > 0}>
+                {aboutBusy ? 'Đang lưu…' : waitSeconds > 0 ? `Chờ ${waitSeconds}s` : 'Lưu giới thiệu'}
+              </button>
+            </form>
+          )}
 
           <section className="profile-character" aria-labelledby="profile-char-title">
             <h3 id="profile-char-title" className="ui-label">

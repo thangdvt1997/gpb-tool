@@ -8,6 +8,7 @@ Trạng thái: **chưa triển khai**. Tài liệu này chỉ chuẩn bị trong
 - Biến môi trường (`services/world/src/config.js`):
   - `PORT` (mặc định 3011), bind 127.0.0.1 như các service khác.
   - `AUTH_URL` (ví dụ `http://127.0.0.1:3001`): kiểm cookie phiên qua `/api/auth/me` khi bắt tay.
+  - `WORLD_DATA_DIR` (khuyến nghị, ví dụ `/data`): thư mục ghi được để lưu vai trò phòng `room-roles.json` (ghi tmp+rename). Không đặt thì vai trò mất khi restart. Cần volume bền, container chạy user `node` nên thư mục phải ghi được bởi uid 1000.
   - `ALLOWED_ORIGINS`: thêm Origin ngoài `https://gp.daisoncoop.com` (phân cách dấu phẩy).
 - Đường WebSocket: `/api/world/ws`. Client tự chọn `wss://<host>/api/world/ws` khi trang chạy HTTPS (`src/net/useWorld.ts`).
 
@@ -21,6 +22,9 @@ Trạng thái: **chưa triển khai**. Tài liệu này chỉ chuẩn bị trong
     environment:
       PORT: "3011"
       AUTH_URL: "http://127.0.0.1:3001"
+      WORLD_DATA_DIR: "/data"
+    volumes:
+      - world-data:/data      # khai báo volume world-data ở cuối compose; chown 1000:1000
 ```
 
 ## 3. Đoạn gateway đề xuất (chưa áp dụng)

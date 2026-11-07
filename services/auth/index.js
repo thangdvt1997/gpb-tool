@@ -60,8 +60,21 @@ import {
   MS_CONSUMER_TENANT,
 } from './oauth.js';
 
+import { originGuard } from './origin.js';
+import {
+  AboutError,
+  DEFAULT_VISIBILITY,
+  canView,
+  validateBio,
+  validateStatus,
+  validateStatusText,
+  validateVisibility,
+} from './about.js';
+
 const app = express();
 app.disable('x-powered-by');
+// Chặn request ghi từ origin lạ trước mọi thứ khác (ngoài SameSite=Lax).
+app.use('/api/auth', originGuard());
 // Báo cáo kiểm duyệt có thể dài hơn (lý do 300 + bản chụp 500 ký tự có dấu), nên route này có giới hạn riêng.
 // Parser này đặt trước parser toàn cục; khi đã đọc body thì parser toàn cục bỏ qua.
 app.use('/api/auth/moderation', express.json({ limit: '16kb' }));
@@ -640,6 +653,126 @@ app.put('/api/auth/profile', requireFullSession, (req, res) => {
     return res.status(409).json({ ok: false, code: 'revision_conflict', error: 'Hồ sơ đã được sửa ở nơi khác. Tải lại rồi thử lại.', currentRevision: result.conflict });
   }
   res.json({ ok: true, profile: profileView({ ...me, name: name ?? me.name }) });
+});
+
+// ---------- Giới thiệu, trạng thái, quyền riêng tư (PROFILE.md mục 10) ----------
+const ABOUT_WRITE_MS = 2000;
+const lastAboutWrite = new Map();
+const ABOUT_WRITABLE = new Set(['revision', 'bio', 'presence', 'statusText', 'profileVisibility', 'characterVisibility']);
+
+function aboutRow(userId) {
+  return db.prepare('SELECT * FROM user_about WHERE user_id = ?').get(userId);
+}
+
+function aboutView(row) {
+  return {
+    bio: row?.bio ?? '',
+    presence: row?.status ?? 'free',
+    statusText: row?.status_text ?? '',
+    profileVisibility: row?.profile_visibility ?? DEFAULT_VISIBILITY,
+    characterVisibility: row?.character_visibility ?? DEFAULT_VISIBILITY,
+    revision: row?.revision ?? 0,
+    updatedAt: row?.updated_at ?? null,
+  };
+}
+
+app.get('/api/auth/profile/about', requireFullSession, (req, res) => {
+  res.json({ ok: true, about: aboutView(aboutRow(req.authUser.id)) });
+});
+
+app.put('/api/auth/profile/about', requireFullSession, (req, res) => {
+  const me = req.authUser;
+  const body = jsonBodyOr415(req, res);
+  if (!body) return;
+  const keys = Object.keys(body);
+  const forbidden = keys.find((k) => PROFILE_FORBIDDEN.has(k));
+  if (forbidden) {
+    return res.status(403).json({ ok: false, code: 'field_forbidden', error: 'Không được sửa trường này qua hồ sơ.', path: forbidden });
+  }
+  const unknown = keys.find((k) => !ABOUT_WRITABLE.has(k));
+  if (unknown) return res.status(422).json({ ok: false, code: 'unknown_field', error: 'Trường không hợp lệ.', path: unknown });
+  const expected = readRevision(body.revision);
+  if (expected === null) {
+    return res.status(422).json({ ok: false, code: 'invalid_revision', error: 'revision phải là số nguyên >= 0.', path: 'revision' });
+  }
+  const patch = {};
+  try {
+    if ('bio' in body) patch.bio = validateBio(body.bio);
+    if ('presence' in body) patch.status = validateStatus(body.presence);
+    if ('statusText' in body) patch.status_text = validateStatusText(body.statusText);
+    if ('profileVisibility' in body) patch.profile_visibility = validateVisibility(body.profileVisibility, 'profileVisibility');
+    if ('characterVisibility' in body) patch.character_visibility = validateVisibility(body.characterVisibility, 'characterVisibility');
+  } catch (err) {
+    if (err instanceof AboutError) {
+      return res.status(422).json({ ok: false, code: err.code, error: err.message, path: err.path });
+    }
+    throw err;
+  }
+  if (Object.keys(patch).length === 0) {
+    return res.status(422).json({ ok: false, code: 'empty_update', error: 'Không có gì để cập nhật.', path: '' });
+  }
+  if (writeThrottled(res, lastAboutWrite, ABOUT_WRITE_MS, me.id)) return;
+
+  const now = Date.now();
+  const result = db.transaction(() => {
+    const row = aboutRow(me.id);
+    const current = row?.revision ?? 0;
+    if (current !== expected) return { conflict: current };
+    const next = {
+      bio: row?.bio ?? '',
+      status: row?.status ?? 'free',
+      status_text: row?.status_text ?? '',
+      profile_visibility: row?.profile_visibility ?? DEFAULT_VISIBILITY,
+      character_visibility: row?.character_visibility ?? DEFAULT_VISIBILITY,
+      ...patch,
+    };
+    db.prepare(
+      `INSERT INTO user_about (user_id, bio, status, status_text, profile_visibility, character_visibility, revision, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+       ON CONFLICT(user_id) DO UPDATE SET bio = excluded.bio, status = excluded.status, status_text = excluded.status_text,
+         profile_visibility = excluded.profile_visibility, character_visibility = excluded.character_visibility,
+         revision = revision + 1, updated_at = excluded.updated_at`,
+    ).run(me.id, next.bio, next.status, next.status_text, next.profile_visibility, next.character_visibility, now);
+    return { conflict: null };
+  })();
+  if (result.conflict !== null) {
+    return res.status(409).json({ ok: false, code: 'revision_conflict', error: 'Hồ sơ đã được sửa ở nơi khác. Tải lại rồi thử lại.', currentRevision: result.conflict });
+  }
+  res.json({ ok: true, about: aboutView(aboutRow(me.id)) });
+});
+
+// Thẻ hồ sơ của người khác, theo quyền riêng tư của họ. Không có email. Nhân vật chỉ kèm khi characterVisibility cho phép.
+app.get('/api/auth/profile/about/:userId', requireFullSession, (req, res) => {
+  if (!/^[1-9]\d{0,9}$/.test(req.params.userId)) return bad(res, 'Không tìm thấy.', 404, 'not_found');
+  const owner = db
+    .prepare("SELECT id, name, department, tenant_id FROM users WHERE id = ? AND status = 'active'")
+    .get(Number(req.params.userId));
+  if (!owner) return bad(res, 'Không tìm thấy.', 404, 'not_found');
+  const viewer = req.authUser;
+  const about = aboutRow(owner.id);
+  const view = aboutView(about);
+  if (!canView(view.profileVisibility, viewer, owner)) {
+    return res.status(403).json({ ok: false, code: 'profile_private', error: 'Hồ sơ này không công khai với bạn.' });
+  }
+  const prof = db.prepare('SELECT avatar_ref FROM user_profiles WHERE user_id = ?').get(owner.id);
+  const card = {
+    id: owner.id,
+    name: owner.name,
+    department: owner.department ?? null,
+    avatarRef: prof?.avatar_ref ?? null,
+    bio: view.bio,
+    presence: view.presence,
+    statusText: view.statusText,
+    character: null,
+  };
+  if (canView(view.characterVisibility, viewer, owner)) {
+    const row = characterRow(owner.id);
+    if (row) {
+      const out = migrateStoredCharacter(row.schema_version, row.data);
+      card.character = out.status === 'ok' ? out.look : null;
+    }
+  }
+  res.json({ ok: true, profile: card });
 });
 
 function characterRow(userId) {

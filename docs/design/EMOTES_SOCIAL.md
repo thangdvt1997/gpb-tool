@@ -14,8 +14,8 @@ Mã: `src/emotes/social/`. Năm emote mới trong `src/emotes/library.ts` (đề
 ## Máy trạng thái
 `pending -> accepted | declined | expired | cancelled`, hàm thuần `reduceInvite`. Chỉ người được mời accept/decline, chỉ người mời cancel; trạng thái cuối bất biến.
 
-## Nối world (chưa làm)
-`SocialTransport { selfId, send(to,msg), subscribe(handler) }`. Có `createLocalBus()`. Đề xuất thông điệp mạng (không sửa `src/net/protocol.ts`): `social_invite {invite}`, `social_respond {inviteId, by, answer}`, `social_cancel {inviteId, by}`, `social_play {actionId, from, to, startTime}`. Server nên kiểm lại khoảng cách và quyền, và chuyển tiếp chỉ tới `to`.
+## Nối world (đã làm)
+`SocialTransport { selfId, send(to,msg), subscribe(handler) }`. Có `createLocalBus()` (một máy) và `createWorldSocialTransport` (`src/net/socialTransport.ts`, khi `?world=1`; `App.tsx` truyền vào `SocialBar`). Thông điệp: `social_invite {invite}`, `social_respond {inviteId, by, answer}`, `social_cancel {inviteId, by}`, `social_play {actionId, from, to, startTime}`, cộng `social.denied {code, inviteId?}` từ server. Server kiểm quyền `social.act` bằng `can()`, tần suất, khoảng cách (tầm × 1.6), hạn 15 s, bận, chặn, và chỉ chuyển tiếp tới `to`; xem WORLD_SYNC.md mục "Hành động xã hội". Thời điểm lời mời được quy về đồng hồ cục bộ ở bên nhận; `social.denied` thành decline để bên mời không bị kẹt.
 
 ## Mount (host làm)
 ```tsx
@@ -26,4 +26,4 @@ const session = useMemo(() => new SocialSession({ transport: createLocalBus().en
 Cần thêm CSS cho `.social-prompt` (định vị) nếu muốn; hình thức nút lấy từ `ui-system.css`.
 
 ## Chưa kiểm chứng
-Chưa chạy trong scene thật; tư thế procedural chưa xem bằng mắt (bắt tay không có IK nên hai tay không khớp nhau); chưa có transport mạng; hướng yaw giả định mặt nhìn +Z.
+Chưa chạy trong scene thật; tư thế procedural chưa xem bằng mắt (bắt tay không có IK nên hai tay không khớp nhau); transport mạng mới kiểm bằng test (ws thật + vitest), chưa thử hai trình duyệt thật; avatar từ xa chưa phát emote khi nhận `social_play` (host chưa truyền `onRemotePlay`); hướng yaw giả định mặt nhìn +Z.

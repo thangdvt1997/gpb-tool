@@ -53,3 +53,9 @@ Trong `Player.tsx` `useFrame`, đổi `g.position.set(p.x,p.y,p.z)` / `g.rotatio
 - FSM chưa nối vào Avatar/âm thanh; chưa có clip thật, chưa có IK (task 03).
 - Chưa có sweep/CCD, cầu thang, vật cản thấp trong cảnh; `floorHeight` chưa tích hợp `stepMotion`.
 - Jump buffer/coyote time chưa làm.
+
+## Nguồn input interact/stunned (lần lặp 2)
+
+- `interact`: nghe bus `onInteractEvent` (scene/interact/objects/interactEvents), không sửa module interact. Hành động thật (mở cửa, bật đèn, nhặt đồ, in, rót nước...) bật xung 0,6 s (`src/scene/controls/locoPulses.ts`). Bỏ qua `*.denied`, `*.blocked`, `*.locked` và `chair.*` (ngồi do session ghế quyết định). Chỉ vào interact khi chạm đất và không nhảy; nhảy luôn thắng. `locoBlendInputs` nhận thêm dữ kiện chạm đất thật để interact/stunned không che tư thế trên không.
+- `stunned`: nguồn thật duy nhất là `isLocked()` của `useGtaPlayer` (Player.tsx nối `getMyVisual().locked`, tức nằm đỡ khi trúng đòn trong duel). Repo chưa có cơ chế đẩy hay va chạm mạnh/knockback nên chưa nối nguồn đó; `requestStun(pulses, now, giây)` là điểm nối sẵn, chưa có nơi gọi.
+- Hoạt ảnh: `clipForState` (clipMap) vẫn rơi về tư thế procedural khi chưa có clip (tập clip rỗng), hành vi hiển thị không đổi. `ControlsDebug.locoClip` cho biết nguồn ('procedural' | 'clip' | 'none'). Avatar chưa có AnimationMixer nên chưa phát clip thật.

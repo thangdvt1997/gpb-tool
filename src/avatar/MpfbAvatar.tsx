@@ -9,6 +9,7 @@ import {
   MPFB_JOINT_ORDER,
   POSE_HIP_HEIGHT,
   computePose,
+  playerLocomotion,
   createPoseScratch,
   type AvatarAnimation,
   type AvatarPose,
@@ -20,7 +21,7 @@ import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { FallbackAvatar } from './FallbackAvatar';
-import { useLimbIK, type GroundSampler } from './ik';
+import { applySeatPose, releaseSeatPose, useLimbIK, type GroundSampler } from './ik';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
 import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
@@ -68,9 +69,30 @@ const FLAT_FLOOR: GroundSampler = (_x, _z, out) => {
   return true;
 };
 
+/** Mặc định BẬT (đã qua e2e); tắt bằng ?ik=0. */
 export function ikEnabledFromUrl(search: string): boolean {
-  return new URLSearchParams(search).get('ik') === '1';
+  return new URLSearchParams(search).get('ik') !== '0';
 }
+
+/** Mặt đệm ghế cao 0,46 m (hông ngồi 0,56 m trừ 0,10 m hông cao hơn mặt ngồi), theo SEATED_HIP của animation. */
+const SEAT_SURFACE_Y = 0.46;
+
+/** Hook kiểm tra trình duyệt: chỉ khi ?debug=ik. Chỉ đọc, ghi mỗi khung. */
+export interface IkDebug {
+  frames: number;
+  sitFrames: number;
+  nanBones: number;
+  pelvisY: number;
+  floorY: number;
+  footY: [number, number];
+}
+const IK_DEBUG: IkDebug | null = (() => {
+  if (typeof window === 'undefined') return null;
+  if (new URLSearchParams(window.location.search).get('debug') !== 'ik') return null;
+  const d: IkDebug = { frames: 0, sitFrames: 0, nanBones: 0, pelvisY: 0, floorY: 0, footY: [0, 0] };
+  (window as unknown as { __gpbIK?: IkDebug }).__gpbIK = d;
+  return d;
+})();
 const IK_ON = typeof window !== 'undefined' && ikEnabledFromUrl(window.location.search);
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -409,6 +431,12 @@ interface MpfbModelProps {
   emote: boolean;
 }
 
+const _ikPos = new THREE.Vector3();
+const _ikQuat = new THREE.Quaternion();
+const _ikScl = new THREE.Vector3();
+const _ikFwd = new THREE.Vector3();
+const _ikAnchor = new THREE.Vector3();
+
 function approach(cur: number, goal: number, rate: number, dt: number): number {
   return cur + (goal - cur) * (1 - Math.exp(-rate * dt));
 }
@@ -510,14 +538,52 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
   useBodyTattoo(rig.root, mpfbModelFor(style, frame), 'medium');
 
   // Chạy sau useFrame ghi tư thế ở trên (cùng priority, thứ tự đăng ký).
+  const seatedIk = useRef(false);
+  const anchorRef = useRef<THREE.Group>(null);
   useLimbIK(IK_ON ? rig.root : null, (ctrl) => {
     if (ctrl.ground === null) {
       ctrl.ground = { sampler: FLAT_FLOOR, maxPelvisDrop: 0.15, maxPelvisRaise: 0.05, maxFootTilt: 0, smoothRate: 12 };
     }
+    // Ngồi: hông khớp mặt ghế, chân chạm sàn qua IK chân. Gốc nhân vật nằm tại điểm ngồi (x, z) trên sàn.
+    const sit = animation === 'sit' ? 1 : animation === 'locomotion' ? playerLocomotion.sit : 0;
+    const g = anchorRef.current;
+    if (g && sit > 0.5) {
+      g.updateWorldMatrix(true, false);
+      g.matrixWorld.decompose(_ikPos, _ikQuat, _ikScl);
+      const floorY = _ikPos.y - groundY;
+      const fwd = _ikFwd.set(0, 0, 1).applyQuaternion(_ikQuat);
+      _ikAnchor.set(_ikPos.x, floorY + SEAT_SURFACE_Y * rootYScale, _ikPos.z);
+      applySeatPose(ctrl, { anchor: _ikAnchor, yaw: Math.atan2(fwd.x, fwd.z), floorY, pelvisAboveSeat: 0.1 * rootYScale });
+      ctrl.pelvisTarget.weight = sit;
+      seatedIk.current = true;
+    } else if (seatedIk.current) {
+      releaseSeatPose(ctrl);
+      seatedIk.current = false;
+    }
+    if (IK_DEBUG) {
+      const pel = ctrl.bones.pelvis;
+      let bad = 0;
+      rig.root.traverse((o) => {
+        const e = o.matrixWorld.elements;
+        for (let i = 0; i < 16; i++) if (!Number.isFinite(e[i])) { bad++; break; }
+      });
+      IK_DEBUG.frames++;
+      if (sit > 0.5) IK_DEBUG.sitFrames++;
+      IK_DEBUG.nanBones = bad;
+      if (g) {
+        g.updateWorldMatrix(true, false);
+        IK_DEBUG.floorY = g.matrixWorld.elements[13] - groundY;
+      }
+      if (pel) IK_DEBUG.pelvisY = _ikAnchor.setFromMatrixPosition(pel.matrixWorld).y;
+      const l = ctrl.chain('legL')?.bones.end;
+      const r = ctrl.chain('legR')?.bones.end;
+      if (l) IK_DEBUG.footY[0] = _ikAnchor.setFromMatrixPosition(l.matrixWorld).y;
+      if (r) IK_DEBUG.footY[1] = _ikAnchor.setFromMatrixPosition(r.matrixWorld).y;
+    }
   });
 
   return (
-    <group position={[0, groundY, 0]}>
+    <group position={[0, groundY, 0]} ref={anchorRef}>
       <group ref={rootRef}>
         <group scale={scale}>
           <primitive object={rig.root} />
