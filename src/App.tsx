@@ -1,8 +1,8 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
-import { InteractionHelp, InteractionHud } from './scene/interact';
-import { HelpCenter, HelpLayer, HelpReplayButton } from './help';
+import { InteractionHelp, InteractionHud, TouchLayer } from './scene/interact';
+import { HelpCenter, HelpLayer, HelpReplayButton, openHelpCenter } from './help';
 import { ProfilePanel } from './profile';
 import { WardrobeRoom } from './wardrobe';
 import { TattooStudio } from './tattoo/TattooStudio';
@@ -544,6 +544,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           {/* Hướng dẫn phím nằm ở InteractionHelp (tắt được); chân trang chỉ giữ ghi chú dữ liệu mẫu. */}
           <footer className="hint hint-end">Dữ liệu là mẫu (mock)</footer>
           <InteractionHelp />
+          <TouchLayer />
           <InteractionHud />
           <HelpLayer role={user.role} />
           <HelpCenter role={user.role} />
@@ -627,6 +628,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             </button>
             <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)}>
               Cài đặt
+            </button>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" onClick={openHelpCenter}>
+              Trợ giúp
             </button>
             <button type="button" className="btn btn-ghost" aria-expanded={backupOpen} onClick={() => setBackupOpen((v) => !v)}>
               Sao lưu

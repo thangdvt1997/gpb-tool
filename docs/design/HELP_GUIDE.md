@@ -57,7 +57,7 @@ Chưa chạy trình duyệt, typecheck hay build. Bố cục trên điện tho�
 - Bước mới (since 2): bản đồ nhỏ, chụp ảnh và biểu cảm, Cài đặt và đổi phím, tay cầm (chỉ khi có kết nối), sắp xếp nội thất (chỉ it/admin), tương tác thêm ngăn kéo, cây nước, máy in, công tắc. Gợi ý ngữ cảnh thêm 4 loại vật này.
 - Tên phím lấy động: `keys.ts` `keyNamesFrom(settings.bindings, controlMode)` dùng `keyLabel`; `KEYS` cố định đã bỏ. Đổi phím trong Cài đặt thì chữ đổi ngay.
 - Lưu trữ: khóa `gpb.help.v1` nay có `seenVersion`. Dạng cũ `{version, completed}` vẫn đọc được (seenVersion = version). `TUTORIAL_VERSION` = 2: người đã xem v1 chỉ thấy các bước có `since` > 1 (rồi bước Xong); nút Xem lại luôn hiện đủ.
-- `HelpCenter.tsx`: trang tra cứu, danh sách chủ đề (`topics.ts`), ô tìm không dấu (`foldVi`), mở bằng F1 hoặc ? (bỏ qua khi đang gõ vào ô nhập), Esc đóng. F1 nằm trong `RESERVED_CODES` nên không bị gán lại. Export `openHelpCenter`/`closeHelpCenter` để nút khác gọi.
+- `HelpCenter.tsx`: trang tra cứu, danh sách chủ đề (`topics.ts`), ô tìm không dấu (`foldVi`), mở bằng F1 hoặc ? (bỏ qua khi đang gõ vào ô nhập), Esc đóng. Là dialog modal (`aria-modal="true"`): bẫy focus qua `trapFocus` (Tab vòng trong hộp, Esc đóng, trả focus về nút mở). Trên cảm ứng mở bằng nút "Trợ giúp" ở cột công cụ (App.tsx). F1 nằm trong `RESERVED_CODES` nên không bị gán lại. Export `openHelpCenter`/`closeHelpCenter` để nút khác gọi.
 - Điện thoại (rộng tối đa 760 px và pointer coarse, hoặc dưới 480 px): thẻ ở đỉnh, cao tối đa 34vh, chữ 16 px, nút từ 44 px; nút Xem lại hướng dẫn dời xuống giữa đáy để không đè joystick và cụm nút.
 - Test: `src/help/help.vitest.test.ts` (22 test).
 

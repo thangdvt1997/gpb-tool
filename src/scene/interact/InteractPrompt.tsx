@@ -168,7 +168,7 @@ function useCoarsePointer(): boolean {
  * Điều khiển cảm ứng: joystick bên trái để di chuyển; kéo trên vùng cảnh bên phải để xoay camera
  * (gtaCamera nhận kéo cảm ứng trên canvas); nút Chạy (bật/tắt), Nhảy, Tương tác.
  */
-function TouchControls() {
+function TouchControls({ interactButton = true }: { interactButton?: boolean } = {}) {
   const { paused } = useControlSnapshot();
   const { focus } = useInteractSnapshot();
   const [run, setRun] = useState(false);
@@ -245,13 +245,24 @@ function TouchControls() {
         <button type="button" className="ui-hud-chip" onPointerDown={() => requestTouchJump()}>
           Nhảy
         </button>
-        <button type="button" className="ui-hud-chip" disabled={focus === null} onClick={() => activateInteractFocus()}>
-          {focus ? focus.verb : 'Tương tác'}
-        </button>
+        {interactButton && (
+          <button type="button" className="ui-hud-chip" disabled={focus === null} onClick={() => activateInteractFocus()}>
+            {focus ? focus.verb : 'Tương tác'}
+          </button>
+        )}
       </div>
       )}
     </>
   );
+}
+
+/**
+ * Joystick, Chạy, Nhảy cho thiết bị cảm ứng, dùng chung nguồn input (touchInput) với useGtaPlayer và các cài đặt
+ * touch.joystickSize, buttonsEnabled. Nút tương tác do InteractionHud đảm nhiệm nên không lặp ở đây.
+ */
+export function TouchLayer() {
+  const coarse = useCoarsePointer();
+  return coarse ? <TouchControls interactButton={false} /> : null;
 }
 
 /** Lớp giao diện điều khiển: bảng phím (ẩn được) kèm cài đặt, menu tạm dừng, điều khiển cảm ứng. */

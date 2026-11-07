@@ -38,3 +38,16 @@ Module `keyboardMove.ts` cung cấp `createMoveController`: `select` -> `step` (
 - Kiểm tra tự động không đủ để tuyên bố đạt WCAG; cần kiểm tra thủ công.
 - Phạm vi của thế giới 3D: nội dung canvas không có cây ngữ nghĩa. Tiếp cận chức năng chính phải qua UI DOM (danh sách vật tương tác, panel); danh sách phòng/vật thể bằng UI chưa được xây trong task này.
 - Các hạng mục của task 12 chưa làm ở đây: kiểm kê thao tác (mục 1), nút chọn vùng cơ thể/đồ vật và nhập số (mục 2), reduced motion/camera shake/nhấp nháy (mục 6), gợi ý văn bản cho âm thanh (mục 7).
+
+## Kiểm trên điện thoại giả lập và axe (task 10, 12 một phần)
+
+Spec ở `e2e-new/mobile.spec.ts` và `e2e-new/a11y.spec.ts` (Playwright, Chromium giả lập).
+
+Đã kiểm tự động:
+- Pixel 7 và iPhone 13 (hasTouch), dọc và ngang: vào văn phòng bằng phiên giả lập, mở Trợ giúp và Cài đặt bằng chạm, không tràn ngang (scrollWidth <= clientWidth), nút trong Trợ giúp và Cài đặt >= 44 px, không lỗi console.
+- axe-core (cài ngoài repo, `/tmp/axe-dir`, biến `AXE_PATH`) trên màn đăng nhập, Trợ giúp, Cài đặt, Thư viện: không còn lỗi critical/serious. Đã sửa: tương phản `.sp-todo` trong Cài đặt.
+- HelpCenter là dialog modal: focus vào ô tìm khi mở, Tab không thoát khỏi hộp, Esc đóng, trả focus về nút mở.
+
+Đã xử lý ở lượt sau: joystick cảm ứng được mount lại (`TouchLayer` trong App, dùng chung `touchInput`, `touch.joystickSize`, `buttonsEnabled` với useGtaPlayer; nút tương tác do InteractionHud đảm nhiệm), e2e kéo joystick thì nhân vật di chuyển; Thư viện `li[role=option]` tự là phần tử tương tác (hết nested-interactive); cột công cụ cuộn được và nằm trên các nút nổi (dưới tour) nên chạm được "Cài đặt" ở màn ngang 915x412.
+
+CHƯA KIỂM CHỨNG: NVDA, VoiceOver, TalkBack thật; điện thoại thật (cảm ứng đa điểm, bàn phím ảo, WebGL iOS, vùng an toàn tai thỏ); chỉ có giả lập Chromium và axe.

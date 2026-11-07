@@ -83,3 +83,8 @@
 }
 .hud-tools .quality-picker .muted { color: #c9d1dc; }
 .social-bar[hidden] { display: none; }
+
+/* Màn hình thấp (điện thoại ngang): cột công cụ dài hơn khung nhìn thì cuộn được thay vì tràn khỏi màn hình. */
+.hud-tools { max-height: calc(100% - 72px); overflow-y: auto; overscroll-behavior: contain; }
+/* Điện thoại: cột công cụ nằm trên các nút nổi khác (biểu cảm, chụp ảnh) nhưng dưới tour hướng dẫn (z 30) để luôn chạm được. */
+@media (pointer: coarse) { .hud-tools { z-index: 29; } }
