@@ -22,6 +22,8 @@ export const ACTION_IDS = [
   'firstPerson',
   'overview',
   'map',
+  'inspectItem',
+  'cameraPreset',
   'cancel',
   'editor',
 ] as const;
@@ -39,6 +41,8 @@ export const ACTION_CONTEXT: Record<ActionId, InputContext> = {
   firstPerson: 'gameplay',
   overview: 'gameplay',
   map: 'gameplay',
+  inspectItem: 'gameplay',
+  cameraPreset: 'gameplay',
   cancel: 'ui',
   editor: 'editor',
 };
@@ -57,6 +61,8 @@ export const DEFAULT_BINDINGS: Bindings = {
   firstPerson: 'KeyV',
   overview: 'KeyO',
   map: 'KeyM',
+  inspectItem: 'KeyR',
+  cameraPreset: 'KeyC',
   cancel: 'Escape',
   editor: 'KeyP',
 };

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { activateFocus, chooseAction, closeMenu, useInteractionSnapshot } from './controller';
 import { updateInteractSettings, useInteractSettings } from './settings';
 import { resetAllObjects } from './objects/resetObjects';
+import { ItemInspectHud } from './objects/ItemInspectHud';
 import './interaction.css';
 
 /** Thiết bị cảm ứng (con trỏ thô hoặc có điểm chạm). Theo dõi đổi chế độ (máy lai, giả lập DevTools). */
@@ -43,6 +44,15 @@ function useTouchDevice(): boolean {
  * - Nút cảm ứng: hiện khi là thiết bị cảm ứng và có vật đang chọn; giống phím E.
  */
 export function InteractionHud() {
+  return (
+    <>
+      <InteractionHudMain />
+      <ItemInspectHud />
+    </>
+  );
+}
+
+function InteractionHudMain() {
   const { focus, primary, actionCount, menu, pointer } = useInteractionSnapshot();
   const { keyHints } = useInteractSettings();
   const touch = useTouchDevice();
