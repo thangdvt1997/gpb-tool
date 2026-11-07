@@ -3,3 +3,4 @@
 import './character.test.js';
 import './profanity.test.js';
 import './http.test.js';
+import './origin.test.js';

@@ -78,6 +78,54 @@ export function buildProfilePatch(
   return { patch };
 }
 
+// ---------- Giới thiệu, trạng thái, quyền riêng tư ----------
+
+export const BIO_MAX = 280;
+export const STATUS_TEXT_MAX = 60;
+
+export const PRESENCE_LABELS = { free: 'Rảnh', busy: 'Bận', meeting: 'Đang họp', away: 'Vắng mặt' } as const;
+export const VISIBILITY_LABELS = { everyone: 'Mọi người', colleagues: 'Đồng nghiệp', self: 'Chỉ mình tôi' } as const;
+export type PresenceKey = keyof typeof PRESENCE_LABELS;
+export type VisibilityKey = keyof typeof VISIBILITY_LABELS;
+
+export interface AboutForm {
+  bio: string;
+  presence: PresenceKey;
+  statusText: string;
+  profileVisibility: VisibilityKey;
+  characterVisibility: VisibilityKey;
+}
+export type AboutBase = AboutForm & { revision: number };
+export type AboutPatchBody = { revision: number } & Partial<AboutForm>;
+
+const normText = (raw: string, multiline: boolean): string => {
+  const t = raw.normalize('NFC').replace(/\r\n?/g, '\n');
+  return (multiline ? t.replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n') : t.replace(/\s+/g, ' ')).trim();
+};
+
+/** Body PUT chỉ gồm trường đổi. Lỗi theo trường nếu quá dài hoặc chứa đường dẫn; server vẫn kiểm cuối (kể cả từ cấm). */
+export function buildAboutPatch(
+  base: AboutBase,
+  form: AboutForm,
+): { patch: AboutPatchBody } | { errors: { bio?: string; statusText?: string } } | { empty: true } {
+  const errors: { bio?: string; statusText?: string } = {};
+  const bio = normText(form.bio, true);
+  const statusText = normText(form.statusText, false);
+  const url = /(:\/\/|^\s*(data|blob|javascript|file):)/i;
+  if (Array.from(bio).length > BIO_MAX) errors.bio = `Giới thiệu tối đa ${BIO_MAX} ký tự.`;
+  else if (url.test(bio)) errors.bio = 'Giới thiệu không được chứa đường dẫn.';
+  if (Array.from(statusText).length > STATUS_TEXT_MAX) errors.statusText = `Câu trạng thái tối đa ${STATUS_TEXT_MAX} ký tự.`;
+  else if (url.test(statusText)) errors.statusText = 'Câu trạng thái không được chứa đường dẫn.';
+  if (errors.bio || errors.statusText) return { errors };
+  const patch: AboutPatchBody = { revision: base.revision };
+  if (bio !== base.bio) patch.bio = bio;
+  if (form.presence !== base.presence) patch.presence = form.presence;
+  if (statusText !== base.statusText) patch.statusText = statusText;
+  if (form.profileVisibility !== base.profileVisibility) patch.profileVisibility = form.profileVisibility;
+  if (form.characterVisibility !== base.characterVisibility) patch.characterVisibility = form.characterVisibility;
+  return Object.keys(patch).length === 1 ? { empty: true } : { patch };
+}
+
 // ---------- Ánh xạ lỗi API ----------
 
 export type ErrorKind =
@@ -156,8 +204,14 @@ export function mapProfileError(err: unknown): MappedError {
     return out('too_large', 'Nhân vật quá lớn để lưu lên máy chủ (tối đa 64 KB). Bớt họa tiết hoặc hình xăm rồi thử lại.');
   }
   if (code === 'content_rejected') {
-    return out('invalid', field === 'name' ? 'Tên chứa từ ngữ không phù hợp. Hãy dùng tên khác.' : 'Nội dung chứa từ ngữ không phù hợp.');
+    return out(
+      'invalid',
+      field === 'name'
+        ? 'Tên chứa từ ngữ không phù hợp. Hãy dùng tên khác.'
+        : 'Nội dung chứa từ ngữ không phù hợp. Hãy sửa lại.',
+    );
   }
+  if (code === 'origin_forbidden') return out('other', 'Yêu cầu bị từ chối vì nguồn truy cập không hợp lệ. Tải lại trang rồi thử lại.');
   if (status === 415) return out('unsupported', 'Máy chủ không nhận định dạng dữ liệu này.');
   if (code === 'field_forbidden') return out('invalid', 'Trường này không được sửa qua hồ sơ.');
   if (status === 422) return out('invalid', field ? `${err.message} (${field})` : err.message);
