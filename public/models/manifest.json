@@ -178,7 +178,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         },
         {
           "name": "male_real.eyebrow001",
@@ -186,7 +187,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "MASK"
         },
         {
           "name": "male_real.low-poly",
@@ -194,7 +196,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         }
       ],
       "sockets": [
@@ -445,7 +448,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         },
         {
           "name": "female_real.eyebrow001",
@@ -453,7 +457,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "MASK"
         },
         {
           "name": "female_real.low-poly",
@@ -461,7 +466,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         }
       ],
       "sockets": [
@@ -712,7 +718,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         },
         {
           "name": "chibi.eyebrow001",
@@ -720,7 +727,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "MASK"
         },
         {
           "name": "chibi.low-poly",
@@ -728,7 +736,8 @@
           "doubleSided": true,
           "maps": [
             "baseColor"
-          ]
+          ],
+          "runtimeAlphaMode": "OPAQUE"
         }
       ],
       "sockets": [

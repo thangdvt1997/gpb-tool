@@ -268,3 +268,11 @@ test('file thiếu báo FILE_MISSING; đường dẫn ra ngoài/tuyệt đối b
     assert.ok(!x.errors.some((e) => e.code === 'FILE_SIZE_MISMATCH'));
   }
 });
+
+test('BLEND trong file nhưng runtimeAlphaMode OPAQUE/MASK thì không cảnh báo BLEND_UNAPPROVED', () => {
+  const blend = (extra) => [{ name: 'x', alphaMode: 'BLEND', doubleSided: true, maps: ['baseColor'], ...extra }];
+  const warn = (m) => validateManifest(manifest([desk({ materials: m })])).warnings.filter((w) => w.code === 'BLEND_UNAPPROVED').length;
+  assert.equal(warn(blend({})), 1);
+  assert.equal(warn(blend({ runtimeAlphaMode: 'OPAQUE' })), 0);
+  assert.equal(warn(blend({ runtimeAlphaMode: 'MASK' })), 0);
+});

@@ -47,3 +47,5 @@ Mỗi GLB tĩnh có đúng 1 mesh, 1 vật liệu (màu theo đỉnh). Bàn và 
 ## Validator
 
 Sửa nhỏ để chấp nhận tệp chỉ có xương + animation: `readGlbFacts` lấy tên node làm xương khi không có skin/mesh, `checkFacts` bỏ so bounds khi tệp không có hình học. Kết quả: 0 lỗi, 15 cảnh báo (giảm từ 24: hết 9 SOCKET_UNCALIBRATED).
+
+Lần 4: manifest ghi `runtimeAlphaMode` (OPAQUE cho body/low-poly, MASK cho eyebrow) vì `fixMaterials` trong MpfbAvatar ép lại lúc chạy; validator bỏ 9 cảnh báo BLEND_UNAPPROVED tương ứng. Kết quả: 0 lỗi, 6 cảnh báo (3 LICENSE_UNVERIFIED, 3 PIVOT_OFFSET_REQUIRED).
