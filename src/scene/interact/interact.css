@@ -205,3 +205,10 @@
     overflow-y: auto;
   }
 }
+
+/* Cảm ứng: nút liên kết phím tắt đạt cao 44 px. */
+@media (pointer: coarse) {
+  .ctl-link {
+    min-height: 44px;
+  }
+}

@@ -89,3 +89,11 @@
   font-size: 12px;
   color: var(--warn);
 }
+
+/* Cảm ứng: ô chọn màu đạt vùng chạm 44 x 44 px (máy tính giữ nguyên 32 px). */
+@media (pointer: coarse) {
+  .display-swatch {
+    width: 44px;
+    height: 44px;
+  }
+}

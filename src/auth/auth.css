@@ -754,3 +754,11 @@ h2.auth-tour-title {
     animation: none;
   }
 }
+
+/* Cảm ứng: nút hiện/ẩn mật khẩu đạt vùng chạm 44 x 44 px (máy tính giữ nguyên). */
+@media (pointer: coarse) {
+  .auth-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

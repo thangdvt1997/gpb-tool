@@ -275,3 +275,22 @@ pre {
 /* Kéo chuột trên cảnh 3D (xoay camera) không được bôi đen chữ HUD. Ô nhập, hộp thoại, panel vẫn chọn chữ được. */
 .app { user-select: none; -webkit-user-select: none; }
 .app input, .app textarea, .app [role='dialog'], .app [role='region'], .app [role='log'] { user-select: text; -webkit-user-select: text; }
+
+/* Cảm ứng: nút và điều khiển cũ đạt vùng chạm 44 x 44 px (máy tính giữ nguyên). */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .onb-btn,
+  .onb-link,
+  .onb-tab,
+  .onb-tab-select select,
+  .onb-choice {
+    min-height: 44px;
+  }
+  .onb-swatch {
+    width: 44px;
+    height: 44px;
+  }
+}
