@@ -146,7 +146,7 @@ describe('mép trang phục: bóng đổ', () => {
 });
 
 describe('vùng màu: biên cổ/gấu mượt', () => {
-  it('band đơn điệu theo độ cao, vùng phụ là cổ ở trên và gấu ở dưới; đỉnh khác band = -1', () => {
+  it('band liên tục theo độ cao cho mọi đỉnh thân/chậu/đùi: dương ở dải cổ và dải gấu, vùng phụ là cổ ở trên và gấu ở dưới', () => {
     const s = spec('inner:polo');
     const zb = vertexZoneBlend(cls, s, data.normals);
     const span = cls.yNeck - cls.yPelvis;
@@ -154,15 +154,16 @@ describe('vùng màu: biên cổ/gấu mượt', () => {
     let hem = 0;
     for (let v = 0; v < cls.vertexCount; v++) {
       const r = cls.region[v];
-      if (zb.band[v] === -1) continue;
-      if (r === Region.torso || r === Region.neck) {
-        expect(zb.zoneB[v]).toBe(ZONE_LIST.indexOf('collar'));
-        expect(zb.band[v]).toBeCloseTo((cls.u[v] - (s.neckU - 0.06)) * span, 5);
-        collar++;
+      const cb = (cls.u[v] - (s.neckU - 0.06)) * span;
+      const hb = (s.hemU + 0.06 - cls.u[v]) * span;
+      if (r === Region.torso || r === Region.neck || r === Region.pelvis || r === Region.thigh) {
+        // Không có đỉnh sentinel giữa thân: band bằng max(dải cổ, dải gấu) và đổi dấu đúng tại biên.
+        expect(zb.band[v]).toBeCloseTo(Math.max(cb, hb), 5);
+        expect(zb.zoneB[v]).toBe(cb >= hb ? ZONE_LIST.indexOf('collar') : ZONE_LIST.indexOf('hem'));
+        if (zb.band[v] >= 0) (cb >= hb ? collar++ : hem++);
       } else {
-        expect(zb.zoneB[v]).toBe(ZONE_LIST.indexOf('hem'));
-        expect(zb.band[v]).toBeCloseTo((s.hemU + 0.06 - cls.u[v]) * span, 5);
-        hem++;
+        expect(zb.band[v]).toBeLessThan(0);
+        expect(zb.band[v]).toBeGreaterThan(-0.01);
       }
     }
     expect(collar).toBeGreaterThan(100);
