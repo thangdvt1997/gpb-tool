@@ -288,13 +288,15 @@ export interface FallbackAvatarProps {
    * vì bộ phát emote là của riêng họ). Mặc định false.
    */
   emote?: boolean;
+  /** Nguồn tư thế riêng cho avatar từ xa; có thì dùng thay bộ phát emote của mình. */
+  poseSource?: (out: AvatarPose, nowMs: number) => boolean;
 }
 
 /**
  * Nhân vật dự phòng bằng hình học, cao 1,60 m (slim, dáng nữ), 1,70 m (regular, dáng nam) hoặc 1,74 m (broad),
  * chân đặt tại y = 0. Dùng khi không có file mô hình. Mặt hướng về +Z. Số đo thân ở fallbackBody.
  */
-export function FallbackAvatar({ appearance, displayName, animation = 'idle', emote = false }: FallbackAvatarProps) {
+export function FallbackAvatar({ appearance, displayName, animation = 'idle', emote = false, poseSource }: FallbackAvatarProps) {
   const scratch = useMemo(createPoseScratch, []);
   const shape = bodyShapeOf(appearance.bodyType);
   const skin = SKIN_TONES[appearance.skinTone];
@@ -342,7 +344,7 @@ export function FallbackAvatar({ appearance, displayName, animation = 'idle', em
   };
 
   useFrame((state) => {
-    applyPose(refs, emote && sampleEmotePose(scratch) ? scratch : computePose(animation, state.clock.elapsedTime));
+    applyPose(refs, (poseSource ? poseSource(scratch, performance.now()) : emote && sampleEmotePose(scratch)) ? scratch : computePose(animation, state.clock.elapsedTime));
   });
 
   const armProps = { shape, sleeve, sleeveColor: topColor, skinColor: skin, showCufflink: hasCufflinks, cuffColor };

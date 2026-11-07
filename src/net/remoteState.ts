@@ -2,6 +2,8 @@
 // Vẽ ở thời điểm (giờ server ước lượng - interpDelay) để luôn có hai mẫu bao quanh; gói trễ/đảo thứ tự
 // được chèn đúng chỗ theo t; mẫu cùng t bị bỏ. Khoảng cách lớn giữa hai mẫu coi là teleport (không nội suy).
 
+import { normalizeAppearance, type Appearance } from '../avatar/appearance';
+import { RemoteActions } from './remoteActions';
 import type { PlayerState } from './protocol';
 
 export interface Sample {
@@ -31,6 +33,9 @@ export function lerpAngle(a: number, b: number, k: number): number {
 export class RemoteStore {
   private buf = new Map<string, Sample[]>();
   private names = new Map<string, string>();
+  private looks = new Map<string, Appearance>();
+  /** Hành động xã hội đang chạy trên avatar từ xa. */
+  readonly actions = new RemoteActions();
   private offset: number | null = null; // serverTime - clientNow (ms), làm mượt
   readonly interpDelayMs: number;
   readonly teleportMeters: number;
@@ -57,11 +62,15 @@ export class RemoteStore {
   reset(players: PlayerState[]): void {
     this.buf.clear();
     this.names.clear();
+    this.looks.clear();
+    this.actions.clearAll();
     for (const p of players) this.push(p);
   }
 
   push(p: PlayerState): void {
     this.names.set(p.id, p.name);
+    // Ngoại hình: chỉ khi world gửi kèm (trường tùy chọn); chuẩn hóa để dữ liệu lạ không làm hỏng avatar.
+    if (p.appearance !== undefined && p.appearance !== null) this.looks.set(p.id, normalizeAppearance(p.appearance));
     let list = this.buf.get(p.id);
     if (!list) this.buf.set(p.id, (list = []));
     const s: Sample = { t: p.t, x: p.x, z: p.z, yaw: p.yaw, anim: p.anim };
@@ -76,6 +85,8 @@ export class RemoteStore {
   remove(id: string): void {
     this.buf.delete(id);
     this.names.delete(id);
+    this.looks.delete(id);
+    this.actions.clear(id);
   }
 
   ids(): string[] {
@@ -84,6 +95,11 @@ export class RemoteStore {
 
   nameOf(id: string): string {
     return this.names.get(id) ?? '';
+  }
+
+  /** Ngoại hình nếu world đã gửi; undefined thì dùng mặc định. */
+  appearanceOf(id: string): Appearance | undefined {
+    return this.looks.get(id);
   }
 
   /** Vị trí tại giờ server `renderT` (đã trừ độ trễ nếu dùng sampleAt). */

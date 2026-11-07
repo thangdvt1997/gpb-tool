@@ -157,12 +157,32 @@ export function sampleEmotePose(out: Pose, nowMs: number = performance.now()): b
   const def = current;
   if (def === null) return false;
   const t = Math.max(0, (nowMs - state.startedAt) / 1000);
+  if (!samplePoseOf(out, def, t, reduced, frozen)) {
+    cancelEmote();
+    return false;
+  }
+  return true;
+}
+
+/** Thời lượng (giây) của emote `once` kể từ lúc bắt đầu tới khi về nghỉ; loop/hold trả Infinity. */
+export function emoteDurationSec(def: EmoteDef): number {
+  if (def.mode !== 'once') return Infinity;
+  let sum = LEAD_IN + LEAD_OUT;
+  for (let i = 1; i < def.frames.length; i++) sum += def.frames[i].dur;
+  return sum;
+}
+
+/**
+ * Thuần: tư thế của `def` sau `t` giây kể từ lúc bắt đầu. Dùng chung cho nhân vật của mình (sampleEmotePose)
+ * và avatar từ xa. Trả false khi emote một lần đã kết thúc (`out` không đổi).
+ * `frozen`: giữ tư thế tĩnh mãi, không tự hết giờ.
+ */
+export function samplePoseOf(out: Pose, def: EmoteDef, t: number, reduced: boolean, frozen = false): boolean {
   const frames = def.frames;
 
   if (reduced) {
     // Giảm chuyển động: một tư thế tĩnh, đổi tức thì, không nội suy, không lặp.
     if (!frozen && def.mode === 'once' && t > REDUCED_HOLD) {
-      cancelEmote();
       return false;
     }
     copyInto(out, frames[def.reducedFrame].pose);
@@ -211,7 +231,6 @@ export function sampleEmotePose(out: Pose, nowMs: number = performance.now()): b
   // once: lead-out về nghỉ rồi kết thúc.
   const tail = local - acc;
   if (tail >= LEAD_OUT) {
-    cancelEmote();
     return false;
   }
   lerpInto(out, last, null, ease('smooth', tail / LEAD_OUT));
