@@ -92,6 +92,7 @@ export type WardrobeAction =
   | { type: 'style'; style: BodyStyle }
   | { type: 'frame'; frame: BodyFrame }
   | { type: 'preset'; id: string }
+  | { type: 'importLook'; look: CharacterLook; notes?: string[] }
   | { type: 'acc'; slot: AccessorySlot; itemId: string | null }
   | { type: 'accOpt'; slot: AccessorySlot; patch: AccessoryPatch }
   | { type: 'ring'; op: 'add'; itemId: string; hand: Side; finger: RingFinger }
@@ -292,6 +293,11 @@ function step(s: WardrobeState, a: WardrobeAction): WardrobeState {
       if (!r) return { ...s, notice: { text: 'Bộ mẫu không tồn tại.', kind: 'error', issues: [] } };
       const next = pushHistory(s, r.look);
       return { ...next, notice: r.changes.length ? { text: r.changes.join(' '), kind: 'info', issues: [] } : null };
+    }
+    case 'importLook': {
+      const next = pushHistory(s, cloneLook(a.look));
+      const warns = (a.notes ?? []).join(' ');
+      return { ...next, notice: { text: warns ? `Đã nhập nhân vật. ${warns}` : 'Đã nhập nhân vật từ tệp JSON.', kind: warns ? 'warn' : 'info', issues: [] } };
     }
     case 'acc': {
       const next = cloneLook(s.draft);
