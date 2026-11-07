@@ -21,6 +21,8 @@ export default defineConfig({
     port: 4173,
     proxy: {
       ...(process.env.GPB_PREVIEW_AUTH_API ? { '/api/auth': process.env.GPB_PREVIEW_AUTH_API } : {}),
+      // GPB_PREVIEW_WORLD_API: tách /api/world (cả WebSocket) sang world service cục bộ (ví dụ http://127.0.0.1:3903).
+      ...(process.env.GPB_PREVIEW_WORLD_API ? { '/api/world': { target: process.env.GPB_PREVIEW_WORLD_API, ws: true } } : {}),
       '/api': process.env.GPB_PREVIEW_API ?? 'http://127.0.0.1:18080',
     },
   },
