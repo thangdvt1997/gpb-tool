@@ -118,3 +118,7 @@ Chưa kiểm chứng: đường qua gateway production (`/api/world`, ws), đổ
 ## Khả năng tiếp cận tự động — wt3/a11y3 87ad9d4
 
 Spec `30-a11y-full.spec.ts` trên bản build main 8fb740a: **13/13 PASS**. axe 0 critical/serious ở màn đăng nhập, 7 panel và toàn trang cảnh; mở/đóng panel bằng bàn phím, focus trap, trả focus; ariaSnapshot thanh công cụ; aria-live; prefers-reduced-motion. Trình đọc màn hình thật (NVDA, VoiceOver, TalkBack): chưa kiểm chứng, checklist ở `docs/design/A11Y_VERIFICATION.md`.
+
+## Production 2026-11-07 — commit 8fb740a (deploy khoảng 19:15 UTC, watcher root)
+
+Acceptance PASS 18:53 (59 pass, 5 skip là 29-multiplayer khi không có world 3903; 1 đăng nhập thật). Trang 18081 phục vụ `assets/index-i8jpEkJ4.js`, trùng bản build riêng của 8fb740a. `playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,5 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 55,3° khi kéo nhanh.
