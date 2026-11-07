@@ -98,3 +98,7 @@ Chạy `npx playwright test -c playwright.prod.config.ts --workers=1` từ /home
 Lần chạy trước trên efe00e6 với `--workers=4` song song acceptance: 20-controls hỏng ở W (thân lệch 20,4°, ngưỡng 20°) do tải; chạy lại một mình PASS. Đã tăng timeout bài này lên 600 s.
 
 Chưa kiểm chứng trên production: đăng nhập thật (tài khoản test e2e chỉ có trong auth kiểm thử 127.0.0.1:3902, không có trong auth production; không tự tạo tài khoản production). Service world và auth bản mới chưa deploy (quy trình deploy chỉ cho web), nên các tính năng `?world=1`, hồ sơ mở rộng (/profile/about) chưa thử trên production.
+
+## Production 2026-11-07 — commit 48631c6 (deploy 14:26 UTC)
+
+`playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,3 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 55,7° khi kéo nhanh (giới hạn 70°). Cảnh 3D, HUD, WASD theo camera đều qua. Đăng nhập thật trên production: chưa kiểm chứng (tài khoản test chỉ có ở auth kiểm thử).

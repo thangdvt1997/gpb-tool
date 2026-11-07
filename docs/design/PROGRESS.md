@@ -134,4 +134,8 @@ world (15, 26, 27), ik (03), auth22 (22), remote (avatar từ xa phát hành đ�
 ### Còn lại
 
 - Bị chặn bởi hạ tầng hoặc asset: 25b thoại (TURN/SFU); 23–27 cần deploy service world và route gateway; 22 cần deploy auth mới; 01/02 cần GLB đồ đạc, clip thật, bằng chứng license MPFB; 12 cần trình đọc màn hình thật.
-- Main e78f25f (body + fashion đợt 3) chờ acceptance.
+| 48631c6 | **PASS** 14:08 (e2e 47) | có | /home/cc/bundles/gpb-48631c6.bundle | 14:26 UTC | **4/4 PASS** |
+
+(48631c6 gồm thanh hình thể bằng xương và fashion đợt 3: mép cổ, điện thoại trong túi, tóc né mũ.)
+
+Không tạo PROJECT_COMPLETE.txt: 22–27 cần deploy service auth/world (ngoài phạm vi quy trình deploy chỉ cho web), 25b cần TURN/SFU, 01/02 cần asset, 12 cần trình đọc màn hình thật. Cần chủ dự án quyết định có cho deploy services/auth và services/world hay không.
