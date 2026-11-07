@@ -1,8 +1,29 @@
+import { createContext, useContext, type ReactNode } from 'react';
 import { Box, Cylinder, Sphere, Torus, type Vec3 } from './fallbackParts';
 import type { HairStyle } from './appearance';
 
 /** Bán kính đầu (mét). Khớp với FallbackAvatar. */
 const HEAD_RADIUS = 0.1;
+
+/** Tóc phần đỉnh khi đội mũ: hệ số nén theo trục đứng (1 là giữ nguyên) và cờ ẩn hẳn. Xem avatar/outfit/hairHat.ts. */
+export interface HairCrown {
+  scale: number;
+  hide: boolean;
+}
+const NO_CROWN: HairCrown = { scale: 1, hide: false };
+const CrownContext = createContext<HairCrown>(NO_CROWN);
+
+/** Phần tóc nằm trên mép mũ (chóp dựng, búi, lọn xoăn): nén theo trục đứng về phía hộp sọ hoặc ẩn dưới mũ. */
+function CrownGroup({ children }: { children: ReactNode }) {
+  const c = useContext(CrownContext);
+  if (c.hide) return null;
+  if (c.scale >= 1) return <>{children}</>;
+  return (
+    <group position={[0, (1 - c.scale) * 0.06, 0]} scale={[1, c.scale, 1]}>
+      {children}
+    </group>
+  );
+}
 
 /** Nắp tóc: nửa cầu phủ trên đầu. thetaLength càng nhỏ thì đường chân tóc càng cao. */
 function HairCap({
@@ -14,7 +35,11 @@ function HairCap({
   scale: Vec3;
   thetaLength: number;
 }) {
-  return <Sphere radius={HEAD_RADIUS} thetaLength={thetaLength} scale={scale} color={color} />;
+  const c = useContext(CrownContext);
+  if (c.hide) return null;
+  // Nén giữ nguyên chân tóc (mép nắp) để không hở trán: dời lên đúng bằng phần mép bị hạ.
+  const rim = HEAD_RADIUS * scale[1] * Math.cos(thetaLength);
+  return <Sphere radius={HEAD_RADIUS} thetaLength={thetaLength} scale={[scale[0], scale[1] * c.scale, scale[2]]} position={[0, rim * (1 - c.scale), 0]} color={color} />;
 }
 
 /** Phần gáy và sau tai: nắp cầu thấp hơn, lùi ra sau để không che mặt. */
@@ -57,13 +82,23 @@ const SPIKE_ANGLES: readonly number[] = [0, 1.05, 2.1, 3.14, 4.19, 5.24];
 export interface FallbackHairProps {
   style: HairStyle;
   color: string;
+  /** Có mũ trên đầu: nén hoặc ẩn phần tóc đỉnh. Bỏ trống là không có mũ. */
+  crown?: HairCrown;
 }
 
 /**
  * Tóc cho nhân vật dự phòng. Đặt bên trong group của đầu, gốc tọa độ là tâm đầu.
  * Mặt nhìn về phía +Z, nên phần sau đầu nằm ở z âm.
  */
-export function FallbackHair({ style, color }: FallbackHairProps) {
+export function FallbackHair({ style, color, crown }: FallbackHairProps) {
+  return (
+    <CrownContext.Provider value={crown ?? NO_CROWN}>
+      <HairByStyle style={style} color={color} />
+    </CrownContext.Provider>
+  );
+}
+
+function HairByStyle({ style, color }: { style: HairStyle; color: string }) {
   switch (style) {
     case 'short':
       return (
@@ -114,7 +149,9 @@ export function FallbackHair({ style, color }: FallbackHairProps) {
       return (
         <>
           <HairCap color={color} scale={[1.08, 1.16, 1.08]} thetaLength={Math.PI * 0.4} />
-          <Sphere radius={0.05} position={[0, 0.1, -0.09]} color={color} />
+          <CrownGroup>
+            <Sphere radius={0.05} position={[0, 0.1, -0.09]} color={color} />
+          </CrownGroup>
         </>
       );
 
@@ -123,6 +160,7 @@ export function FallbackHair({ style, color }: FallbackHairProps) {
       return (
         <>
           <HairCap color={color} scale={[1.08, 1.16, 1.08]} thetaLength={Math.PI * 0.4} />
+          <CrownGroup>
           {SPIKE_ANGLES.map((angle, i) => (
             <Cylinder
               key={i}
@@ -134,6 +172,7 @@ export function FallbackHair({ style, color }: FallbackHairProps) {
               color={color}
             />
           ))}
+          </CrownGroup>
         </>
       );
 
@@ -142,9 +181,11 @@ export function FallbackHair({ style, color }: FallbackHairProps) {
       return (
         <>
           <HairCap color={color} scale={[1.08, 1.16, 1.08]} thetaLength={Math.PI * 0.4} />
-          {CURLY_POINTS.map((p, i) => (
-            <Sphere key={i} radius={0.034} segments={8} position={p} color={color} />
-          ))}
+          <CrownGroup>
+            {CURLY_POINTS.map((p, i) => (
+              <Sphere key={i} radius={0.034} segments={8} position={p} color={color} />
+            ))}
+          </CrownGroup>
         </>
       );
 

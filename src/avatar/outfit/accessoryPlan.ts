@@ -199,11 +199,8 @@ export function planAccessories(look: CharacterLook): AccessoryPlan {
       if (slot === 'phone') {
         const st = (extra.state ?? 'held') as PhoneState;
         state = st;
-        if (st === 'stowed') {
-          skipped.push({ slot, itemId: w.itemId, reason: 'Điện thoại đang cất trong túi quần: không vẽ (không có asset túi quần).' });
-          continue;
-        }
-        attachBone = 'hand';
+        // Cất: nhô khỏi túi sau quần, gắn xương chậu; cầm/dùng: gắn bàn tay.
+        attachBone = st === 'stowed' ? 'hips' : 'hand';
       }
       if (slot === 'headphones') attachBone = (extra.state as HeadphoneWear | undefined) === 'around-neck' ? 'neck' : 'head';
       entries.push({

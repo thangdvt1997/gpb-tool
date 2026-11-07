@@ -5,6 +5,7 @@ import { SKIN_TONES, type Appearance } from './appearance';
 import { computePose, createPoseScratch, type AvatarAnimation, type AvatarPose } from './animation';
 import { sampleEmotePose } from '../emotes/player';
 import { FallbackHair } from './fallbackHair';
+import { hairUnderHat } from './outfit/hairHat';
 import { BodyAccessories, HeadAccessories } from './fallbackAccessories';
 import {
   FallbackOutfit,
@@ -290,13 +291,15 @@ export interface FallbackAvatarProps {
   emote?: boolean;
   /** Nguồn tư thế riêng cho avatar từ xa; có thì dùng thay bộ phát emote của mình. */
   poseSource?: (out: AvatarPose, nowMs: number) => boolean;
+  /** Loại mũ đang đội theo look.outfit.hat (cap, beanie, bucket, beret, party); bỏ trống thì chỉ xét mũ tiệc của Appearance. Dùng để nén tóc đỉnh. */
+  hatKind?: string | null;
 }
 
 /**
  * Nhân vật dự phòng bằng hình học, cao 1,60 m (slim, dáng nữ), 1,70 m (regular, dáng nam) hoặc 1,74 m (broad),
  * chân đặt tại y = 0. Dùng khi không có file mô hình. Mặt hướng về +Z. Số đo thân ở fallbackBody.
  */
-export function FallbackAvatar({ appearance, displayName, animation = 'idle', emote = false, poseSource }: FallbackAvatarProps) {
+export function FallbackAvatar({ appearance, displayName, animation = 'idle', emote = false, poseSource, hatKind = null }: FallbackAvatarProps) {
   const scratch = useMemo(createPoseScratch, []);
   const shape = bodyShapeOf(appearance.bodyType);
   const skin = SKIN_TONES[appearance.skinTone];
@@ -317,6 +320,11 @@ export function FallbackAvatar({ appearance, displayName, animation = 'idle', em
   );
   const hasWatch = accessories.includes('watch');
   const hasCufflinks = accessories.includes('cufflinks');
+  // Mũ tiệc (Appearance) hoặc mũ theo look: nén/ẩn tóc đỉnh để không xuyên vỏ mũ.
+  const hairCrown = useMemo(() => {
+    const under = hairUnderHat(appearance.hairStyle, hatKind ?? (accessories.includes('hat-party') ? 'party' : null));
+    return under.crownScale >= 1 ? undefined : { scale: under.crownScale, hide: under.hideCrown };
+  }, [appearance.hairStyle, hatKind, accessories]);
   const cuffColor = outfitCuffColor(outfit);
   const crease = outfitHasCrease(outfit);
   const stripeColor = outfitLegStripe(outfit);
@@ -416,7 +424,7 @@ export function FallbackAvatar({ appearance, displayName, animation = 'idle', em
           <Sphere radius={0.011} segments={8} scale={[2.5, 0.5, 0.7]} position={[0, -0.046, 0.0915]} color={lip} />
           <Sphere radius={0.012} segments={8} scale={[2.25, 0.6, 0.7]} position={[0, -0.053, 0.0905]} color={shade(lip, 0.06)} />
 
-          <FallbackHair style={appearance.hairStyle} color={appearance.hairColor} />
+          <FallbackHair style={appearance.hairStyle} color={appearance.hairColor} crown={hairCrown} />
         </group>
         {/* Kính và mũ đặt ngoài group co để tròng kính tròn, không bị bóp méo */}
         <HeadAccessories accessories={accessories} />

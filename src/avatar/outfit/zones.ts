@@ -24,7 +24,7 @@ export const ZONE_LIST: readonly GarmentZone[] = [
 const IDX = Object.fromEntries(ZONE_LIST.map((z, i) => [z, i])) as Record<string, number>;
 
 /** Mức vùng của đỉnh v; chuỗi tên vùng ưa thích (món không có vùng đó thì chọn vùng thay thế khi tô màu). */
-export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: number, v: number): GarmentZone {
+export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: number, v: number, nearNeck = true): GarmentZone {
   const r = cls.region[v];
   const t = cls.t[v];
   const u = cls.u[v];
@@ -45,7 +45,7 @@ export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: num
   // top hoặc full
   if (r === Region.upperArm) return 'sleeve';
   if (r === Region.foreArm) return t > 0.88 * spec.sleeveFore ? 'cuff' : 'sleeve';
-  if ((r === Region.torso || r === Region.neck) && u > spec.neckU - 0.06) return 'collar';
+  if ((r === Region.torso || r === Region.neck) && u > spec.neckU - 0.06 && nearNeck) return 'collar';
   if (spec.part === 'top' && (r === Region.pelvis || r === Region.thigh) && u < spec.hemU + 0.06) return 'hem';
   if (spec.part === 'full' && (r === Region.thigh || r === Region.calf)) return 'leg';
   return 'body';
@@ -59,13 +59,50 @@ export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: num
 /** Giá trị band (m) của đỉnh ngoài thân. */
 const OUT_BAND = 0.002;
 
+/** Bán kính ngang (so với bán kính cổ) trong đó mới tính là vùng cổ áo; xa hơn là vai, không tô màu cổ. */
+export const COLLAR_REACH = 1.7;
+
+/** Trục và bán kính cổ đo từ đỉnh vùng cổ (trung bình khoảng cách ngang tới tâm). */
+export function neckFrame(cls: Classification, positions: ArrayLike<number>): { cx: number; cz: number; r: number } | null {
+  let sx = 0;
+  let sz = 0;
+  let n = 0;
+  for (let v = 0; v < cls.vertexCount; v++) {
+    if (cls.region[v] !== Region.neck) continue;
+    sx += positions[v * 3];
+    sz += positions[v * 3 + 2];
+    n++;
+  }
+  if (n < 8) return null;
+  const cx = sx / n;
+  const cz = sz / n;
+  let sr = 0;
+  for (let v = 0; v < cls.vertexCount; v++) {
+    if (cls.region[v] !== Region.neck) continue;
+    sr += Math.hypot(positions[v * 3] - cx, positions[v * 3 + 2] - cz);
+  }
+  return { cx, cz, r: sr / n };
+}
+
+/** Khoảng cách ngang còn lại tới rìa vùng cổ áo (m): dương trong vùng cổ, âm ở vai. Vô hạn nếu không có vị trí. */
+function collarReach(cls: Classification, positions: ArrayLike<number> | undefined): ((v: number) => number) | null {
+  if (!positions) return null;
+  const f = neckFrame(cls, positions);
+  if (!f) return null;
+  const R = COLLAR_REACH * f.r;
+  return (v) => R - Math.hypot(positions[v * 3] - f.cx, positions[v * 3 + 2] - f.cz);
+}
+
 export function vertexZoneBlend(
   cls: Classification,
   spec: ShellClass,
   normals: ArrayLike<number>,
+  /** Vị trí đỉnh: có thì cổ áo chỉ tô quanh cổ, không tràn lên vai (băng màu cổ liên tục theo khoảng cách ngang). */
+  positions?: ArrayLike<number>,
 ): { zone: Uint8Array; zoneB: Uint8Array; band: Float32Array } {
   const n = cls.vertexCount;
-  const zone = vertexZones(cls, spec, normals);
+  const zone = vertexZones(cls, spec, normals, positions);
+  const reach = collarReach(cls, positions);
   const zoneB = Uint8Array.from(zone);
   const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
   // Sentinel nhỏ (m) cho đỉnh ngoài thân (tay, bàn tay...): giá trị -1 cũ làm đường band = 0 nội suy lệch về phía đỉnh thân.
@@ -79,7 +116,8 @@ export function vertexZoneBlend(
     if (!(r === Region.torso || r === Region.neck || (top && (r === Region.pelvis || r === Region.thigh)))) continue;
     // Band liên tục theo độ cao cho MỌI đỉnh thân/chậu/đùi: dương trong dải cổ hoặc dải gấu, âm ở giữa. Vùng phụ là cổ ở nửa trên,
     // gấu ở nửa dưới, nên màu vùng phụ nội suy giữa hai đỉnh kề nhau luôn cùng loại (không có bậc thang ở ranh giới vùng của lưới).
-    const cb = (u - (spec.neckU - 0.06)) * span;
+    let cb = (u - (spec.neckU - 0.06)) * span;
+    if (reach) cb = Math.min(cb, reach(v));
     const hb = top ? (spec.hemU + 0.06 - u) * span : -Infinity;
     band[v] = Math.max(cb, hb);
     zoneB[v] = cb >= hb ? IDX.collar : IDX.hem;
@@ -89,11 +127,12 @@ export function vertexZoneBlend(
 }
 
 /** Chỉ số vùng cho mọi đỉnh. normals có thể rỗng (đế giày khi đó không nhận ra). */
-export function vertexZones(cls: Classification, spec: ShellClass, normals: ArrayLike<number>): Uint8Array {
+export function vertexZones(cls: Classification, spec: ShellClass, normals: ArrayLike<number>, positions?: ArrayLike<number>): Uint8Array {
   const out = new Uint8Array(cls.vertexCount);
+  const reach = collarReach(cls, positions);
   for (let v = 0; v < cls.vertexCount; v++) {
     const ny = normals.length >= (v + 1) * 3 ? normals[v * 3 + 1] : 0;
-    out[v] = IDX[zoneOfVertex(cls, spec, ny, v)] ?? 0;
+    out[v] = IDX[zoneOfVertex(cls, spec, ny, v, reach ? reach(v) >= 0 : true)] ?? 0;
   }
   return out;
 }

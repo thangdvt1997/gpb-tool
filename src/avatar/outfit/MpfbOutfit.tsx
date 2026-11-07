@@ -176,7 +176,7 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
     order.forEach(({ p, i }, rank) => {
       const r = results[i];
       if (r.index.length === 0) return;
-      const zb = vertexZoneBlend(cls, p.spec, data.normals);
+      const zb = vertexZoneBlend(cls, p.spec, data.normals, data.positions);
       const key = shellGeometryKey(baseGeo.uuid, `${p.garmentId}|${p.variant.fit}|${p.variant.tucked ? 1 : 0}`, r.index, r.offset, r.cut);
       const geo = geometryPool.acquire(key, () => deriveGeometry(baseGeo, r.index, { offset: r.offset, zone: zb.zone, zoneB: zb.zoneB, band: zb.band, cut: r.cut }));
       acquired.push(key);

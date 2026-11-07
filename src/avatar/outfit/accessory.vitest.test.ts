@@ -69,7 +69,7 @@ describe('phụ kiện: bảng hình dạng phủ toàn bộ danh mục', () => 
     expect(mpfbBone('finger', 'l', 'little')).toBe('pinky_01_l');
   });
 
-  it('kế hoạch: đồng hồ bên trái, vòng tay hai bên, điện thoại cất không vẽ', () => {
+  it('kế hoạch: đồng hồ bên trái, vòng tay hai bên, điện thoại cất gắn xương chậu', () => {
     const l = lookWith((x) => {
       x.accessories.watch = wearAcc('watch-metal', { side: 'left' });
       x.accessories.bracelet = wearAcc('bracelet-chain', { side: 'both' });
@@ -79,8 +79,8 @@ describe('phụ kiện: bảng hình dạng phủ toàn bộ danh mục', () => 
     const p = planAccessories(l);
     expect(p.entries.filter((e) => e.slot === 'watch').map((e) => e.bone)).toEqual(['lowerarm_l']);
     expect(p.entries.filter((e) => e.slot === 'bracelet').map((e) => e.bone).sort()).toEqual(['lowerarm_l', 'lowerarm_r']);
-    expect(p.entries.find((e) => e.slot === 'phone')).toBeUndefined();
-    expect(p.skipped.some((s) => s.slot === 'phone')).toBe(true);
+    expect(p.entries.find((e) => e.slot === 'phone')?.bone).toBe('pelvis');
+    expect(p.skipped.some((s) => s.slot === 'phone')).toBe(false);
     expect(p.entries.find((e) => e.slot === 'headphones')?.bone).toBe('neck_01');
     expect(accessorySignature(l)).not.toBe(accessorySignature(makeDefaultLook()));
   });
@@ -286,5 +286,44 @@ describe('co theo kích thước thân (chiều cao, chibi, morph)', () => {
     expect(l.x).toBeGreaterThan(h.cx);
     expect(r.x).toBeLessThan(h.cx);
     expect(headSlice(data, ctx.cls, h.minY + 0.5 * h.height, 0.01).count).toBeGreaterThan(50);
+  });
+});
+
+describe.each(MODELS)('điện thoại cất nhô khỏi túi sau trên %s', (model) => {
+  const { data, ctx } = world(model);
+  it.each(['left', 'right'] as const)('bên %s: gắn pelvis, nằm phía sau và phía trên túi, không chìm vào mông', (side) => {
+    const l = lookWith((x) => {
+      x.accessories.phone = { ...wearAcc('phone-slab', { side }), state: 'stowed' };
+    });
+    const e = planAccessories(l).entries[0];
+    expect(e.bone).toBe('pelvis');
+    expect(data.boneNames).toContain('pelvis');
+    const b = buildAccessory(e, ctx);
+    expect(b.parts.length).toBeGreaterThanOrEqual(3);
+    const box = new THREE.Box3();
+    for (const p of b.parts) box.union(bbox(p.geometry));
+    const c = box.getCenter(new THREE.Vector3());
+    // Ở phía sau thân (z nhỏ hơn trục thân) và đúng bên.
+    const axisZ = data.bonePos['pelvis'][2];
+    expect(c.z).toBeLessThan(axisZ);
+    expect(side === 'left' ? c.x > 0 : c.x < 0).toBe(true);
+    // Gần xương chậu và kích thước hợp lý.
+    expect(Math.hypot(c.x - data.bonePos['pelvis'][0], c.y - data.bonePos['pelvis'][1], c.z - axisZ)).toBeLessThan(ctx.cls.bodyHeight * 0.2);
+    const size = box.getSize(new THREE.Vector3());
+    expect(Math.max(size.x, size.y, size.z)).toBeLessThan(ctx.cls.bodyHeight * 0.15);
+    // Mặt ngoài của điện thoại nằm ngoài bề mặt mông tại chỗ đó.
+    const pos = b.parts[1].geometry.getAttribute('position');
+    let minGap = Infinity;
+    for (let i = 0; i < pos.count; i += 4) {
+      const px = pos.getX(i);
+      const py = pos.getY(i);
+      const pz = pos.getZ(i);
+      for (let v = 0; v < ctx.cls.vertexCount; v += 3) {
+        if (ctx.cls.region[v] !== Region.pelvis) continue;
+        if (Math.abs(data.positions[v * 3 + 1] - py) > 0.02) continue;
+        minGap = Math.min(minGap, Math.hypot(px - data.positions[v * 3], pz - data.positions[v * 3 + 2]));
+      }
+    }
+    expect(minGap).toBeGreaterThan(0.002);
   });
 });
