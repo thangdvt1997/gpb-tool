@@ -1093,7 +1093,45 @@ function buildRing(e: AccessoryEntry, ctx: BuildContext): AccessoryPart[] {
   return parts;
 }
 
+/**
+ * Điện thoại cất: nhô khỏi túi sau của quần ở hông bên `side`. Dựng miệng túi (mảnh mỏng viền tối) áp lên mông và
+ * điện thoại cắm chếch, nhô khoảng một phần ba thân máy khỏi miệng túi, màn hình quay vào người.
+ */
+function buildStowedPhone(e: AccessoryEntry, ctx: BuildContext): AccessoryPart[] {
+  const bu = ctx.bu;
+  const k = e.size;
+  const y = ctx.yPelvis - 0.035 * ctx.span;
+  const ax = torsoAxis(ctx, y);
+  const sign = e.side === 'r' ? -1 : 1;
+  const th = Math.PI + sign * -0.55; // lưng, lệch về phía hông của bên đeo
+  const cl = ctx.torsoClear + 0.002 * bu;
+  const r = ctx.torso.polar(ax.cx, ax.cz, y, th, 0.025, 0.25) + cl;
+  const px = ax.cx + Math.sin(th) * r;
+  const pz = ax.cz + Math.cos(th) * r;
+  const w = 0.07 * bu * k;
+  const h = 0.145 * bu * k;
+  const d = 0.0085 * bu;
+  const M = new THREE.Matrix4().makeRotationY(th).setPosition(px, y, pz);
+  const parts: AccessoryPart[] = [];
+  // Miệng túi: dải ngang mỏng, tối màu.
+  const mouth = slab(0.115 * bu, 0.012 * bu, 0.004 * bu, 0.003 * bu);
+  mouth.translate(0, 0.012 * bu, 0.002 * bu);
+  parts.push({ geometry: xform(mouth, M.clone()), role: 'dark' });
+  // Điện thoại: tâm cao hơn miệng túi để chỉ phần trên nhô ra; nghiêng nhẹ ra ngoài.
+  const tilt = new THREE.Matrix4().makeRotationX(-0.12);
+  const body = slab(w, h, d, 0.012 * bu);
+  body.translate(0, 0.012 * bu + h * 0.5 - h * 0.34, d / 2 + 0.004 * bu);
+  body.applyMatrix4(tilt);
+  parts.push({ geometry: xform(body, M.clone()), role: 'main' });
+  const screen = slab(w * 0.9, h * 0.94, 0.0007 * bu, 0.01 * bu);
+  screen.translate(0, 0.012 * bu + h * 0.5 - h * 0.34, 0.0015 * bu);
+  screen.applyMatrix4(tilt);
+  parts.push({ geometry: xform(screen, M.clone()), role: 'lens', color: '#0c0f14' });
+  return parts;
+}
+
 function buildPhone(e: AccessoryEntry, ctx: BuildContext): AccessoryPart[] {
+  if (e.state === 'stowed') return buildStowedPhone(e, ctx);
   const s = armSide(e);
   const h = ctx.data.bonePos[`hand_${s}`];
   const m1 = ctx.data.bonePos[`middle_01_${s}`];

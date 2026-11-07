@@ -7,7 +7,7 @@ import { loadBodyData } from './glbBody.testutil';
 import { bodyPatterns, drawPatterns, patternSignature, type Ctx2D } from './patternTexture';
 import { Region, classifyBody } from './regions';
 import { SHELL_CLASSES } from './shellClass';
-import { vertexZoneBlend } from './zones';
+import { neckFrame, vertexZoneBlend, vertexZones, ZONE_LIST } from './zones';
 
 function fakeCtx(): Ctx2D & { texts: string[]; ops: number } {
   const c = {
@@ -133,5 +133,45 @@ describe('đẩy đỉnh vỏ theo pháp tuyến', () => {
     const downShift = (sn[1] / len) * 0.065;
     const before = (n[1] / Math.hypot(n[0], n[1], n[2])) * 0.065;
     expect(Math.abs(downShift)).toBeLessThan(Math.abs(before) * 0.7);
+  });
+});
+
+describe('cổ áo chỉ quanh cổ, không tràn lên vai', () => {
+  const data = loadBodyData('male_real');
+  const cls = classifyBody(data);
+  const spec = SHELL_CLASSES.find((c) => c.key === 'outer:bomber')!;
+  const frame = neckFrame(cls, data.positions)!;
+  it('đo được trục và bán kính cổ hợp lý', () => {
+    expect(frame.r).toBeGreaterThan(0.03);
+    expect(frame.r).toBeLessThan(0.09);
+  });
+  it('đỉnh vai cách trục cổ xa hơn tầm với thì band cổ âm và không có vùng collar; quanh cổ thì dương', () => {
+    const zb = vertexZoneBlend(cls, spec, data.normals, data.positions);
+    const noPos = { zone: vertexZones(cls, spec, data.normals) };
+    const withPos = vertexZones(cls, spec, data.normals, data.positions);
+    const collar = ZONE_LIST.indexOf('collar');
+    let farTop = 0;
+    let nearTop = 0;
+    for (let v = 0; v < cls.vertexCount; v++) {
+      if (cls.region[v] !== Region.torso && cls.region[v] !== Region.neck) continue;
+      if (cls.u[v] < spec.neckU - 0.05) continue;
+      const d = Math.hypot(data.positions[v * 3] - frame.cx, data.positions[v * 3 + 2] - frame.cz);
+      if (d > 1.7 * frame.r + 1e-4) {
+        farTop++;
+        expect(zb.zone[v], 'vai không phải collar').not.toBe(collar);
+        expect(zb.band[v]).toBeLessThan(0);
+      } else if (cls.u[v] > spec.neckU - 0.04) {
+        nearTop++;
+        expect(zb.band[v]).toBeGreaterThanOrEqual(-1e-6);
+      }
+    }
+    expect(farTop).toBeGreaterThan(0);
+    expect(nearTop).toBeGreaterThan(20);
+    // Không có vị trí thì giữ hành vi cũ (collar theo độ cao).
+    let oldCollar = 0;
+    for (let v = 0; v < cls.vertexCount; v++) if (noPos.zone[v] === collar) oldCollar++;
+    let newCollar = 0;
+    for (let v = 0; v < cls.vertexCount; v++) if (withPos[v] === collar) newCollar++;
+    expect(newCollar).toBeLessThan(oldCollar);
   });
 });
