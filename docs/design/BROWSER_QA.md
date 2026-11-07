@@ -126,3 +126,45 @@ Acceptance PASS 18:53 (59 pass, 5 skip là 29-multiplayer khi không có world 3
 ## Production 2026-11-07 — commit 1235903 (deploy khoảng 19:45 UTC, watcher root)
 
 Acceptance PASS 19:22 (59 pass, 5 skip, 1 đăng nhập thật). Trang phục vụ `assets/index-BiJMpdRh.js`, trùng bản build riêng của 1235903. GLB tự sinh phục vụ đúng (`/models/anim_male_real.glb`, `/models/furn_desk.glb`: 200, `application/octet-stream`, magic `glTF`). `playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,6 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 56,4° khi kéo nhanh.
+
+## NVDA thật (chủ dự án kiểm, 07/11/2026, Windows, NVDA 2026.2, Chrome, production đã đăng nhập)
+
+Giọng NVDA trên máy chủ dự án báo "Vietnamese (not supported)": môi trường, không phải lỗi app.
+
+| Đợt | Bản production | Nút / panel | Kết quả NVDA | Xử lý |
+|---|---|---|---|---|
+| 1 | (trước ab407c7) | Thứ tự Tab toàn trang | ĐẠT: mọi phần tử có tên và trạng thái | — |
+| 1 | | Phòng thay đồ: Esc | LỖI: focus về nút nhưng đọc "expanded" | sửa ở 478bdc8 |
+| 1 | | Thông báo "Đã ghi danh lúc …, mời bạn vào tầng 7" | LỖI nhỏ: đọc hai lần | sửa ở commit sau 478bdc8 (vùng live một chuỗi) |
+| 2 | ab407c7 | Phòng thay đồ, Cài đặt: Esc | LỖI: đọc "expanded" / "expanded opens dialog" | sửa ở 478bdc8 |
+| 2 | ab407c7 | Vẽ xăm | ĐẠT | — |
+| 2 | ab407c7 | Trợ giúp | ĐẠT: Esc đóng, focus về nút, đọc "opens dialog" | — |
+| 2 | ab407c7 | Sao lưu: Esc | LỖI: panel không đóng | sửa ở 478bdc8 |
+| 2 | ab407c7 | Thư viện, Hồ sơ | Đóng bằng Esc nhưng NVDA không đọc lại nút | 478bdc8: Esc đóng cả khi mở bằng chuột, focus về nút (e2e) |
+| 3 | 1235903 | Thư viện, Hồ sơ, Vẽ xăm | ĐẠT: "expanded" rồi "collapsed" | — |
+| 3 | 1235903 | Phòng thay đồ, Cài đặt | LỖI như đợt 2 | sửa ở 478bdc8 |
+| 3 | 1235903 | Sao lưu | LỖI như đợt 2 | sửa ở 478bdc8 |
+
+Chưa kiểm bằng NVDA thật: nhập liệu trong hộp thoại, Enter để kích hoạt nút, bẫy focus (Tab vòng), đọc nội dung cảnh 3D. Phần trình đọc màn hình thật chỉ chủ dự án kiểm được (VPS Linux không chạy NVDA/JAWS); task 12 chưa đóng cho đến khi chủ dự án kiểm lại bản có 478bdc8.
+
+### Nguyên nhân và cách sửa (478bdc8)
+
+- Phòng thay đồ và Cài đặt là hộp thoại `aria-modal="true"`; Tattoo, Thư viện, Hồ sơ là `aria-modal="false"` và NVDA đọc đúng. State `wardrobeOpen`/`settingsOpen` vẫn về `false` (callback onCancel/onClose đã gọi `setXOpen(false)`), nhưng focus được trả về nút ngay trong lúc tháo hộp thoại modal. Lúc đó Chrome chưa dựng lại cây trợ năng cho phần trang bị che, NVDA đọc trạng thái cũ. Sửa: `restoreFocusLater` (src/a11y/restoreFocus.ts) trả focus sau hai khung hình, dùng cho Phòng thay đồ, Cài đặt, bẫy focus chung (Trợ giúp, Thành viên, Máy tính) và `useReturnFocus`.
+- Nguyên nhân trên là suy luận từ việc chỉ hộp thoại modal bị lỗi; Playwright/Chromium headless không tái hiện được thời điểm NVDA đọc. Bằng chứng cuối cùng là NVDA thật của chủ dự án.
+- Sao lưu là `role="region"` và chỉ có nút ×: Esc rơi xuống phím Esc của điều khiển (mở menu tạm dừng). Thư viện chỉ bắt Esc khi focus nằm trong panel; Hồ sơ không bắt Esc. Sửa: `useEscapeClose` (src/a11y/useEscapeClose.ts) nghe Esc trên window ở pha bắt, panel mở sau cùng đóng trước, nhường cho hộp thoại modal; dùng cho Thư viện, Hồ sơ, Sao lưu, Vẽ xăm. Sao lưu đổi sang `role="dialog" aria-modal="false"`; nút × giữ `aria-label="Đóng bảng sao lưu"`. Menu tạm dừng bỏ qua Esc đã có `defaultPrevented`.
+
+### Rà nút HUD (V3) — e2e `31-hud-expanded.spec.ts`, bản build 478bdc8 trên preview cục bộ
+
+Mỗi nút: mở bằng chuột (như chủ dự án), đóng bằng Esc và bằng nút đóng; kiểm panel ẩn, `aria-expanded="false"`, focus về nút, giá trị `aria-expanded` tại sự kiện focus cuối của nút là `"false"`, ariaSnapshot không còn `[expanded]`.
+
+| Nút | aria-haspopup | Esc | Nút đóng | aria-expanded sau đóng | Focus về nút |
+|---|---|---|---|---|---|
+| Thư viện | — | ĐẠT | ĐẠT ("Đóng thư viện") | false | có |
+| Hồ sơ | — | ĐẠT | ĐẠT ("Đóng hồ sơ") | false | có |
+| Sao lưu | — | ĐẠT | ĐẠT ("Đóng bảng sao lưu") | false | có |
+| Phòng thay đồ | dialog | ĐẠT | ĐẠT (Hủy) | false | có |
+| Vẽ xăm | dialog | ĐẠT | ĐẠT ("Đóng xưởng xăm") | false | có |
+| Cài đặt | dialog | ĐẠT | ĐẠT ("Đóng cài đặt") | false | có |
+| Trợ giúp | dialog | ĐẠT | ĐẠT | (không có aria-expanded) | có |
+
+Trước khi sửa, cùng spec trên bản chưa có `useEscapeClose`: Thư viện, Hồ sơ, Sao lưu FAIL ở bước Esc khi mở bằng chuột (panel vẫn hiện). Spec 30-a11y-full 13/13 PASS cùng lượt (27/27). Bản sao spec trong repo: tests/e2e/31-hud-expanded.spec.ts.
