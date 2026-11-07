@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import * as fs from 'node:fs';
 import { collectErrors, mockSession, skipTour, testAccount, waitForRenderedCanvas } from '/home/cc/gpb-e2e/tests/helpers.ts';
 
-// axe-core cài ngoài repo (/tmp/axe-dir) vì @axe-core/playwright chưa có trong gpb-e2e và mạng bị chặn.
-const AXE = process.env.AXE_PATH || '/tmp/axe-dir/node_modules/axe-core/axe.min.js';
+// axe-core cài ngoài repo (/home/cc/gpb-e2e/vendor) vì @axe-core/playwright chưa có trong gpb-e2e và mạng bị chặn.
+const AXE = process.env.AXE_PATH || '/home/cc/gpb-e2e/vendor/axe.min.js';
 
 interface Viol { id: string; impact: string; nodes: string[] }
 async function axe(page: Page, include?: string): Promise<Viol[]> {

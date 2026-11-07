@@ -4,7 +4,7 @@ Trạng thái: MỘT PHẦN. Chỉ kiểm tự động được; chưa có kiể
 
 ## Đã kiểm tự động
 
-Spec: `e2e-new/30-a11y-full.spec.ts` (bản chạy: `/home/cc/gpb-e2e/tests/30-a11y-full.spec.ts`, chạy với `vite preview` của bản build). Dùng axe-core 4.x nạp bằng `addScriptTag` từ `/tmp/axe-dir/node_modules/axe-core` (biến `AXE_PATH` ghi đè). `@axe-core/playwright` chưa cài trong gpb-e2e và mạng bị chặn nên không cài thêm.
+Spec: `e2e-new/30-a11y-full.spec.ts` (bản chạy: `/home/cc/gpb-e2e/tests/30-a11y-full.spec.ts`, chạy với `vite preview` của bản build). Dùng axe-core 4.x nạp bằng `addScriptTag` từ `/home/cc/gpb-e2e/vendor/node_modules/axe-core` (biến `AXE_PATH` ghi đè). `@axe-core/playwright` chưa cài trong gpb-e2e và mạng bị chặn nên không cài thêm.
 
 | Hạng mục | Cách kiểm |
 |---|---|
