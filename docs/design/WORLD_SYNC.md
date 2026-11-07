@@ -76,6 +76,15 @@ Luật pose:
 
 Client nên: gửi pose khi di chuyển, tối đa 10 lần/giây; đứng yên thì gửi lại mỗi 5 s để không hết hạn; với người khác, nội suy theo `t` và teleport khi khoảng cách lớn hơn ngưỡng; bỏ `poses` có `tick` nhỏ hơn tick đã áp. Kết nối lại (đóng khác 4401) thì chờ có backoff và dùng `snapshot` mới; đóng 4401 thì chuyển về đăng nhập, không thử lại.
 
+## Ngoại hình (appearance)
+
+- Client gửi `{type:'appearance', appearance:{...}, requestId?}` ngay sau snapshot (mỗi lần kết nối, kể cả resume) và khi đổi. Client giãn cách >= 5 giây giữa các lần đổi, chỉ gửi bản cuối (`src/net/appearanceSync.ts`).
+- Server lọc theo whitelist trong `services/world/src/appearance.js` (cùng schema `normalizeAppearance`: bodyType, skinTone, hairStyle, hairColor, eyeColor, outfit, topColor, bottomColor, shoes, accessories). Trường lạ bị bỏ, giá trị sai lấy mặc định; không phải đối tượng hoặc JSON > 600 byte thì lỗi `invalid_appearance`. Khung tổng vẫn bị giới hạn 1 KB.
+- Giới hạn tần suất riêng mỗi người: tối đa 3 tin liên tiếp, nạp 1 tin / 5 giây; vượt thì `error rate_limited` (kèm `retryAfterMs`). Tin lỗi cũng tốn lượt.
+- Trả `{type:'appearance.ack', requestId, appearance}` (bản đã lọc) cho người gửi.
+- Lưu trong presence, sống qua TTL pose, mất khi người đó rời (`leave`/ngắt kết nối cuối). Phát cho người khác: `snapshot.players[].appearance` (luôn kèm nếu có), `join.appearance`, và `poses[].appearance` chỉ ở tick đầu tiên sau khi đổi hoặc khi presence mới tạo (không lặp mỗi tick).
+- Quyền riêng tư `characterVisibility`: CHƯA làm. `/api/auth/me` mà world nhận (`normalizeUser`) không mang trường này; cần auth trả thêm trường rồi world lọc khi phát. Hiện mọi người cùng tenant thấy ngoại hình của nhau.
+
 ## HTTP còn lại
 
 | Method | Đường dẫn | Trả về |

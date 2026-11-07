@@ -17,7 +17,7 @@ import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
 import { SettingsPanel } from './settings';
 import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
 import { holdPause } from './scene/controls';
-import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, createWorldSocialTransport, useWorld, worldEnabled } from './net';
+import { ChatPanel, ConnectionBanner, PoseSender, RemotePlayers, createWorldSocialTransport, useAppearanceSync, useWorld, worldEnabled } from './net';
 import { audioZoneAt, audioZoneRects } from './scene/audioZones';
 import { LiveRegion, announce } from './a11y';
 import { QuickWheel, useQuickHost } from './emotes/quick';
@@ -267,6 +267,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   }, [wardrobeOpen]);
   // Nhiều người (TASK 23 đến 27): chỉ kết nối khi bật cờ, vì service world chưa deploy và gateway chưa có route.
   const world = useWorld({ enabled: WORLD_ON });
+  useAppearanceSync(world, WORLD_ON ? appearance : null);
   // Người khác cho hành động xã hội (TASK 15): vị trí nội suy từ world; không có world thì rỗng.
   const remote = world.remote;
   const getPeers = useCallback(

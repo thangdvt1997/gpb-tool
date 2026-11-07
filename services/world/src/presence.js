@@ -11,8 +11,11 @@ export class PresenceError extends Error {
 }
 
 // Dữ liệu công khai cho người cùng tenant: chỉ id, tên hiển thị và pose.
-export function publicEntry(e) {
-  return { id: e.id, name: e.name, x: e.x, z: e.z, yaw: e.yaw, anim: e.anim, seq: e.seq, t: e.at };
+// `look` (ngoại hình đã lọc) chỉ kèm khi có và cần phát.
+export function publicEntry(e, look) {
+  const out = { id: e.id, name: e.name, x: e.x, z: e.z, yaw: e.yaw, anim: e.anim, seq: e.seq, t: e.at };
+  if (look) out.appearance = look;
+  return out;
 }
 
 export function createPresenceStore({ ttlMs, maxPerTenant }) {
@@ -20,6 +23,10 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
   const tenants = new Map();
   // tenantId -> Set(userId) có pose mới chưa phát
   const dirty = new Map();
+  // tenantId -> Map(userId -> ngoại hình đã lọc). Sống qua TTL pose, mất khi người đó rời.
+  const looks = new Map();
+  // tenantId -> Set(userId) có ngoại hình mới chưa phát trong poses.
+  const lookDirty = new Map();
 
   function room(tenantId, create) {
     let m = tenants.get(tenantId);
@@ -37,6 +44,24 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
       dirty.set(tenantId, s);
     }
     s.add(userId);
+  }
+
+  const lookOf = (tenantId, userId) => looks.get(tenantId)?.get(userId);
+
+  /** Lưu ngoại hình đã lọc. Ném PresenceError 'room_full' nếu tenant đã đủ chỗ cho người mới. */
+  function setAppearance(user, look) {
+    let lm = looks.get(user.tenantId);
+    if (!lm) looks.set(user.tenantId, (lm = new Map()));
+    if (!lm.has(user.id) && lm.size >= maxPerTenant) throw new PresenceError('room_full');
+    lm.set(user.id, look);
+    let ld = lookDirty.get(user.tenantId);
+    if (!ld) lookDirty.set(user.tenantId, (ld = new Set()));
+    ld.add(user.id);
+    if (room(user.tenantId, false)?.has(user.id)) markDirty(user.tenantId, user.id);
+  }
+
+  function appearanceOf(tenantId, userId) {
+    return lookOf(tenantId, userId) || null;
   }
 
   /**
@@ -61,13 +86,21 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
       at: now,
     };
     m.set(user.id, entry);
+    if (!prev && lookOf(user.tenantId, user.id)) {
+      let ld = lookDirty.get(user.tenantId);
+      if (!ld) lookDirty.set(user.tenantId, (ld = new Set()));
+      ld.add(user.id);
+    }
     markDirty(user.tenantId, user.id);
-    return { created: !prev, entry, corrected: accepted.corrected };
+    return { created: !prev, entry, corrected: accepted.corrected, appearance: lookOf(user.tenantId, user.id) || null };
   }
 
   /** Người dùng chủ động rời. Trả true nếu có presence. */
   function remove(tenantId, userId) {
     const m = room(tenantId, false);
+    looks.get(tenantId)?.delete(userId);
+    if (looks.get(tenantId)?.size === 0) looks.delete(tenantId);
+    lookDirty.get(tenantId)?.delete(userId);
     if (!m || !m.delete(userId)) return false;
     dirty.get(tenantId)?.delete(userId);
     if (m.size === 0) tenants.delete(tenantId);
@@ -93,12 +126,12 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
   /** Pose hiện tại của một người (bản sao công khai) hoặc null. */
   function get(tenantId, userId) {
     const e = room(tenantId, false)?.get(userId);
-    return e ? publicEntry(e) : null;
+    return e ? publicEntry(e, lookOf(tenantId, userId)) : null;
   }
 
   function list(tenantId) {
     const m = room(tenantId, false);
-    return m ? [...m.values()].map(publicEntry) : [];
+    return m ? [...m.values()].map((e) => publicEntry(e, lookOf(tenantId, e.id))) : [];
   }
 
   /** Lấy và xóa danh sách pose chưa phát: Map(tenantId -> [publicEntry]). */
@@ -109,11 +142,12 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
       const poses = [];
       if (m) for (const id of ids) {
         const e = m.get(id);
-        if (e) poses.push(publicEntry(e));
+        if (e) poses.push(publicEntry(e, lookDirty.get(tenantId)?.has(id) ? lookOf(tenantId, id) : undefined));
       }
       if (poses.length) out.set(tenantId, poses);
     }
     dirty.clear();
+    lookDirty.clear();
     return out;
   }
 
@@ -123,5 +157,5 @@ export function createPresenceStore({ ttlMs, maxPerTenant }) {
     return { tenants: tenants.size, players };
   }
 
-  return { update, remove, sweep, get, list, drainDirty, stats };
+  return { update, setAppearance, appearanceOf, remove, sweep, get, list, drainDirty, stats };
 }
