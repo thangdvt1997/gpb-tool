@@ -121,3 +121,19 @@ export function reachTo(
   t.active = true;
   return true;
 }
+
+/**
+ * Hai điểm đặt tay trên mặt bàn trước người ngồi: cách điểm neo `forward` m về phía trước, lệch ±`spread` m,
+ * ở độ cao `deskY`. Dùng với applySeatPose khi biết mặt bàn.
+ */
+export function deskHandPoints(anchor: THREE.Vector3, yaw: number, deskY: number, forward = 0.38, spread = 0.18): DeskHands {
+  const sin = Math.sin(yaw);
+  const cos = Math.cos(yaw);
+  const mk = (side: number) =>
+    new THREE.Vector3(
+      anchor.x + sin * forward + cos * side * spread,
+      deskY,
+      anchor.z + cos * forward - sin * side * spread,
+    );
+  return { left: mk(1), right: mk(-1) };
+}
