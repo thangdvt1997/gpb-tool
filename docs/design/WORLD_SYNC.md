@@ -219,26 +219,44 @@ Server quyết định người nhận: `room` = cả phòng, `near` = người 
 
 ## Vai trò và quyền (TASK 26)
 
-Vai trò phòng: `owner > editor > member > guest`. Ánh xạ ban đầu từ role tài khoản (`/api/auth/me` `user.role`, giữ nội bộ, không phát cho người khác): `admin→owner`, `it→editor`, `employee→member`, `moderator→member`, khác/thiếu→`guest`. Chủ phòng ghi đè được bằng `role.set` (RAM). Hàm dùng chung `can(actor, action, resource)` trong `roles.js`; mọi message đi qua nó, vai trò đọc lại mỗi lần nên thu hồi có hiệu lực ngay.
+Vai trò phòng: `owner > editor > member > guest`. Ánh xạ ban đầu từ role tài khoản (`/api/auth/me` `user.role`, giữ nội bộ, không phát cho người khác): `admin→owner`, `it→editor`, `employee→member`, `moderator→member`, khác/thiếu→`guest`. Chủ phòng ghi đè được bằng `role.set`; ghi đè được lưu bền khi đặt `WORLD_DATA_DIR` (xem dưới). Hàm dùng chung `can(actor, action, resource)` trong `roles.js`; mọi message đi qua nó, vai trò đọc lại mỗi lần nên thu hồi có hiệu lực ngay.
 
 | Quyền | guest | member | editor | owner |
 |---|---|---|---|---|
 | room.view, room.join, pose.send, chat.read | x | x | x | x |
-| chat.send, seat.use, object.use | | x | x | x |
+| chat.send, seat.use, object.use, social.act | | x | x | x |
 | layout.edit | | | x | x |
-| member.list, member.kick, member.mute, role.set, audit.view, lease.force_release | | | | x |
+| member.list, member.kick, member.mute, role.set, owner.transfer, audit.view, lease.force_release | | | | x |
 
-Ràng buộc: khác phòng → `cross_room`; không tác động chính mình (`cannot_target_self`) hoặc owner khác (`cannot_target_owner`); `role.set` không cấp `owner` (`cannot_grant_owner`) nên không mất/đổi owner cuối cùng; mute chặn `chat.send`. Chưa có chuyển quyền owner. Hạ vai trò nhả ngay lease không còn quyền (`revoked`) và gửi `role{role,capabilities}` cho người đó.
+Ràng buộc: khác phòng → `cross_room`; không tác động chính mình (`cannot_target_self`) hoặc owner khác (`cannot_target_owner`); `role.set` không cấp `owner` (`cannot_grant_owner`) nên không mất/đổi owner cuối cùng; mute chặn `chat.send`. Hạ vai trò nhả ngay lease không còn quyền (`revoked`) và gửi `role{role,capabilities}` cho người đó.
 
 | Client gửi | Kết quả |
 |---|---|
 | `mod.kick{target}` | `mod.result`; nhả lease, hủy phiên, đóng socket mục tiêu **4403**, chặn vào lại `WORLD_KICK_COOLDOWN_MS` (5 phút) |
 | `mod.mute{target,on?,durationMs?}` | mặc định 10 phút, tối đa 24 giờ; mục tiêu nhận `muted` |
 | `role.set{target,role}` | `mod.result` |
+| `owner.transfer{target,confirm:true}` | chỉ owner hiện tại; mục tiêu đang trong phòng, không phải chính mình hay owner khác; thiếu `confirm` → `confirm_required`. Bên cũ xuống `editor`, bên mới lên `owner` (một lần ghi), cả hai nhận `role`; audit `owner.transfer` (cả lần bị từ chối) |
 | `audit.list{limit?}` | `audit.list{entries}`; chỉ owner |
 | `member.list` | `member.list{members[{id,name,role,muted}]}`; chỉ owner (quyền `member.list`); client UI quản lý thành viên dùng để hiện danh sách |
 
 Mục tiêu phải đang trong phòng (`target_not_found`). Audit trong RAM, 500 mục mỗi phòng: `{at, actor, action, target, result, requestId, detail?}`; ghi cả lần bị từ chối; không ghi nội dung chat hay token.
+
+### Lưu bền vai trò (TASK 26)
+
+Đặt `WORLD_DATA_DIR` (thư mục ghi được, ví dụ volume `/data`): ghi đè vai trò (kể cả owner chuyển quyền) nằm ở `${WORLD_DATA_DIR}/room-roles.json` (`{version:1, rooms:{tenant:{userId:role}}}`), ghi nguyên tử (tệp tạm cùng thư mục rồi `rename`, mode 0600) sau mỗi `role.set`/`owner.transfer`, đọc lại lúc khởi động. Tệp hỏng được đổi tên `room-roles.json.corrupt-<ts>` và service chạy tiếp với bảng rỗng; vai trò lạ trong tệp bị bỏ. Lỗi ghi chỉ log, trạng thái RAM vẫn đúng. Mute, kick, audit vẫn chỉ trong RAM. Không đặt biến thì không lưu (log cảnh báo). Một tiến trình duy nhất ghi tệp (chưa hỗ trợ nhiều bản sao).
+
+## Hành động xã hội (TASK 15)
+
+Mọi tin cần quyền `social.act` (member trở lên; guest nhận `social.denied{code:'forbidden'}`), token bucket 5 tin, nạp 1 tin/giây mỗi người (`rate_limited` + `retryAfterMs`). Server đặt `from`, `createdAt/expiresAt` (hạn 15 s), bỏ qua giá trị client gửi; chỉ chuyển tới đúng người nhận trong cùng phòng. Khoảng cách tính theo pose server, tối đa `tầm × 1.6` (khớp client). Bảng tầm: vẫy 8 m, cúi 5 m, chỉ tay 12 m, bắt tay/đập tay 2.5 m. Lời mời không lưu qua restart, không vào nhật ký sự kiện.
+
+| Client gửi | Server làm |
+|---|---|
+| `social_invite{invite:{id,actionId,to}}` (bắt tay, đập tay) | kiểm quyền, tầm, bận; chuyển `social_invite{invite}` cho `to`. Mỗi người một lời mời đi và không nhận khi đang trong lời mời khác (trả `social_respond decline` như bị từ chối). Người nhận đã `chat.block` người mời: cũng trả decline, không lộ việc bị chặn |
+| `social_respond{inviteId,answer}` | chỉ người được mời; chuyển cho người mời. Chấp nhận khi hai bên đã đi quá tầm: đổi thành decline và báo `too_far` cho người trả lời |
+| `social_cancel{inviteId}` | chỉ người mời; chuyển `social_cancel` cho người nhận |
+| `social_play{actionId,to}` (vẫy, cúi, chỉ tay) | chuyển `social_play{actionId,from,to,startTime}` (giờ server) cho `to` |
+
+Lỗi: `social.denied{code,inviteId?}` với `forbidden`, `invalid_invite`, `invalid_action`, `invalid_answer`, `target_not_found`, `too_far`, `busy`, `duplicate`, `invite_not_found` (đã xong hoặc hết hạn), `rate_limited`. Người rời, mất kết nối hoặc bị kick: lời mời liên quan bị hủy và bên kia nhận `social_cancel` (hoặc decline nếu họ là bên mời). Client: `src/net/socialTransport.ts` (`createWorldSocialTransport`) nối `SocialSession` với world, quy thời điểm lời mời về đồng hồ cục bộ, đổi `social.denied` thành decline để bên mời không kẹt; `App.tsx` truyền transport cho `SocialBar` chỉ khi `?world=1`, không thì vẫn dùng bus cục bộ.
 
 ## Reconnect và phiên (TASK 27)
 
@@ -262,8 +280,13 @@ Mục tiêu phải đang trong phòng (`target_not_found`). Audit trong RAM, 500
 | Auth hết hạn | 4401, client `authExpired`, không retry | đạt (client giả lập) |
 | Chat gửi lúc offline | xếp hàng, gửi lại sau resync, khử trùng | đạt (client giả lập) |
 | Thu hồi editor khi đang giữ khóa | lease nhả, commit sau đó `forbidden` | đạt |
+| Ngắt đột ngột (`terminate`, không khung đóng), TCP cắt cứng | người khác thấy `leave disconnect`; resume giữ ghế, nhận chat lỡ; hub dọn kết nối | đạt qua `ws` thật (`flaky.test.js`) |
+| Dùng lại token cũ (đã xoay) | `resumed.ok=false`, `full:true` | đạt qua `ws` thật |
+| Token hết hạn (TTL ngắn trong test) | `reason:'expired'`, `full:true`, ghế nhả, người khác ngồi được | đạt qua `ws` thật |
+| JSON cụt giữa chừng / khung 5 KB / flood | `invalid_json` giữ kết nối / 1009 / 1008 | đạt qua `ws` thật |
+| Bắt tay HTTP nửa vời treo ở một kết nối | không chặn kết nối khác | đạt |
 
-Thời gian phục hồi đo thật: chưa đo (test dùng đồng hồ giả). `WorldClient.lastRecoveryMs` ghi lại thời gian từ lúc mất đến lúc có snapshot để đo khi chạy thật.
+Chưa kiểm: mạng chập chờn thật qua gateway nginx/Cloudflare (mất gói, NAT đổi, proxy cắt im lặng), chỉ mô phỏng cục bộ. Thời gian phục hồi đo thật: chưa đo (test dùng đồng hồ giả). `WorldClient.lastRecoveryMs` ghi lại thời gian từ lúc mất đến lúc có snapshot để đo khi chạy thật.
 
 ## Gắn vào ứng dụng (chưa gắn; App.tsx ngoài phạm vi)
 
@@ -280,4 +303,4 @@ Các giới hạn chưa kiểm chứng: bắt tay thật qua gateway nginx, hai 
 ## Nối client (TASK 24, 26)
 
 - `src/net/seatLease.ts` (mount bởi `SeatLeaseBridge` trong `ChatPanel`, chỉ khi `?world=1`): bọc `run` của hành động `sit` các vật `kind:'chair'` đã đăng ký; gửi `lease.acquire` (`seat:<id>`), chỉ ngồi khi `lease.result` ok có `leaseId` và `fence`; ghế người khác giữ hiện "Ghế đã có người"; về `walking` sau khi ngồi thì `lease.release`; heartbeat do `WorldClient` tự gửi. Mất lease (`lease_lost`, snapshot không còn) thì đứng dậy và báo.
-- `src/net/MemberPanel.tsx` (mount trong `ChatPanel`, chỉ owner): danh sách `member.list`, nút mời ra/tắt tiếng/đổi vai trò member-editor qua `mod.kick`, `mod.mute`, `role.set`.
+- `src/net/MemberPanel.tsx` (mount trong `ChatPanel`, chỉ owner): danh sách `member.list`, nút mời ra/tắt tiếng/đổi vai trò member-editor/chuyển quyền chủ phòng (có hộp xác nhận) qua `mod.kick`, `mod.mute`, `role.set`, `owner.transfer`.

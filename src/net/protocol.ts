@@ -1,3 +1,5 @@
+import type { SocialMessage } from '../emotes/social/logic';
+
 // Giao thức message của world service (xem docs/design/WORLD_SYNC.md). Chỉ kiểu dữ liệu, không logic.
 
 export interface PlayerState {
@@ -91,7 +93,10 @@ export type ServerMessage =
   | { type: 'muted'; on: boolean; durationMs: number }
   | { type: 'mod.result'; op: string; requestId?: string; ok: boolean; error?: string }
   | { type: 'member.list'; requestId?: string; members: MemberInfo[] }
-  | { type: 'audit.list'; entries: Record<string, unknown>[] };
+  | { type: 'audit.list'; entries: Record<string, unknown>[] }
+  /** TASK 15: server chuyển tiếp thông điệp xã hội; social.denied khi server từ chối (xa quá, bận, quá nhanh...). */
+  | SocialMessage
+  | { type: 'social.denied'; code: string; inviteId?: string; retryAfterMs?: number };
 
 // Mã đóng kết nối của world.
 export const CLOSE_CODES = {

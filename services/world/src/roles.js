@@ -2,6 +2,9 @@
 // Phòng = tenant. Vai trò phòng tách khỏi vai trò tài khoản: tài khoản chỉ cho vai trò MẶC ĐỊNH,
 // chủ phòng có thể ghi đè (role.set) trong bộ nhớ. Mặc định từ chối với action lạ.
 
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 export const ROLES = ['guest', 'member', 'editor', 'owner'];
 
 // Ánh xạ ban đầu từ role tài khoản (auth). Role lạ hoặc thiếu -> guest (quyền tối thiểu).
@@ -14,9 +17,9 @@ export function roleFromAccount(accountRole) {
 // Quyền tối thiểu của từng vai trò; vai trò cao kế thừa vai trò thấp.
 const BASE = {
   guest: ['room.view', 'room.join', 'pose.send', 'chat.read'],
-  member: ['chat.send', 'seat.use', 'object.use'],
+  member: ['chat.send', 'seat.use', 'object.use', 'social.act'],
   editor: ['layout.edit'],
-  owner: ['member.list', 'member.kick', 'member.mute', 'role.set', 'audit.view', 'lease.force_release'],
+  owner: ['member.list', 'member.kick', 'member.mute', 'role.set', 'owner.transfer', 'audit.view', 'lease.force_release'],
 };
 
 export const MATRIX = (() => {
@@ -43,7 +46,7 @@ export function can(actor, action, resource = {}) {
   // Chống truy cập phòng khác bằng đổi ID.
   if (resource.tenantId !== undefined && resource.tenantId !== actor.tenantId) return { ok: false, reason: 'cross_room' };
   if (action === 'chat.send' && actor.muted) return { ok: false, reason: 'muted' };
-  if (action === 'member.kick' || action === 'member.mute' || action === 'role.set') {
+  if (action === 'member.kick' || action === 'member.mute' || action === 'role.set' || action === 'owner.transfer') {
     if (resource.targetId === actor.id) return { ok: false, reason: 'cannot_target_self' };
     // Chủ phòng không đụng tới chủ phòng khác: không để phòng mất chủ cuối cùng.
     if (resource.targetRole === 'owner') return { ok: false, reason: 'cannot_target_owner' };
@@ -59,8 +62,64 @@ export function capabilitiesOf(role) {
   return [...(MATRIX[role] || [])];
 }
 
-export function createRoleStore({ kickMs = 300_000, auditMax = 500, now = Date.now } = {}) {
+const FILE_NAME = 'room-roles.json';
+
+/**
+ * dataDir (tùy chọn): lưu bền ghi đè vai trò vào `${dataDir}/room-roles.json` (ghi tmp rồi rename nguyên tử).
+ * Chỉ lưu vai trò; mute, kick, audit vẫn trong bộ nhớ. Tệp hỏng được đổi tên `.corrupt-<ts>` và bỏ qua.
+ */
+export function createRoleStore({ kickMs = 300_000, auditMax = 500, now = Date.now, dataDir = null, onError = () => {} } = {}) {
   const overrides = new Map(); // `${tenant}:${user}` -> role
+  const filePath = dataDir ? join(dataDir, FILE_NAME) : null;
+
+  function load() {
+    if (!filePath) return;
+    let raw;
+    try {
+      raw = readFileSync(filePath, 'utf8');
+    } catch (err) {
+      if (err && err.code !== 'ENOENT') onError(err);
+      return;
+    }
+    try {
+      const data = JSON.parse(raw);
+      if (!data || data.version !== 1 || !data.rooms || typeof data.rooms !== 'object') throw new Error('bad_format');
+      for (const [tenant, users] of Object.entries(data.rooms)) {
+        for (const [uid, role] of Object.entries(users || {})) {
+          if (ROLES.includes(role)) overrides.set(`${tenant}:${uid}`, role);
+        }
+      }
+    } catch (err) {
+      onError(err);
+      try {
+        renameSync(filePath, `${filePath}.corrupt-${now()}`);
+      } catch {
+        // Bỏ qua.
+      }
+    }
+  }
+
+  /** Ghi nguyên tử. Lỗi ghi không làm hỏng trạng thái bộ nhớ (báo qua onError). Trả true nếu ghi được. */
+  function save() {
+    if (!filePath) return true;
+    const rooms = {};
+    for (const [key, role] of overrides) {
+      const i = key.indexOf(':');
+      const tenant = key.slice(0, i);
+      (rooms[tenant] ||= {})[key.slice(i + 1)] = role;
+    }
+    const tmp = `${filePath}.${process.pid}.tmp`;
+    try {
+      mkdirSync(dataDir, { recursive: true });
+      writeFileSync(tmp, JSON.stringify({ version: 1, rooms }), { mode: 0o600 });
+      renameSync(tmp, filePath);
+      return true;
+    } catch (err) {
+      onError(err);
+      return false;
+    }
+  }
+  load();
   const mutes = new Map(); // key -> until (ms) hoặc Infinity
   const kicks = new Map(); // key -> until
   const audits = new Map(); // tenant -> [entry]
@@ -86,6 +145,13 @@ export function createRoleStore({ kickMs = 300_000, auditMax = 500, now = Date.n
   function setRole(tenantId, userId, role) {
     if (role === undefined) overrides.delete(k(tenantId, userId));
     else overrides.set(k(tenantId, userId), role);
+    save();
+  }
+  /** Chuyển quyền chủ phòng: bên cũ xuống editor, bên mới lên owner, ghi một lần. */
+  function transferOwner(tenantId, fromId, toId) {
+    overrides.set(k(tenantId, fromId), 'editor');
+    overrides.set(k(tenantId, toId), 'owner');
+    save();
   }
   function setMute(tenantId, userId, on, durationMs) {
     const key = k(tenantId, userId);
@@ -116,5 +182,5 @@ export function createRoleStore({ kickMs = 300_000, auditMax = 500, now = Date.n
     const list = audits.get(tenantId) || [];
     return list.slice(-Math.max(1, Math.min(200, limit))).reverse();
   }
-  return { roleOf, actorOf, isMuted, setRole, setMute, kick, isKicked, audit, auditList };
+  return { roleOf, actorOf, isMuted, setRole, transferOwner, setMute, kick, isKicked, audit, auditList };
 }
