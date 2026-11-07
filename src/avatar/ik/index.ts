@@ -5,3 +5,4 @@ export * from './controller';
 export * from './posture';
 export { useLimbIK } from './useLimbIK';
 export * from './grip';
+export * from './holdState';

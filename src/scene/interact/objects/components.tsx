@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { MathUtils, type Group, type Mesh, type MeshStandardMaterial, type PointLight } from 'three';
+import { MathUtils, Vector3, type Group, type Mesh, type MeshStandardMaterial, type PointLight } from 'three';
 import { playerPose } from '../../controls/playerPose';
+import { ikHold } from '../../../avatar/ik/holdState';
 import { useObjectState } from '../objectStates';
 import { doorOf } from './door';
 import { computerOf, screenGlow } from './computer';
@@ -219,11 +220,20 @@ export function ItemMesh(p: { id: string; home: { x: number; y: number; z: numbe
       tx = playerPose.x + sy * 0.35 + cy * 0.18;
       tz = playerPose.z + cy * 0.35 - sy * 0.18;
       ty = 1.0;
+      // Tay phải đã với tới cốc bằng IK: cốc bám socket bàn tay (tâm cốc ở socket).
+      if (ikHold.active) {
+        tx = ikHold.handSocket.x;
+        ty = ikHold.handSocket.y - h / 2;
+        tz = ikHold.handSocket.z;
+      }
     }
     g.position.x = MathUtils.damp(g.position.x, tx, 18, dt);
     g.position.y = MathUtils.damp(g.position.y, ty, 18, dt);
     g.position.z = MathUtils.damp(g.position.z, tz, 18, dt);
     g.rotation.y = st.yaw;
+    if (st.where === 'hand') {
+      (ikHold.itemPos ??= new Vector3()).set(g.position.x, g.position.y + h / 2, g.position.z);
+    } else if (ikHold.itemPos && ikHold.active === false) ikHold.itemPos = null;
   });
   return (
     <group ref={ref} position={[st.x, st.y, st.z]}>

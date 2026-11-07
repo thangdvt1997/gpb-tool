@@ -21,7 +21,21 @@ import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { FallbackAvatar } from './FallbackAvatar';
-import { applySeatPose, releaseSeatPose, useLimbIK, type GroundSampler } from './ik';
+import {
+  FingerGrip,
+  applySeatPose,
+  cupReachPoint,
+  handSocketForUrl,
+  deskHandPoints,
+  deskHeightAhead,
+  gripAt,
+  ikHold,
+  releaseSeatPose,
+  useLimbIK,
+  type GroundSampler,
+} from './ik';
+import { playerPose } from '../scene/controls/playerPose';
+import { getHeldItem } from '../scene/interact/objects/smallItem';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
 import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
@@ -85,11 +99,16 @@ export interface IkDebug {
   pelvisY: number;
   floorY: number;
   footY: [number, number];
+  /** Tay phải đang cầm vật bằng IK; khoảng cách socket tay tới điểm cầm danh nghĩa (m), -1 nếu không cầm. */
+  gripActive: boolean;
+  holdDist: number;
+  /** Tay đặt lên bàn: sai số hai bàn tay tới điểm bàn (m), -1 nếu không có bàn. */
+  deskErr: number;
 }
 const IK_DEBUG: IkDebug | null = (() => {
   if (typeof window === 'undefined') return null;
   if (new URLSearchParams(window.location.search).get('debug') !== 'ik') return null;
-  const d: IkDebug = { frames: 0, sitFrames: 0, nanBones: 0, pelvisY: 0, floorY: 0, footY: [0, 0] };
+  const d: IkDebug = { frames: 0, sitFrames: 0, nanBones: 0, pelvisY: 0, floorY: 0, footY: [0, 0], gripActive: false, holdDist: -1, deskErr: -1 };
   (window as unknown as { __gpbIK?: IkDebug }).__gpbIK = d;
   return d;
 })();
@@ -436,6 +455,7 @@ const _ikQuat = new THREE.Quaternion();
 const _ikScl = new THREE.Vector3();
 const _ikFwd = new THREE.Vector3();
 const _ikAnchor = new THREE.Vector3();
+const _ikCup = new THREE.Vector3();
 
 function approach(cur: number, goal: number, rate: number, dt: number): number {
   return cur + (goal - cur) * (1 - Math.exp(-rate * dt));
@@ -539,8 +559,12 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
 
   // Chạy sau useFrame ghi tư thế ở trên (cùng priority, thứ tự đăng ký).
   const seatedIk = useRef(false);
+  const socketOffset = handSocketForUrl(url);
+  const armGrip = useRef({ L: false, R: false });
+  const fingersR = useRef<FingerGrip | null>(null);
+  const fingersL = useRef<FingerGrip | null>(null);
   const anchorRef = useRef<THREE.Group>(null);
-  useLimbIK(IK_ON ? rig.root : null, (ctrl) => {
+  useLimbIK(IK_ON ? rig.root : null, (ctrl, dt) => {
     if (ctrl.ground === null) {
       ctrl.ground = { sampler: FLAT_FLOOR, maxPelvisDrop: 0.15, maxPelvisRaise: 0.05, maxFootTilt: 0, smoothRate: 12 };
     }
@@ -553,12 +577,74 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
       const floorY = _ikPos.y - groundY;
       const fwd = _ikFwd.set(0, 0, 1).applyQuaternion(_ikQuat);
       _ikAnchor.set(_ikPos.x, floorY + SEAT_SURFACE_Y * rootYScale, _ikPos.z);
-      applySeatPose(ctrl, { anchor: _ikAnchor, yaw: Math.atan2(fwd.x, fwd.z), floorY, pelvisAboveSeat: 0.1 * rootYScale });
+      const seatYaw = Math.atan2(fwd.x, fwd.z);
+      // Bàn có máy tính trước mặt: đặt tay lên mặt bàn (độ cao từ dữ liệu khối bàn).
+      const deskY = deskHeightAhead(_ikAnchor.x, _ikAnchor.z, seatYaw);
+      const hands = deskY === null ? undefined : deskHandPoints(_ikAnchor, seatYaw, floorY + deskY, 0.3, 0.15);
+      if (IK_DEBUG) IK_DEBUG.deskErr = hands ? Math.max(ctrl.lastError('armL'), ctrl.lastError('armR')) : -1;
+      applySeatPose(ctrl, { anchor: _ikAnchor, yaw: seatYaw, floorY, pelvisAboveSeat: 0.1 * rootYScale }, hands);
       ctrl.pelvisTarget.weight = sit;
       seatedIk.current = true;
     } else if (seatedIk.current) {
       releaseSeatPose(ctrl);
       seatedIk.current = false;
+    }
+    // Grip (chỉ nhân vật người chơi): cầm vật bằng E -> tay phải với tới socket, ngón khép; điện thoại cầm/dùng.
+    if (animation === 'locomotion') {
+      fingersR.current ??= ctrl.hasLimb('armR') ? new FingerGrip(ctrl.chain('armR')!.bones.end) : null;
+      fingersL.current ??= ctrl.hasLimb('armL') ? new FingerGrip(ctrl.chain('armL')!.bones.end) : null;
+      const held = getHeldItem();
+      let usedL = false;
+      let usedR = false;
+      let gripOk = false;
+      if (held !== null) {
+        const profile = /phone/i.test(held) ? 'phone' : 'cup';
+        gripOk = (() => {
+          const sh = ctrl.limbRootPosition('armR', _ikAnchor);
+          return sh ? gripAt(ctrl, fingersR.current, 'R', cupReachPoint(sh, playerPose.yaw, ctrl.limbLength('armR'), _ikCup), profile, socketOffset) : false;
+        })();
+        usedR = true;
+      }
+      const ph = look?.accessories?.phone;
+      if (ph && ph.state !== 'stowed') {
+        const side: 'L' | 'R' = ph.side === 'left' ? 'L' : 'R';
+        if (!(side === 'R' && usedR)) {
+          const fingers = side === 'L' ? fingersL.current : fingersR.current;
+          if (side === 'L') usedL = true;
+          else usedR = true;
+          if (ph.state === 'using') {
+            // Đưa điện thoại lên trước ngực: điểm cách vai 0,25 m phía trước, thấp hơn vai 0,2 m.
+            const id = side === 'L' ? 'armL' : 'armR';
+            const sh = ctrl.limbRootPosition(id, _ikAnchor);
+            if (sh) {
+              const k = ctrl.limbLength(id) / 0.56;
+              const sy = Math.sin(playerPose.yaw);
+              const cy = Math.cos(playerPose.yaw);
+              _ikCup.set(sh.x + sy * 0.25 * k, sh.y - 0.2 * k, sh.z + cy * 0.25 * k);
+              gripAt(ctrl, fingers, side, _ikCup, 'phone');
+            }
+          } else fingers?.grip('phone');
+        }
+      }
+      if (!usedL) fingersL.current?.grip(null);
+      if (!usedR) fingersR.current?.grip(null);
+      // Hết cầm: trả tay về animation (tư thế ngồi tự quản tay qua applySeatPose).
+      if (!usedR && armGrip.current.R) ctrl.targets.armR.active = false;
+      if (!usedL && armGrip.current.L) ctrl.targets.armL.active = false;
+      armGrip.current.R = usedR && (held !== null || ph?.state === 'using');
+      armGrip.current.L = usedL && ph?.state === 'using';
+      fingersL.current?.update(dt);
+      fingersR.current?.update(dt);
+      const hand = ctrl.chain('armR')?.bones.end;
+      ikHold.active = gripOk && ctrl.weights.armR > 0.9 && !!hand;
+      if (ikHold.active && hand) {
+        hand.updateWorldMatrix(true, false);
+        ikHold.handSocket.set(...socketOffset).applyMatrix4(hand.matrixWorld);
+      }
+      if (IK_DEBUG) {
+        IK_DEBUG.gripActive = ikHold.active;
+        IK_DEBUG.holdDist = ikHold.active && ikHold.itemPos ? ikHold.handSocket.distanceTo(ikHold.itemPos) : -1;
+      }
     }
     if (IK_DEBUG) {
       const pel = ctrl.bones.pelvis;

@@ -32,6 +32,7 @@ const AXES: readonly THREE.Vector3[] = [
 const _q = new THREE.Quaternion();
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
+const _c = new THREE.Vector3();
 
 interface Digit {
   bones: THREE.Object3D[];
@@ -62,6 +63,8 @@ export class FingerGrip {
   private amount = 0;
   private dirty = false;
   private profile: GripProfile = GRIP_PROFILES.cup;
+  /** Hiệu chỉnh vị trí cổ tay (thế giới) để socket cục bộ của bàn tay trùng điểm cầm; hội tụ qua các khung. */
+  readonly bias = new THREE.Vector3();
 
   constructor(readonly hand: THREE.Object3D) {
     hand.updateWorldMatrix(true, true);
@@ -140,6 +143,8 @@ export function gripAt(
   side: 'L' | 'R',
   socket: THREE.Vector3,
   kind: GripKind | GripProfile,
+  /** Socket cục bộ của xương bàn tay (manifest, hand_r/hand_l). Có thì cổ tay được hiệu chỉnh dần để socket trùng điểm cầm. */
+  socketLocal?: readonly [number, number, number],
 ): boolean {
   const id = side === 'L' ? 'armL' : 'armR';
   const profile = typeof kind === 'string' ? GRIP_PROFILES[kind] : kind;
@@ -149,7 +154,18 @@ export function gripAt(
     const dir = wrist.clone().sub(root);
     if (dir.lengthSq() > 1e-8) wrist.addScaledVector(dir.normalize(), -profile.palmOffset);
   }
+  if (fingers && socketLocal) {
+    const hand = ctrl.chain(id)?.bones.end;
+    if (hand) {
+      hand.updateWorldMatrix(true, false);
+      _c.set(socketLocal[0], socketLocal[1], socketLocal[2]).applyMatrix4(hand.matrixWorld);
+      fingers.bias.addScaledVector(_c.sub(socket), -0.6);
+      if (fingers.bias.length() > 0.15) fingers.bias.setLength(0.15);
+    }
+    wrist.add(fingers.bias);
+  }
   const ok = reachTo(ctrl, id, wrist);
+  if (!ok) fingers?.bias.set(0, 0, 0);
   fingers?.grip(ok ? kind : null);
   return ok;
 }
