@@ -93,3 +93,11 @@ Chưa chạy `tsc`, `vite build` hay mở cảnh. Chưa thử: đi lùi sát tư
 ngồi cạnh tủ, đổi hình thể, zoom cực trị, Esc khi overview, thanh trong menu tạm dừng (vị trí, z-index 1000 so
 với backdrop, focus trap của hộp thoại có thể chặn Tab tới thanh), và ngưỡng 0,7 m của collision mask so với
 kích thước props thật.
+
+## Xem tổng thể (phím O)
+
+- Phím `overview` (mặc định O, hành động `overview` trong `settings/schema.ts`, đổi được ở Cài đặt, mục Điều khiển) gọi `toggleOverview()` từ `useGtaCamera`. O lần nữa hoặc Esc trả chế độ nền cũ (kể cả góc nhìn thứ nhất). Không bật khi tạm dừng hoặc đang gõ chữ. Trên cảm ứng vẫn dùng nút "Toàn cảnh" trong menu tạm dừng.
+- Camera từ trên xuống chéo (pitch 0,9 đến 1,4 rad, cách 10 đến 30 m, vào 18 m). Không khóa di chuyển: vẫn đi và xoay camera được.
+- Trần ẩn khi ở overview (`useOverviewActive` trong `controls/overviewState.ts`, Floorplan ẩn nhóm trần); thoát thì hiện lại. `document.body.dataset.cameraMode` phản ánh chế độ (dùng cho e2e). Tường chưa hạ/ẩn (đặc tả cho phép "có thể").
+- Giảm chuyển động: dùng `cameraComfort.reduceMotion` sẵn có (cắt thẳng, không rung).
+- HelpCenter có chủ đề "Xem tổng thể văn phòng". Test: `src/scene/controls/overview.vitest.test.ts`, `e2e-new/overview.spec.ts`.

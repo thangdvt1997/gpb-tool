@@ -672,6 +672,11 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
     bindModeHooks(rig, cameraModes);
     const detach = attachCameraInput(gl.domElement, rig, () => getControls().settings.sensitivity);
     const onKey = (e: KeyboardEvent): void => {
+      if (isAction(e.code, 'overview') && !e.repeat && !e.isComposing && !isTyping(e.target) && !getControls().paused) {
+        e.preventDefault();
+        toggleOverview();
+        return;
+      }
       if (!isAction(e.code, 'cancel') || e.isComposing || isTyping(e.target) || getControls().paused) return;
       if (!cameraModes.canEscape()) return;
       e.preventDefault();
@@ -679,7 +684,13 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
       cameraModes.escape();
     };
     window.addEventListener('keydown', onKey, true);
+    // Cho CSS và kiểm thử trình duyệt biết chế độ camera hiện tại (data-camera-mode trên <body>).
+    const markMode = (): void => { document.body.dataset.cameraMode = cameraModes.getMode(); };
+    markMode();
+    const unsubMode = cameraModes.subscribe(markMode);
     return () => {
+      unsubMode();
+      delete document.body.dataset.cameraMode;
       window.removeEventListener('keydown', onKey, true);
       detach();
       cameraModes.setHooks(null);

@@ -14,6 +14,7 @@ const ACTION_INFO: Record<ActionId, { label: string; wired: boolean }> = {
   run: { label: 'Chạy', wired: true },
   jump: { label: 'Nhảy', wired: true },
   firstPerson: { label: 'Đổi góc nhìn', wired: true },
+  overview: { label: 'Xem tổng thể', wired: true },
   cancel: { label: 'Tạm dừng / thoát', wired: true },
   interact: { label: 'Tương tác', wired: false },
   map: { label: 'Bản đồ', wired: false },
