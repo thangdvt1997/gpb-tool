@@ -181,3 +181,12 @@
   color: var(--ui-ink);
   border-color: var(--ui-primary);
 }
+
+/* Cảm ứng: thẻ gợi ý, mục menu và công tắc của khung tương tác đạt cao 44 px. */
+@media (pointer: coarse) {
+  .ix-chip,
+  .ix-menu-item,
+  .ix-toggle {
+    min-height: 44px;
+  }
+}

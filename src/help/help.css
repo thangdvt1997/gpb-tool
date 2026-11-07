@@ -173,3 +173,10 @@
     padding-inline: var(--ui-s3);
   }
 }
+
+/* Cảm ứng (kể cả màn rộng): ô tìm đạt cao 44 px. */
+@media (pointer: coarse) {
+  .help-search {
+    min-height: 44px;
+  }
+}
