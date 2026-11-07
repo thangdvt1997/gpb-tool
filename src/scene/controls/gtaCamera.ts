@@ -11,7 +11,9 @@ import {
   createCameraModeController,
   createComfortStore,
   effectiveShake,
+  mergeReduceMotion,
   MODE_POLICY,
+  type CameraComfort,
   type CameraMode,
   type CameraModeController,
   type ComfortStore,
@@ -145,6 +147,11 @@ function browserStorage(): StorageLike | null {
   }
 }
 
+/** Tùy chọn camera đã gộp cài đặt người dùng (display.reducedMotion) và hệ thống. Mọi chỗ đọc giảm chuyển động dùng hàm này. */
+function activeComfort(): CameraComfort {
+  return mergeReduceMotion(cameraComfort.get(), getSettings().display.reducedMotion, prefersReducedMotion());
+}
+
 function prefersReducedMotion(): boolean {
   try {
     return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
@@ -175,7 +182,7 @@ const shake = { amp: 0, t: 0 };
 
 /** Rung camera (0..1). Nhân hệ số của người dùng; tắt hẳn khi giảm chuyển động. Chưa có nơi gọi trong cảnh. */
 export function addCameraShake(strength: number): void {
-  const a = effectiveShake(strength, cameraComfort.get()) * CAM.shakeMax;
+  const a = effectiveShake(strength, activeComfort()) * CAM.shakeMax;
   if (a > shake.amp) shake.amp = a;
 }
 
@@ -305,7 +312,7 @@ export function updateGtaCamera(
   mode: CameraMode = frame.firstPerson ? 'firstPerson' : 'thirdPerson',
 ): void {
   const d = Math.min(Math.max(dt, 0), 0.1);
-  const comfort = cameraComfort.get();
+  const comfort = activeComfort();
   const pol = MODE_POLICY[mode];
   const kLook = 1 - Math.exp(-CAM.lookRate * d);
   const kZoom = comfort.reduceMotion ? 1 : 1 - Math.exp(-CAM.zoomRate * d);

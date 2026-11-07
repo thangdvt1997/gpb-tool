@@ -180,7 +180,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
               <h3>Cảm ứng</h3>
               {slider('Cỡ joystick', settings.touch.joystickSize, RANGES.joystickSize.min, RANGES.joystickSize.max, 5, (v) => update({ touch: { ...settings.touch, joystickSize: v } }))}
               {check('Hiện nút hành động', settings.touch.buttonsEnabled, (v) => update({ touch: { ...settings.touch, buttonsEnabled: v } }))}
-              <p className="sp-todo">Cỡ joystick, nút hành động cảm ứng và chế độ chạm để đi: đã lưu nhưng chưa nối vào scene.</p>
+              {check('Chạm sàn để đi tới đó', settings.touch.tapToWalk, (v) => update({ touch: { ...settings.touch, tapToWalk: v } }))}
               <div className="sp-row">
                 <span>Chế độ điều khiển chuột <span className="sp-todo">(chưa nối)</span></span>
                 <select value={settings.controlMode} onChange={(e) => update({ controlMode: e.target.value === 'leftMouse' ? 'leftMouse' : 'rightMouse' })} aria-label="Chế độ điều khiển chuột">
@@ -202,7 +202,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
               {check('Hiện gợi ý phím', settings.hintsEnabled, (v) => update({ hintsEnabled: v }))}
               {check('Viền sáng vật tương tác', settings.highlightEnabled, (v) => update({ highlightEnabled: v }))}
               {slider('Âm lượng', settings.volume, RANGES.volume.min, RANGES.volume.max, 0.05, (v) => update({ volume: v }))}
-              {check('Giảm chuyển động', settings.display.reducedMotion, (v) => update({ display: { reducedMotion: v } }), 'chưa nối vào scene; hộp thoại này đã tôn trọng prefers-reduced-motion')}
+              {check('Giảm chuyển động', settings.display.reducedMotion, (v) => update({ display: { reducedMotion: v } }), 'tắt rung và nhún camera; cũng theo prefers-reduced-motion của hệ thống')}
               <p className="sp-note">Cỡ chữ: chưa có trong schema nên chưa hiển thị.</p>
             </div>
           )}

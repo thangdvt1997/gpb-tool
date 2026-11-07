@@ -290,6 +290,15 @@ export function sanitizeComfort(raw: unknown, prefersReduced = false): CameraCom
   return { reduceMotion, shakeScale };
 }
 
+/**
+ * Gộp tùy chọn camera với cài đặt chung: giảm chuyển động nếu bất kỳ nguồn nào bật
+ * (tùy chọn camera, Cài đặt > Hiển thị, hoặc prefers-reduced-motion của hệ thống).
+ */
+export function mergeReduceMotion(c: CameraComfort, settingsReduced: boolean, systemReduced = false): CameraComfort {
+  const reduceMotion = c.reduceMotion || settingsReduced || systemReduced;
+  return reduceMotion === c.reduceMotion ? c : { ...c, reduceMotion };
+}
+
 /** Biên độ rung thực tế sau tùy chọn. */
 export function effectiveShake(amount: number, c: CameraComfort): number {
   if (c.reduceMotion || !Number.isFinite(amount) || amount <= 0) return 0;

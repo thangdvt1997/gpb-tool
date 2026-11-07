@@ -73,10 +73,11 @@ export interface Settings {
   hintsEnabled: boolean;
   highlightEnabled: boolean;
   controlMode: ControlMode;
-  touch: { joystickSize: number; buttonsEnabled: boolean };
+  /** Cảm ứng: cỡ joystick (px), hiện nút phụ, chạm một lần lên sàn để đi tới đó. */
+  touch: { joystickSize: number; buttonsEnabled: boolean; tapToWalk: boolean };
   /** Tay cầm: vùng chết (0 đến 0,5) và độ nhạy nhìn (hệ số nhân). Chỉ useGamepadInput đọc. */
   gamepad: { deadzone: number; sensitivity: number };
-  /** Hiển thị: giảm chuyển động (chưa có nơi tiêu thụ ngoài SettingsPanel). */
+  /** Hiển thị: giảm chuyển động (gtaCamera tắt rung, nhún, trễ camera; hộp thoại theo prefers-reduced-motion). */
   display: { reducedMotion: boolean };
 }
 
@@ -97,7 +98,7 @@ export function defaultSettings(): Settings {
     hintsEnabled: true,
     highlightEnabled: true,
     controlMode: 'rightMouse',
-    touch: { joystickSize: 120, buttonsEnabled: true },
+    touch: { joystickSize: 120, buttonsEnabled: true, tapToWalk: true },
     gamepad: { deadzone: 0.15, sensitivity: 1 },
     display: { reducedMotion: false },
   };
@@ -198,6 +199,7 @@ export function sanitize(input: unknown): Settings {
     touch: {
       joystickSize: num(touch.joystickSize, RANGES.joystickSize.min, RANGES.joystickSize.max, d.touch.joystickSize),
       buttonsEnabled: bool(touch.buttonsEnabled, d.touch.buttonsEnabled),
+      tapToWalk: bool(touch.tapToWalk, d.touch.tapToWalk),
     },
     gamepad: {
       deadzone: num(gp.deadzone, RANGES.deadzone.min, RANGES.deadzone.max, d.gamepad.deadzone),
