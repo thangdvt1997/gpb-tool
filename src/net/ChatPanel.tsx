@@ -4,11 +4,12 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { ChatChannel } from './protocol';
 import { MemberPanel } from './MemberPanel';
 import { SeatLeaseBridge } from './SeatLeaseBridge';
+import { WorldDebugHook } from './WorldDebug';
 import type { WorldApi } from './useWorld';
 
 const MAX_CHARS = 250; // khớp CHAT.maxChars của server
 
-export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat' | 'block' | 'blocked' | 'state' | 'muted' | 'role' | 'loadHistory' | 'client'> }) {
+export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat' | 'block' | 'blocked' | 'state' | 'muted' | 'role' | 'loadHistory' | 'client' | 'remote' | 'players' | 'leases'> }) {
   const [text, setText] = useState('');
   const [channel, setChannel] = useState<ChatChannel>('room');
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -72,6 +73,7 @@ export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat'
     </section>
     <SeatLeaseBridge world={world} />
     <MemberPanel world={world} />
+    <WorldDebugHook world={world} />
     </>
   );
 }
