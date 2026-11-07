@@ -33,6 +33,19 @@ export function computerPower(s: ComputerState): Partial<ComputerState> {
   return s.on ? { on: false, user: '' } : { on: true };
 }
 
+/** Dùng máy: đánh thức (bật màn hình) và đăng nhập nếu chưa; đã sẵn sàng thì không đổi gì (null). */
+export function computerWake(s: ComputerState, name: string): Partial<ComputerState> | null {
+  const patch: Partial<ComputerState> = {};
+  if (!s.on) patch.on = true;
+  if (!s.on || s.user === '') patch.user = name.trim().slice(0, 24) || 'khach';
+  return Object.keys(patch).length > 0 ? patch : null;
+}
+
+/** Đóng giao diện: máy về nghỉ (tắt màn hình, đăng xuất). Đã nghỉ thì null. Ghi chú vẫn giữ. */
+export function computerSleep(s: ComputerState): Partial<ComputerState> | null {
+  return s.on || s.user !== '' ? { on: false, user: '' } : null;
+}
+
 /** Đăng nhập giả: chỉ khi đang bật, tên rỗng thì dùng 'khach'. */
 export function computerLogin(s: ComputerState, name: string): Partial<ComputerState> | null {
   if (!s.on || s.user !== '') return null;
@@ -115,9 +128,18 @@ export function computerInteractable(o: ComputerOptions): InteractableDef {
     actions: [
       {
         id: 'use',
-        label: 'Sử dụng máy tính',
-        when: (c) => computerOf(c.state).on && computerOf(c.state).user !== '',
-        run: () => o.openUi(o.id),
+        label: 'Dùng máy tính',
+        // Luôn dùng được khi đứng đúng chỗ: tự bật màn hình và đăng nhập rồi mở giao diện.
+        run: () => {
+          const p = computerWake(cur(), who);
+          if (p) {
+            const wasOn = cur().on;
+            setObjectState(o.id, p);
+            if (!wasOn) ev('computer.on');
+            if (p.user !== undefined) ev('computer.login');
+          }
+          o.openUi(o.id);
+        },
       },
       {
         id: 'login',

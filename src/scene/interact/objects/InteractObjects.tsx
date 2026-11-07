@@ -7,7 +7,8 @@ import { playerPose } from '../../controls/playerPose';
 import type { ZoneObject } from '../../../content/types';
 import { chairInteractables } from '../chairs';
 import { registerObjects, type ObjectsConfig } from './index';
-import { ObjectsTicker, DoorMesh, DrawerCabinetMesh, GroupLight, SwitchMesh, WaterCoolerMesh, PrinterMesh, ItemMesh, ComputerMesh } from './components';
+import { ObjectsTicker, DoorMesh, DrawerCabinetMesh, GroupLight, SwitchMesh, WaterCoolerMesh, PrinterMesh, ItemMesh, ComputerMesh, CurtainMesh } from './components';
+import { openComputerUi } from './computerUi';
 import type { Footprint } from '../registry';
 
 /**
@@ -50,7 +51,7 @@ export function buildSampleConfig(objects: readonly ZoneObject[], blocked: (x: n
         return { x, z, yaw: cab.yaw, fp, front, w, d: cab.d, top: 0.9 };
       })();
   const sw = switchPos(water);
-  const geo: SampleGeometry = { cab, water, low, tv };
+  const geo: SampleGeometry = { cab, water, low, tv, door: SAMPLE_DOOR, desk: SAMPLE_DESK, curtain: SAMPLE_CURTAIN };
   const player = () => playerPose;
   const cfg: ObjectsConfig = {
     chairs: {
@@ -58,6 +59,30 @@ export function buildSampleConfig(objects: readonly ZoneObject[], blocked: (x: n
       seatOf: (d) => (d.footprint ? { x: d.footprint.cx, z: d.footprint.cz + 0.06, yaw: Math.PI } : null),
       hooks: { sit: requestSit, stand: () => requestStand(), isFree: (x, z) => !blocked(x, z) },
     },
+    doors: [
+      {
+        id: SAMPLE_DOOR.id,
+        label: 'Cửa kho',
+        hinge: SAMPLE_DOOR.hinge,
+        yaw: SAMPLE_DOOR.yaw,
+        length: SAMPLE_DOOR.length,
+        footprint: SAMPLE_DOOR.fp,
+        getPlayer: player,
+        config: { lockable: true },
+      },
+    ],
+    computers: [
+      {
+        id: SAMPLE_DESK.id,
+        label: 'Máy tính',
+        footprint: SAMPLE_DESK.fp,
+        point: SAMPLE_DESK.stand,
+        standAt: SAMPLE_DESK.stand,
+        getPlayer: player,
+        openUi: openComputerUi,
+      },
+    ],
+    curtains: [{ id: SAMPLE_CURTAIN.id, label: 'Rèm cửa', footprint: SAMPLE_CURTAIN.fp, point: SAMPLE_CURTAIN.stand, baseY: 0, height: SAMPLE_CURTAIN.height }],
     cabinets: [{ id: 'sample_cabinet', count: 3, footprint: cab.fp, at: cab.front, yaw: cab.front.yaw, locked: [2] }],
     switches: [{ id: 'sample_switch', groups: ['sample_zone'], footprint: { cx: sw.x, cz: sw.z, hx: 0.1, hz: 0.1 } }],
     coolers: [{ id: 'sample_cooler', footprint: water.fp, point: water.front }],
@@ -96,7 +121,46 @@ export interface SampleGeometry {
   water: PlaceInfo;
   low: SampleLow;
   tv: PlaceInfo;
+  door: typeof SAMPLE_DOOR;
+  desk: typeof SAMPLE_DESK;
+  curtain: typeof SAMPLE_CURTAIN;
 }
+
+// Ba vật bổ sung ở góc Đông-Nam (tọa độ bản vẽ x 41–45, y 25–30), cạnh tủ hồ sơ, máy in và TV của khu mẫu.
+// Cố ý ra khỏi dải hành lang Nam (x 36–44,2; y 25,5–28,5) để không chắn lối đi chính.
+/** Cửa kho: lá dài 0,9 m dọc trục z ở mép Đông chữ L (x 45,0), bản lề ở y 27,5; mở về phía Đông, xa người đứng phía Tây. */
+export const SAMPLE_DOOR = {
+  id: 'sample_door',
+  hinge: { x: toWorldX(45.0), z: toWorldZ(27.5) },
+  yaw: Math.PI / 2,
+  length: 0.9,
+  fp: { cx: toWorldX(45.0), cz: toWorldZ(27.05), hx: 0.1, hz: 0.45 } as Footprint,
+};
+/** Bàn máy tính 0,6 x 1,0 m sát mép Đông chữ L, màn hình quay về phía Tây; người dùng đứng cách mép bàn 0,6 m. */
+export const SAMPLE_DESK = {
+  id: 'sample_computer',
+  x: toWorldX(44.7),
+  z: toWorldZ(25.7),
+  w: 0.6,
+  d: 1.0,
+  top: 0.75,
+  /** Màn hình quay về -x. */
+  yaw: -Math.PI / 2,
+  fp: { cx: toWorldX(44.7), cz: toWorldZ(25.7), hx: 0.3, hz: 0.5 } as Footprint,
+  stand: { x: toWorldX(43.8), z: toWorldZ(25.7), yaw: Math.PI / 2 },
+};
+/** Rèm rộng 1,2 m sát tường Nam, giữa cây lớn (x 41,3) và TV (x 42,76). */
+export const SAMPLE_CURTAIN = {
+  id: 'sample_curtain',
+  x: toWorldX(42.05),
+  z: toWorldZ(29.75),
+  width: 1.2,
+  height: 2.4,
+  /** Mặt rèm hướng -z (ra phòng). */
+  yaw: Math.PI,
+  fp: { cx: toWorldX(42.05), cz: toWorldZ(29.75), hx: 0.6, hz: 0.05 } as Footprint,
+  stand: { x: toWorldX(42.05), z: toWorldZ(29.05), yaw: 0 },
+};
 
 /** Hướng dọc tường (vuông góc hướng mặt). yaw = π (mặt N) cho (1, 0). */
 function tangentOf(yaw: number) {
@@ -129,6 +193,13 @@ export function InteractObjects(p: { objects: readonly ZoneObject[]; blocked: (x
       <PrinterMesh id="sample_printer" position={[g.low.x, g.low.top, g.low.z]} yaw={g.low.yaw} />
       <SwitchMesh group="sample_zone" position={[sw.x, 1.2, sw.z]} yaw={g.water.yaw} />
       <GroupLight group="sample_zone" position={[g.water.x + Math.sin(g.water.yaw), 2.6, g.water.z + Math.cos(g.water.yaw)]} />
+      <DoorMesh id={SAMPLE_DOOR.id} hinge={SAMPLE_DOOR.hinge} yaw={SAMPLE_DOOR.yaw} length={SAMPLE_DOOR.length} />
+      <mesh position={[SAMPLE_DESK.x, SAMPLE_DESK.top / 2, SAMPLE_DESK.z]} castShadow receiveShadow>
+        <boxGeometry args={[SAMPLE_DESK.w, SAMPLE_DESK.top, SAMPLE_DESK.d]} />
+        <meshStandardMaterial color="#b8a58a" roughness={0.8} />
+      </mesh>
+      <ComputerMesh id={SAMPLE_DESK.id} position={[SAMPLE_DESK.x, SAMPLE_DESK.top, SAMPLE_DESK.z]} yaw={SAMPLE_DESK.yaw} />
+      <CurtainMesh id={SAMPLE_CURTAIN.id} position={[SAMPLE_CURTAIN.x, 0, SAMPLE_CURTAIN.z]} yaw={SAMPLE_CURTAIN.yaw} width={SAMPLE_CURTAIN.width} height={SAMPLE_CURTAIN.height} />
       <ItemMesh id="sample_cup" home={cupHome(g.low)} radius={0.04} height={0.1} />
     </group>
   );

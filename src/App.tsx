@@ -48,6 +48,7 @@ import { useTheme } from './theme/ThemeProvider';
 import type { ThemeName } from './theme/tokens';
 import type { PartyTheme } from './env';
 import { DuelPanel } from './duel/DuelPanel';
+import { ComputerPanel } from './scene/interact/objects/ComputerPanel';
 import { DuelBanner } from './duel/DuelBanner';
 import { getActiveDuel } from './duel/api';
 import type { Duel } from './duel/types';
@@ -541,6 +542,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           <LiveRegion />
           <QuickWheel getContext={getQuickContext} enabled={!duelOpen && !emoteOpen} />
           <PhotoPanel />
+          <ComputerPanel />
 
           {selectedObj && <Panel obj={selectedObj} role={user.role} onClose={() => setSelected(null)} />}
           {displayKind !== null && selected !== null && (
