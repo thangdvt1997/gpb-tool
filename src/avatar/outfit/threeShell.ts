@@ -20,12 +20,15 @@ export function bodyDataFromMesh(mesh: THREE.SkinnedMesh): BodyData {
   const idx = geo.getIndex();
   if (!pos || !si || !sw || !idx) throw new Error('Mesh thân thiếu position/skin/index.');
   const bones = mesh.skeleton.bones;
+  // Không dùng mesh.bindMatrixInverse: với bindMode 'attached' three cập nhật nó theo matrixWorld hiện tại (có scale chiều cao, vị trí),
+  // nên không còn là nghịch đảo của bindMatrix. Nghịch đảo của bindMatrix mới khớp với boneInverses và vị trí đỉnh.
+  const bindInv = mesh.bindMatrix.clone().invert();
   const bonePos: Record<string, [number, number, number]> = {};
   const m = new THREE.Matrix4();
   const v = new THREE.Vector3();
   for (let i = 0; i < bones.length; i++) {
     // inverse(boneInverse) = ma trận thế giới của xương lúc bind; đổi về không gian cục bộ của mesh.
-    m.copy(mesh.skeleton.boneInverses[i]).invert().premultiply(mesh.bindMatrixInverse);
+    m.copy(mesh.skeleton.boneInverses[i]).invert().premultiply(bindInv);
     v.setFromMatrixPosition(m);
     bonePos[bones[i].name] = [v.x, v.y, v.z];
   }

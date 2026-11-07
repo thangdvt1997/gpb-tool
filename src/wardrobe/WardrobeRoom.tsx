@@ -8,11 +8,26 @@ import type { AvatarAnimation } from '../avatar/animation';
 import { MpfbAvatar, targetHeightM } from '../avatar/MpfbAvatar';
 import { MpfbOutfitOn } from '../avatar/outfit/MpfbOutfitOn';
 import { garmentSupport } from '../avatar/outfit/compat';
-import { GARMENT_GROUP_LABELS, garmentsInGroup, getGarment, STYLE_TAG_LABELS } from '../fashion/catalog';
+import {
+  ACCESSORY_SIZE_MAX,
+  ACCESSORY_SIZE_MIN,
+  ACCESSORY_SLOT_LABELS,
+  GARMENT_GROUP_LABELS,
+  MAX_RINGS,
+  PATTERNS,
+  PATTERN_TEXT_MAX,
+  accessoriesInSlot,
+  garmentsInGroup,
+  getAccessory,
+  getGarment,
+  getPattern,
+  STYLE_TAG_LABELS,
+} from '../fashion/catalog';
+import { MAX_PATTERNS_PER_GARMENT } from '../fashion/rules';
 import { GARMENT_PALETTE } from '../fashion/palette';
 import { PRESETS } from '../fashion/presets';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
-import { OUTFIT_SLOTS, type BodyStyle, type CharacterLook, type OutfitSlot } from '../fashion/types';
+import { ACCESSORY_SLOTS, OUTFIT_SLOTS, PHONE_STATES, type AccessorySlot, type BodyStyle, type CharacterLook, type OutfitSlot, type RingFinger, type Side, type WornAccessory } from '../fashion/types';
 import { SHAPE_SLIDERS, UNSUPPORTED_SHAPE, type SliderGroup } from './shapeSliders';
 import {
   REMOVABLE_SLOTS,
@@ -352,6 +367,8 @@ export function WardrobeRoom({ initialLook, appearance = DEFAULT_APPEARANCE, onC
           {s.tab === 'color' && <ColorTab s={s} dispatch={dispatch} />}
           {s.tab === 'shape' && <ShapeTab s={s} dispatch={dispatch} />}
           {s.tab === 'style' && <StyleTab s={s} dispatch={dispatch} />}
+          {s.tab === 'acc' && <AccessoryTab s={s} dispatch={dispatch} />}
+          {s.tab === 'pattern' && <PatternTab s={s} dispatch={dispatch} />}
         </div>
 
         <div style={S.foot}>
@@ -534,7 +551,7 @@ function ColorTab({ s, dispatch }: TabProps) {
             </Section>
           ))}
           <p style={{ color: C.dim, fontSize: 12 }}>
-            Xem trước hiển thị màu từng vùng và độ nhám/kim loại theo chất liệu của vùng thân/chính. Họa tiết chưa được dựng lên vỏ.
+            Xem trước hiển thị màu từng vùng và độ nhám/kim loại theo chất liệu của vùng thân/chính.
           </p>
         </>
       )}
@@ -633,3 +650,265 @@ function StyleTab({ s, dispatch }: TabProps) {
     </>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Phụ kiện và họa tiết                                                */
+/* ------------------------------------------------------------------ */
+
+type AccKey = AccessorySlot | 'hat' | 'ring';
+const ACC_KEYS: readonly AccKey[] = ['hat', ...ACCESSORY_SLOTS, 'ring'];
+const accLabel = (k: AccKey): string => (k === 'hat' ? GARMENT_GROUP_LABELS.hat : ACCESSORY_SLOT_LABELS[k]);
+const PHONE_LABEL = { stowed: 'Cất', held: 'Cầm', using: 'Dùng' } as const;
+const FINGERS: readonly { id: RingFinger; label: string }[] = [
+  { id: 'index', label: 'Trỏ' },
+  { id: 'middle', label: 'Giữa' },
+  { id: 'ring', label: 'Áp út' },
+  { id: 'little', label: 'Út' },
+];
+
+function Swatches({ value, label, onPick }: { value: string; label: string; onPick: (hex: string) => void }) {
+  return (
+    <div style={S.row} role="group" aria-label={label}>
+      {GARMENT_PALETTE.map((sw) => (
+        <button
+          key={sw.hex}
+          type="button"
+          aria-label={`${label}: ${sw.label}`}
+          title={sw.label}
+          onClick={() => onPick(sw.hex)}
+          style={{ width: 24, height: 24, borderRadius: 4, background: sw.hex, border: value === sw.hex ? `2px solid ${C.accent}` : `1px solid ${C.line}`, cursor: 'pointer' }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AccessoryTab({ s, dispatch }: TabProps) {
+  const [key, setKey] = useState<AccKey>('hat');
+  const acc = s.draft.accessories;
+  const worn = key !== 'hat' && key !== 'ring' ? ((acc as unknown as Record<string, WornAccessory | null>)[key] ?? null) : null;
+  const def = worn ? getAccessory(worn.itemId) : undefined;
+  const isWorn = (k: AccKey): boolean => (k === 'hat' ? !!s.draft.outfit.hat : k === 'ring' ? acc.rings.length > 0 : !!(acc as unknown as Record<string, unknown>)[k]);
+  return (
+    <>
+      <div style={S.row} role="group" aria-label="Loại phụ kiện">
+        {ACC_KEYS.map((k) => (
+          <button key={k} type="button" style={btn(key === k)} aria-pressed={key === k} onClick={() => setKey(k)}>
+            {accLabel(k)}
+            {isWorn(k) ? ' •' : ''}
+          </button>
+        ))}
+      </div>
+
+      {key === 'hat' && (
+        <Section title="Mũ">
+          <div style={{ display: 'grid', gap: 6 }}>
+            <button type="button" style={btn(!s.draft.outfit.hat)} aria-pressed={!s.draft.outfit.hat} onClick={() => dispatch({ type: 'takeOff', slot: 'hat' })}>
+              Không đội mũ
+            </button>
+            {garmentsInGroup('hat').map((g) => (
+              <button key={g.id} type="button" style={{ ...btn(s.draft.outfit.hat?.garmentId === g.id), textAlign: 'left' }} aria-pressed={s.draft.outfit.hat?.garmentId === g.id} onClick={() => dispatch({ type: 'wear', slot: 'hat', garmentId: g.id })}>
+                <strong>{g.name}</strong>
+                <div style={{ color: C.dim, fontSize: 12 }}>{g.description}</div>
+              </button>
+            ))}
+          </div>
+          <p style={{ color: C.dim, fontSize: 12 }}>Màu mũ chỉnh ở tab Màu (ô Mũ).</p>
+        </Section>
+      )}
+
+      {key !== 'hat' && key !== 'ring' && (
+        <>
+          <Section title={ACCESSORY_SLOT_LABELS[key]}>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <button type="button" style={btn(!worn)} aria-pressed={!worn} onClick={() => dispatch({ type: 'acc', slot: key, itemId: null })}>
+                Không dùng
+              </button>
+              {accessoriesInSlot(key).map((a) => (
+                <button key={a.id} type="button" style={{ ...btn(worn?.itemId === a.id), textAlign: 'left' }} aria-pressed={worn?.itemId === a.id} onClick={() => dispatch({ type: 'acc', slot: key, itemId: a.id })}>
+                  <strong>{a.name}</strong>
+                  <div style={{ color: C.dim, fontSize: 12 }}>{a.styles.map((t) => STYLE_TAG_LABELS[t]).join(', ')}</div>
+                </button>
+              ))}
+            </div>
+          </Section>
+          {worn && def && (
+            <Section title={`Tùy chỉnh: ${def.name}`}>
+              <Swatches value={worn.color} label="Màu phụ kiện" onPick={(hex) => dispatch({ type: 'accOpt', slot: key, patch: { color: hex } })} />
+              <label style={{ display: 'block', color: C.dim, marginBottom: 8 }}>
+                Chất liệu{' '}
+                <select value={worn.material} style={{ minHeight: 32 }} onChange={(e) => dispatch({ type: 'accOpt', slot: key, patch: { material: e.target.value as 'metal' } })}>
+                  {def.materials.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: 'block', marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Kích thước</span>
+                  <span style={{ color: C.dim }}>{worn.size.toFixed(2)}</span>
+                </div>
+                <input type="range" aria-label="Kích thước phụ kiện" min={ACCESSORY_SIZE_MIN} max={ACCESSORY_SIZE_MAX} step={0.01} value={worn.size} style={{ width: '100%', minHeight: 28 }} onChange={(e) => dispatch({ type: 'accOpt', slot: key, patch: { size: Number(e.target.value) } })} />
+              </label>
+              {def.sides.length > 1 && (
+                <div style={S.row} role="group" aria-label="Bên đeo">
+                  {def.sides.map((sd) => (
+                    <button key={sd} type="button" style={btn(worn.side === sd)} aria-pressed={worn.side === sd} onClick={() => dispatch({ type: 'accOpt', slot: key, patch: { side: sd } })}>
+                      {sd === 'left' ? 'Trái' : sd === 'right' ? 'Phải' : 'Hai bên'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {key === 'phone' && (
+                <div style={S.row} role="group" aria-label="Trạng thái điện thoại">
+                  {PHONE_STATES.map((st) => (
+                    <button key={st} type="button" style={btn((worn as { state?: string }).state === st)} aria-pressed={(worn as { state?: string }).state === st} onClick={() => dispatch({ type: 'accOpt', slot: key, patch: { state: st } })}>
+                      {PHONE_LABEL[st]}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {key === 'headphones' && (
+                <div style={S.row} role="group" aria-label="Cách đeo tai nghe">
+                  {(['on-ears', 'around-neck'] as const).map((w) => (
+                    <button key={w} type="button" style={btn((worn as { wear?: string }).wear === w)} aria-pressed={(worn as { wear?: string }).wear === w} onClick={() => dispatch({ type: 'accOpt', slot: key, patch: { wear: w } })}>
+                      {w === 'on-ears' ? 'Trên tai' : 'Quanh cổ'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+        </>
+      )}
+
+      {key === 'ring' && <RingSection s={s} dispatch={dispatch} />}
+    </>
+  );
+}
+
+function RingSection({ s, dispatch }: TabProps) {
+  const [hand, setHand] = useState<Side>('right');
+  const [finger, setFinger] = useState<RingFinger>('ring');
+  const rings = s.draft.accessories.rings;
+  return (
+    <Section title={`Nhẫn (tối đa ${MAX_RINGS})`}>
+      <div style={S.row} role="group" aria-label="Tay đeo nhẫn">
+        {(['left', 'right'] as const).map((h) => (
+          <button key={h} type="button" style={btn(hand === h)} aria-pressed={hand === h} onClick={() => setHand(h)}>
+            {h === 'left' ? 'Tay trái' : 'Tay phải'}
+          </button>
+        ))}
+      </div>
+      <div style={S.row} role="group" aria-label="Ngón đeo nhẫn">
+        {FINGERS.map((f) => (
+          <button key={f.id} type="button" style={btn(finger === f.id)} aria-pressed={finger === f.id} onClick={() => setFinger(f.id)}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {accessoriesInSlot('ring').map((a) => (
+          <button key={a.id} type="button" style={{ ...btn(), textAlign: 'left' }} onClick={() => dispatch({ type: 'ring', op: 'add', itemId: a.id, hand, finger })}>
+            <strong>Thêm: {a.name}</strong>
+          </button>
+        ))}
+      </div>
+      {rings.length > 0 && (
+        <ul style={{ paddingLeft: 18 }}>
+          {rings.map((r, i) => (
+            <li key={`${r.hand}-${r.finger}`} style={{ marginBottom: 4 }}>
+              {getAccessory(r.itemId)?.name} ({r.hand === 'left' ? 'trái' : 'phải'}, {FINGERS.find((f) => f.id === r.finger)?.label}){' '}
+              <button type="button" style={btn()} onClick={() => dispatch({ type: 'ring', op: 'remove', index: i })} aria-label={`Bỏ nhẫn ${i + 1}`}>
+                Bỏ
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
+function PatternTab({ s, dispatch }: TabProps) {
+  const worn = s.draft.outfit[s.slot];
+  const def = worn ? getGarment(worn.garmentId) : undefined;
+  const slots = OUTFIT_SLOTS.filter((sl) => {
+    const w = s.draft.outfit[sl];
+    return !!w && (getGarment(w.garmentId)?.patternZones.length ?? 0) > 0;
+  });
+  const sliderRow = (label: string, value: number, min: number, max: number, step: number, index: number, field: 'scale' | 'rotation' | 'offsetX' | 'offsetY') => (
+    <label style={{ display: 'block', marginBottom: 6 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>{label}</span>
+        <span style={{ color: C.dim }}>{value.toFixed(2)}</span>
+      </div>
+      <input type="range" aria-label={`${label} (họa tiết ${index + 1})`} min={min} max={max} step={step} value={value} style={{ width: '100%', minHeight: 28 }} onChange={(e) => dispatch({ type: 'patternSet', slot: s.slot, index, patch: { [field]: Number(e.target.value) } })} />
+    </label>
+  );
+  return (
+    <>
+      <div style={S.row} role="group" aria-label="Món có thể thêm họa tiết">
+        {slots.length === 0 && <span style={{ color: C.dim }}>Chưa có món nào cho đặt họa tiết.</span>}
+        {slots.map((slot) => (
+          <button key={slot} type="button" style={btn(s.slot === slot)} aria-pressed={s.slot === slot} onClick={() => dispatch({ type: 'slot', slot })}>
+            {SLOT_SHORT[slot]}
+          </button>
+        ))}
+      </div>
+      {worn && def && def.patternZones.length > 0 ? (
+        <>
+          <Section title={`Họa tiết trên: ${def.name} (${worn.patterns.length}/${MAX_PATTERNS_PER_GARMENT})`}>
+            {worn.patterns.length === 0 && <p style={{ color: C.dim }}>Chưa có họa tiết.</p>}
+            {worn.patterns.map((p, i) => {
+              const pd = getPattern(p.patternId);
+              return (
+                <fieldset key={i} style={{ border: `1px solid ${C.line}`, borderRadius: 6, marginBottom: 10 }}>
+                  <legend>
+                    {i + 1}. {pd?.name ?? p.patternId}
+                  </legend>
+                  {pd?.allowsText && (
+                    <label style={{ display: 'block', marginBottom: 6 }}>
+                      Chữ{' '}
+                      <input
+                        type="text"
+                        value={p.text}
+                        maxLength={PATTERN_TEXT_MAX}
+                        aria-label={`Chữ (họa tiết ${i + 1})`}
+                        onChange={(e) => dispatch({ type: 'patternSet', slot: s.slot, index: i, patch: { text: e.target.value } })}
+                        style={{ minHeight: 32 }}
+                      />
+                    </label>
+                  )}
+                  <Swatches value={p.color} label={`Màu họa tiết ${i + 1}`} onPick={(hex) => dispatch({ type: 'patternSet', slot: s.slot, index: i, patch: { color: hex } })} />
+                  {sliderRow('Tỷ lệ', p.scale, 0.3, 3, 0.05, i, 'scale')}
+                  {sliderRow('Góc xoay', p.rotation, -180, 180, 1, i, 'rotation')}
+                  {sliderRow('Lệch ngang', p.offsetX, -1, 1, 0.05, i, 'offsetX')}
+                  {sliderRow('Lệch dọc', p.offsetY, -1, 1, 0.05, i, 'offsetY')}
+                  <button type="button" style={btn()} onClick={() => dispatch({ type: 'patternRemove', slot: s.slot, index: i })}>
+                    Xóa họa tiết {i + 1}
+                  </button>
+                </fieldset>
+              );
+            })}
+          </Section>
+          <Section title="Thêm họa tiết">
+            <div style={{ display: 'grid', gap: 6 }}>
+              {PATTERNS.map((pt) => (
+                <button key={pt.id} type="button" style={{ ...btn(false, worn.patterns.length >= MAX_PATTERNS_PER_GARMENT), textAlign: 'left' }} disabled={worn.patterns.length >= MAX_PATTERNS_PER_GARMENT} onClick={() => dispatch({ type: 'patternAdd', slot: s.slot, patternId: pt.id })}>
+                  {pt.name}
+                </button>
+              ))}
+            </div>
+          </Section>
+          <p style={{ color: C.dim, fontSize: 12 }}>Xem trước in họa tiết và chữ lên mặt trước thân của áo (vùng thân). Họa tiết ở tay, mũ, giày chưa in lên vỏ.</p>
+        </>
+      ) : (
+        slots.length > 0 && <p style={{ color: C.dim }}>Chọn một món ở trên.</p>
+      )}
+    </>
+  );
+}
+

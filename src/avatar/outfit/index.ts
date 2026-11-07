@@ -15,3 +15,4 @@ export * from './accessoryHat';
 export * from './patternTexture';
 export { attachAccessories, morphedBodyData, type AttachedAccessories } from './accessoryRig';
 export { MpfbAccessories } from './MpfbAccessories';
+export * from './hairHat';

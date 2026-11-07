@@ -152,12 +152,11 @@ describe('wardrobeState: reducer', () => {
     expect(s3.draft.outfit.outer?.garmentId).toBe('outer-blazer');
   });
 
-  it('mặc mũ (chưa có mesh) bị từ chối, bản nháp giữ nguyên và có lý do', () => {
+  it('mặc mũ (mesh procedural gắn xương head) được chấp nhận và vào lịch sử', () => {
     const s0 = start();
     const s1 = run(s0, { type: 'wear', slot: 'hat', garmentId: 'hat-cap' });
-    expect(s1.draft).toBe(s0.draft);
-    expect(s1.notice?.kind).toBe('error');
-    expect(s1.undoStack.length).toBe(0);
+    expect(s1.draft.outfit.hat?.garmentId).toBe('hat-cap');
+    expect(s1.undoStack.length).toBe(1);
   });
 
   it('đầm cần xác nhận: chưa áp tới khi đồng ý; "giữ nguyên" không đổi gì', () => {

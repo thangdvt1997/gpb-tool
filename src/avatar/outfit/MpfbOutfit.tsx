@@ -131,7 +131,7 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
     const baseGeo = body.geometry;
     const { data, cls } = analyzeBody(body, baseGeo);
     const plan = planOutfit(current);
-    for (const s of plan.skipped) console.warn(`Trang phục chưa dựng được (${s.slot}/${s.garmentId}): ${s.reason}`);
+    for (const s of plan.skipped.filter((x) => x.slot !== 'hat')) console.warn(`Trang phục chưa dựng được (${s.slot}/${s.garmentId}): ${s.reason}`);
     const results = resolveLayers(cls, data.index, plan.pieces);
 
     // Da: ẩn tam giác nằm kín dưới vỏ.
