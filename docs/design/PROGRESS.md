@@ -107,3 +107,31 @@ Production: vẫn chạy image `gpb-tool/web:backup-20261107T102845Z` (tag local
 | camera | /home/cc/wt/camera, wt2/camera | 05 (e2e camera trong cảnh, phục hồi khi server ghi đè vị trí), 09 (tự đi qua Player) | 4186 |
 
 Tiếp theo: gộp từng nhánh khi xanh (tsc, vitest, build), chạy acceptance đầy đủ, push `main`, bundle vào /home/cc/handoff-20261107/, deploy production.
+
+## 2026-11-07 — Lần lặp 2, kết quả đợt 1–3
+
+### Acceptance, push, deploy
+
+| Commit | Acceptance | Push origin/main | Bundle | Deploy production | Test production |
+|---|---|---|---|---|---|
+| efe00e6 | PASS 11:51 (e2e 32) | có | /home/cc/bundles/gpb-efe00e6.bundle | 12:10 UTC (watcher root) | 3/4, 20-controls hỏng do tải; chạy lại riêng PASS |
+| 54e6406 | FAIL (2 e2e quá thời gian do load ~98) | — | — | — | — |
+| 6137383 | FAIL (03-login-real: .env test mới xuất hiện, preview trỏ auth production) | — | — | — | — |
+| d71e1be | FAIL (20-controls quá 240 s) | — | — | — | — |
+| b75a255 | FAIL (10-panels Thư viện: thẻ đổi sang role option, test cập nhật) | — | — | — | — |
+| 6cadd19 | **PASS** 13:41 (e2e 47, gồm đăng nhập thật qua auth kiểm thử) | có | /home/cc/bundles/gpb-6cadd19.bundle | 14:01 UTC | **4/4 PASS** (BROWSER_QA.md) |
+
+Ghi chú hạ tầng:
+- /home/cc/handoff-20261107 thuộc root, user cc không ghi được, nên bundle đặt ở /home/cc/bundles/.
+- Root chạy watcher (/home/cc/handoff-20261107/watcher.sh) tự deploy khi /home/cc/gpb-acceptance.txt có RESULT=PASS, theo đúng các bước sao lưu, tag image, build web. Smoke test của watcher lỗi vì root chưa cài trình duyệt Playwright; điều phối viên chạy test production bằng user cc.
+- e2e_with_stub.sh không khởi động được stub (ghi log vào thư mục root). Đăng nhập thật dùng auth kiểm thử 127.0.0.1:3902 qua biến mới `GPB_PREVIEW_AUTH_API` (vite.config.ts); webServer trong /home/cc/gpb-e2e/playwright.config.ts đặt mặc định biến này.
+- Spec mới thêm vào /home/cc/gpb-e2e/tests: 23-ik, 24-asset-viewer, 25-camera, 26-autowalk, 27-mobile, 28-overview (+ camera-helpers.ts). Bản gốc nằm trong repo ở e2e-new/.
+
+### Nhánh đã gộp (worktree /home/cc/wt/<tên>)
+
+world (15, 26, 27), ik (03), auth22 (22), remote (avatar từ xa phát hành động), assets01 (01, 02), appear (world gửi ngoại hình), interact (va chạm cửa, bàn, cửa sổ sau rèm), fashion (mũ, 41 phụ kiện, họa tiết, tab Phụ kiện/Họa tiết, sửa mất thân trong phòng thay đồ, mép hông, mép cổ, điện thoại trong túi, tóc né mũ), camera (05, 09 sửa kẹt tự đi), mobile (joystick cảm ứng, HelpCenter modal, axe), overview (xem tổng thể, phím O), ik2 (cầm cốc, điện thoại, tay lên bàn), body (dài tay/chân/cổ, cong lưng).
+
+### Còn lại
+
+- Bị chặn bởi hạ tầng hoặc asset: 25b thoại (TURN/SFU); 23–27 cần deploy service world và route gateway; 22 cần deploy auth mới; 01/02 cần GLB đồ đạc, clip thật, bằng chứng license MPFB; 12 cần trình đọc màn hình thật.
+- Main e78f25f (body + fashion đợt 3) chờ acceptance.

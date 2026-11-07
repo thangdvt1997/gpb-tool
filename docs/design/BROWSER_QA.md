@@ -83,3 +83,18 @@ Vân xấu và cách sửa:
 - Tường: roughness 0,7 hơi bóng; thêm prop `roughness` cho `InstancedBoxes`, tường dùng 0,92, metalness 0.
 - Da nhân vật: GLB xuất hai mặt nên mặt trong da tạo sọc bóng đổ tự che trên cẳng tay; roughness 0,5 hơi bóng. `fixMaterials` trong `src/avatar/MpfbAvatar.tsx`: da FrontSide, roughness 0,62, metalness 0, envMapIntensity 0,45, anisotropy 8 cho map da (hằng số `SKIN_MATERIAL`).
 - Xăm: texture xăm 1024/2048 px đã lọc tuyến tính và mipmap; thêm anisotropy 8 (`src/tattoo/overlay.ts`). Bản đồ UV xem trước vẽ mask ở độ phân giải gốc rồi phóng to có làm mượt (`TattooPainter.tsx`); ranh giới vùng vẫn thô vì mask nguồn chỉ MASK_RES ô.
+
+## Production 2026-11-07 — commit 6cadd19 (deploy 14:01 UTC)
+
+Chạy `npx playwright test -c playwright.prod.config.ts --workers=1` từ /home/cc/gpb-e2e trên https://gp.daisoncoop.com (Chromium headless, SwiftShader). **4/4 PASS** (6,7 phút).
+
+| Test | Kết quả | Số đo |
+|---|---|---|
+| prod/30-hanging: camera không lọt băng rôn | PASS | 36 mẫu, 8 khung bị kéo lại trước băng rôn, 0 khung lọt |
+| 02-scene-mock: cảnh 3D, HUD, trợ giúp, gợi ý E, panel | PASS | canvas render, không lỗi console |
+| 02-scene-mock: HUD không chồng (1280x800) | PASS | |
+| 20-controls: chuột phải, đầu theo camera, WASD | PASS | đầu lệch tối đa 56,4° khi kéo nhanh (giới hạn 70°); A/D/S/W: thân lệch 2,5° / 3,2° / 3,0° / 3,3° so với hướng mong đợi, đi 0,86–1,53 m đúng hướng camera |
+
+Lần chạy trước trên efe00e6 với `--workers=4` song song acceptance: 20-controls hỏng ở W (thân lệch 20,4°, ngưỡng 20°) do tải; chạy lại một mình PASS. Đã tăng timeout bài này lên 600 s.
+
+Chưa kiểm chứng trên production: đăng nhập thật (tài khoản test e2e chỉ có trong auth kiểm thử 127.0.0.1:3902, không có trong auth production; không tự tạo tài khoản production). Service world và auth bản mới chưa deploy (quy trình deploy chỉ cho web), nên các tính năng `?world=1`, hồ sơ mở rộng (/profile/about) chưa thử trên production.
