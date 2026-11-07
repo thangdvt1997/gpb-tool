@@ -179,7 +179,7 @@ Lặp lại qua gateway (`wss://gp.daisoncoop.com/api/world/ws`) để xác nh�
 
 Cập nhật 2026-11-06. Mã: `services/world/src/{leases,chat,roles,sessions,profanity}.js` (điều phối trong `world.js`), client `src/net/*`. Tất cả trạng thái trong RAM của một tiến trình; restart mất hết (lease, phiên, nhật ký sự kiện, audit, vai trò ghi đè). Không có khóa nào sống sót qua restart, nên không có khóa mồ côi vô hạn.
 
-**Chưa làm:** thoại theo khoảng cách (TASK 25 phần voice) bị chặn vì chưa có TURN/SFU; chat riêng 1-1; báo cáo (report) tin nhắn; phòng họp; lưu bền vững (SQLite) lịch sử, vai trò, audit; đa instance; UI quản lý thành viên; HTTP API cho vai trò (chỉ realtime); khách chưa đăng nhập (bắt tay vẫn bắt buộc đăng nhập, vai trò `guest` chỉ áp dụng cho tài khoản có role lạ/thiếu).
+**Chưa làm:** thoại theo khoảng cách (TASK 25 phần voice) bị chặn vì chưa có TURN/SFU; chat riêng 1-1; báo cáo (report) tin nhắn; phòng họp; lưu bền vững (SQLite) lịch sử, vai trò, audit; đa instance; HTTP API cho vai trò (chỉ realtime); khách chưa đăng nhập (bắt tay vẫn bắt buộc đăng nhập, vai trò `guest` chỉ áp dụng cho tài khoản có role lạ/thiếu).
 
 ## Đối tượng và định danh
 
@@ -226,7 +226,7 @@ Vai trò phòng: `owner > editor > member > guest`. Ánh xạ ban đầu từ ro
 | room.view, room.join, pose.send, chat.read | x | x | x | x |
 | chat.send, seat.use, object.use | | x | x | x |
 | layout.edit | | | x | x |
-| member.kick, member.mute, role.set, audit.view, lease.force_release | | | | x |
+| member.list, member.kick, member.mute, role.set, audit.view, lease.force_release | | | | x |
 
 Ràng buộc: khác phòng → `cross_room`; không tác động chính mình (`cannot_target_self`) hoặc owner khác (`cannot_target_owner`); `role.set` không cấp `owner` (`cannot_grant_owner`) nên không mất/đổi owner cuối cùng; mute chặn `chat.send`. Chưa có chuyển quyền owner. Hạ vai trò nhả ngay lease không còn quyền (`revoked`) và gửi `role{role,capabilities}` cho người đó.
 
@@ -236,6 +236,7 @@ Ràng buộc: khác phòng → `cross_room`; không tác động chính mình (`
 | `mod.mute{target,on?,durationMs?}` | mặc định 10 phút, tối đa 24 giờ; mục tiêu nhận `muted` |
 | `role.set{target,role}` | `mod.result` |
 | `audit.list{limit?}` | `audit.list{entries}`; chỉ owner |
+| `member.list` | `member.list{members[{id,name,role,muted}]}`; chỉ owner (quyền `member.list`); client UI quản lý thành viên dùng để hiện danh sách |
 
 Mục tiêu phải đang trong phòng (`target_not_found`). Audit trong RAM, 500 mục mỗi phòng: `{at, actor, action, target, result, requestId, detail?}`; ghi cả lần bị từ chối; không ghi nội dung chat hay token.
 
@@ -275,3 +276,8 @@ const world = useWorld({ enabled: loggedIn });          // trong App
 ```
 
 Các giới hạn chưa kiểm chứng: bắt tay thật qua gateway nginx, hai trình duyệt thật, quy ước hướng `yaw` của Avatar (RemotePlayers gán `rotation.y = yaw`), ngoại hình người khác (đang dùng ngoại hình mặc định).
+
+## Nối client (TASK 24, 26)
+
+- `src/net/seatLease.ts` (mount bởi `SeatLeaseBridge` trong `ChatPanel`, chỉ khi `?world=1`): bọc `run` của hành động `sit` các vật `kind:'chair'` đã đăng ký; gửi `lease.acquire` (`seat:<id>`), chỉ ngồi khi `lease.result` ok có `leaseId` và `fence`; ghế người khác giữ hiện "Ghế đã có người"; về `walking` sau khi ngồi thì `lease.release`; heartbeat do `WorldClient` tự gửi. Mất lease (`lease_lost`, snapshot không còn) thì đứng dậy và báo.
+- `src/net/MemberPanel.tsx` (mount trong `ChatPanel`, chỉ owner): danh sách `member.list`, nút mời ra/tắt tiếng/đổi vai trò member-editor qua `mod.kick`, `mod.mute`, `role.set`.

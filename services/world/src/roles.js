@@ -16,7 +16,7 @@ const BASE = {
   guest: ['room.view', 'room.join', 'pose.send', 'chat.read'],
   member: ['chat.send', 'seat.use', 'object.use'],
   editor: ['layout.edit'],
-  owner: ['member.kick', 'member.mute', 'role.set', 'audit.view', 'lease.force_release'],
+  owner: ['member.list', 'member.kick', 'member.mute', 'role.set', 'audit.view', 'lease.force_release'],
 };
 
 export const MATRIX = (() => {

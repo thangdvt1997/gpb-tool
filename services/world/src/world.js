@@ -347,6 +347,17 @@ export function createWorld({
       if (!d.ok) return result(false, { error: d.reason });
       return hub.send(client, { type: 'audit.list', requestId, entries: roles.auditList(user.tenantId, m.limit) });
     }
+    if (m.type === 'member.list') {
+      const d = can(actor, 'member.list', { tenantId: user.tenantId });
+      if (!d.ok) return result(false, { error: d.reason });
+      // Mỗi người một dòng (nhiều tab gộp). Chỉ id, tên, vai trò phòng, tắt tiếng: không lộ role tài khoản hay token.
+      const seen = new Map();
+      hub.forEach((c) => {
+        if (c.user.tenantId !== user.tenantId || seen.has(c.user.id)) return;
+        seen.set(c.user.id, { id: c.user.id, name: c.user.name, role: roles.roleOf(c.user), muted: roles.isMuted(c.user) });
+      });
+      return hub.send(client, { type: 'member.list', requestId, members: [...seen.values()] });
+    }
     const target = findTarget(user, m.target);
     const action = { 'mod.kick': 'member.kick', 'mod.mute': 'member.mute', 'role.set': 'role.set' }[m.type];
     const d = can(actor, action, {
@@ -422,6 +433,7 @@ export function createWorld({
       case 'mod.mute':
       case 'role.set':
       case 'audit.list':
+      case 'member.list':
         handleModeration(user, client, m);
         return true;
       default:

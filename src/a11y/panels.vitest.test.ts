@@ -8,15 +8,15 @@ const FILES = [
   'settings/SettingsPanel', 'library/LibraryPanel', 'backup/BackupPanel', 'editor/EditorPanel',
   'wardrobe/WardrobeRoom', 'tattoo/TattooPainter', 'tattoo/TattooStudio', 'profile/ProfilePanel',
   'help/HelpCenter', 'emotes/social/SocialPrompt', 'emotes/social/SocialBar', 'net/ChatPanel',
-  'net/ConnectionBanner', 'quality/QualityPicker', 'photo/PhotoMode',
+  'net/ConnectionBanner', 'net/MemberPanel', 'quality/QualityPicker', 'photo/PhotoMode',
 ].map((f) => `src/${f}.tsx`);
 
 const src = (p: string) => readFileSync(p, 'utf8');
 const css = (p: string) => src(p);
 
 describe('panel: ngữ nghĩa hộp thoại', () => {
-  it('đọc được đủ 15 file', () => {
-    expect(FILES.length).toBe(15);
+  it('đọc được đủ 16 file', () => {
+    expect(FILES.length).toBe(16);
     for (const f of FILES) expect(src(f).length).toBeGreaterThan(100);
   });
   for (const f of FILES) {

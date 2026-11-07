@@ -52,6 +52,14 @@ export interface Snapshot {
 }
 
 export type Role = 'guest' | 'member' | 'editor' | 'owner';
+/** Một dòng của danh sách thành viên (chỉ owner nhận). */
+export interface MemberInfo {
+  id: string;
+  name: string;
+  role: Role;
+  muted: boolean;
+}
+
 export type ChatChannel = 'room' | 'near';
 
 export interface ChatMessage {
@@ -82,6 +90,7 @@ export type ServerMessage =
   | { type: 'role'; role: Role; capabilities: string[] }
   | { type: 'muted'; on: boolean; durationMs: number }
   | { type: 'mod.result'; op: string; requestId?: string; ok: boolean; error?: string }
+  | { type: 'member.list'; requestId?: string; members: MemberInfo[] }
   | { type: 'audit.list'; entries: Record<string, unknown>[] };
 
 // Mã đóng kết nối của world.
