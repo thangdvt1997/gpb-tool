@@ -12,6 +12,8 @@ import { useGtaControls, useSessionHotkeys, type MoveInput } from './useGtaContr
 import { useGamepadInput } from '../../settings/useGamepadInput';
 import { cameraHeightsFor } from './eyeHeight';
 import { advanceFixedStep, createFixedStepper, lerpAngle } from '../motion/fixedStep';
+import { createLocoInput, createLocomotionFsm, stepLocomotionFsm } from '../motion/locomotionFsm';
+import { fillLocoInput, locoBlendInputs, type LocoBlendInputs } from './locoBridge';
 
 export { useGtaControls, useSessionHotkeys, isTypingTarget, type GtaControls, type MoveInput } from './useGtaControls';
 export {
@@ -73,6 +75,8 @@ export interface ControlsDebug {
   live: boolean;
   grounded: boolean;
   seatPending: boolean;
+  /** Trạng thái state machine locomotion (TASK 02) của khung trước. */
+  loco: string;
   /** Camera khung trước: điểm nhìn, vị trí, tỷ lệ kéo lại do biển treo (1 = không chặn). */
   cam: { eyeX: number; eyeY: number; eyeZ: number; x: number; y: number; z: number; hangingPull: number };
   /** Ghi vào đây để dịch chuyển nhân vật ở khung kế tiếp (chỉ cho Playwright). yaw: hướng thân và camera (rad). */
@@ -81,7 +85,7 @@ export interface ControlsDebug {
 const debugHook: ControlsDebug | null = (() => {
   if (typeof window === 'undefined') return null;
   if (new URLSearchParams(window.location.search).get('debug') !== 'controls') return null;
-  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false, cam: { ...cameraProbe }, teleport: null };
+  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false, loco: 'idle', cam: { ...cameraProbe }, teleport: null };
   (window as unknown as { __gpbControls?: ControlsDebug }).__gpbControls = h;
   return h;
 })();
@@ -191,6 +195,12 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   const renderPose = useRef({ x: start.x, y: 0, z: start.z, yaw: yawRef.current }).current;
   /** Nhảy bấm ở khung không có bước mô phỏng nào thì giữ tới bước kế tiếp. */
   const pendingJump = useRef(false);
+  // State machine locomotion: mỗi khung nhận input, trạng thái quyết định trộn hoạt ảnh (trên không/chạm đất).
+  const locoFsm = useRef(createLocomotionFsm()).current;
+  const locoInput = useRef(createLocoInput()).current;
+  const blendIn = useRef<LocoBlendInputs>({ grounded: true, sitting: false }).current;
+  // Camera đọc tư thế vẽ đã nội suy (renderPose), không đọc vị trí bước 60 Hz.
+  const cameraPosRef = useRef({ current: renderPose }).current;
 
   // Đổi enabled sang false giữa chừng: dừng hẳn.
   useEffect(() => {
@@ -336,7 +346,25 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     renderPose.z = prevPose.z + (pos.z - prevPose.z) * a;
     renderPose.yaw = lerpAngle(prevPose.yaw, motion.yaw, a);
 
-    stepLocomotion(playerLocomotion, motion.speed, motion.grounded, seat !== null, dt);
+    // FSM locomotion: dữ kiện khung -> trạng thái -> đầu vào trộn hoạt ảnh procedural.
+    const emoteNow = getEmoteState();
+    fillLocoInput(
+      locoInput,
+      {
+        speed: motion.speed,
+        vy: motion.vy,
+        grounded: motion.grounded,
+        jumped: motion.jumped,
+        moveIntent: keyMove || motion.moved,
+        run: motion.running,
+        seated: seat !== null,
+        emoteId: emoteNow.phase !== 'idle' ? emoteNow.id : null,
+      },
+      locoFsm.state,
+    );
+    stepLocomotionFsm(locoFsm, locoInput, dt);
+    locoBlendInputs(locoFsm.state, seat !== null, blendIn);
+    stepLocomotion(playerLocomotion, motion.speed, blendIn.grounded, blendIn.sitting, dt);
     // Đầu nhìn theo hướng camera (kẹp ±70 độ so với thân), trừ khi ngồi hoặc ở góc nhìn thứ nhất.
     stepHeadLook(
       playerLocomotion,
@@ -360,6 +388,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       debugHook.live = live;
       debugHook.grounded = motion.grounded;
       debugHook.seatPending = pendingSeat.current !== null;
+      debugHook.loco = locoFsm.state;
       Object.assign(debugHook.cam, cameraProbe);
     }
     const sitW = playerLocomotion.sit;
@@ -380,7 +409,7 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
   });
 
   // Đăng ký sau useFrame chuyển động để camera dùng vị trí của chính khung này.
-  useGtaCamera({ rig, positionRef, obstacles, bounds: ROOM_BOUNDS, getFrame: () => camFrame });
+  useGtaCamera({ rig, positionRef: cameraPosRef, obstacles, bounds: ROOM_BOUNDS, getFrame: () => camFrame });
 
   return { positionRef, yawRef, motion, rig, renderPose, isMoving, isRunning };
 }
