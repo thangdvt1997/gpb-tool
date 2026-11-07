@@ -6,12 +6,16 @@
  */
 export function restoreFocusLater(target: HTMLElement | null | undefined): void {
   if (!target) return;
+  let done = false;
   const run = (): void => {
+    if (done) return;
+    done = true;
     if (!target.isConnected) return;
     const active = document.activeElement;
     if (active && active !== document.body && active !== document.documentElement) return;
     target.focus();
   };
+  // Cảnh 3D nặng (GPU phần mềm) có thể làm một khung hình kéo dài cả giây: hẹn giờ 120 ms là mốc dự phòng.
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(run));
-  else setTimeout(run, 0);
+  setTimeout(run, 120);
 }

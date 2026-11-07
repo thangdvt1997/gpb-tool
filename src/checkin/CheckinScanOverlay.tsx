@@ -59,10 +59,15 @@ export function CheckinScanOverlay({ phase, name, at, onSkip, onRetry }: Checkin
             {(phase === 'done' || phase === 'already') && '✓'}
             {phase === 'error' && '!'}
           </span>
-          <div className="ci-text" role={phase === 'error' ? 'alert' : 'status'} aria-live={phase === 'error' ? 'assertive' : 'polite'}>
+          {/* Chữ hiển thị không nằm trong vùng live; trình đọc màn hình nhận một chuỗi duy nhất mỗi pha
+              (NVDA 07/11 đọc "Đã ghi danh…, mời bạn vào tầng 7" hai lần khi hai đoạn cùng đổi trong vùng live). */}
+          <div className="ci-text" aria-hidden="true">
             <p className="ci-title">{title}</p>
             <p className="ci-detail">{detail}</p>
           </div>
+          <span className="ci-sr" role={phase === 'error' ? 'alert' : 'status'} aria-atomic="true">
+            {`${title}. ${detail}`}
+          </span>
         </div>
         <div className="ui-actions">
           {phase === 'error' && onRetry && (
