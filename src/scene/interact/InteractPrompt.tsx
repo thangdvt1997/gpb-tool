@@ -8,6 +8,8 @@ import {
   updateSettings,
   useControlSnapshot,
 } from '../controls';
+import { useSettings } from '../../settings/useSettings';
+import { joystickMetrics } from './joystickMetrics';
 import { activateInteractFocus, useInteractSnapshot } from './store';
 import './interact.css';
 
@@ -162,8 +164,6 @@ function useCoarsePointer(): boolean {
   return coarse;
 }
 
-const JOY_RADIUS = 48;
-
 /**
  * Điều khiển cảm ứng: joystick bên trái để di chuyển; kéo trên vùng cảnh bên phải để xoay camera
  * (gtaCamera nhận kéo cảm ứng trên canvas); nút Chạy (bật/tắt), Nhảy, Tương tác.
@@ -172,6 +172,9 @@ function TouchControls() {
   const { paused } = useControlSnapshot();
   const { focus } = useInteractSnapshot();
   const [run, setRun] = useState(false);
+  const { settings } = useSettings();
+  const { buttonsEnabled } = settings.touch;
+  const joy = joystickMetrics(settings.touch.joystickSize);
   const knobRef = useRef<HTMLDivElement>(null);
   const active = useRef<{ id: number; cx: number; cy: number } | null>(null);
 
@@ -193,12 +196,12 @@ function TouchControls() {
     let dx = e.clientX - a.cx;
     let dy = e.clientY - a.cy;
     const len = Math.hypot(dx, dy);
-    if (len > JOY_RADIUS) {
-      dx = (dx / len) * JOY_RADIUS;
-      dy = (dy / len) * JOY_RADIUS;
+    if (len > joy.radius) {
+      dx = (dx / len) * joy.radius;
+      dy = (dy / len) * joy.radius;
     }
-    touchInput.x = dx / JOY_RADIUS;
-    touchInput.y = -dy / JOY_RADIUS;
+    touchInput.x = dx / joy.radius;
+    touchInput.y = -dy / joy.radius;
     if (knobRef.current) knobRef.current.style.transform = `translate(${dx}px, ${dy}px)`;
   };
   const endKnob = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -214,6 +217,7 @@ function TouchControls() {
     <>
       <div
         className="ctl-joystick"
+        style={{ width: joy.size, height: joy.size }}
         role="presentation"
         onPointerDown={(e) => {
           if (active.current) return;
@@ -227,8 +231,13 @@ function TouchControls() {
         onPointerCancel={endKnob}
         onLostPointerCapture={endKnob}
       >
-        <div ref={knobRef} className="ctl-joystick-knob" />
+        <div
+          ref={knobRef}
+          className="ctl-joystick-knob"
+          style={{ width: joy.knob, height: joy.knob, margin: `${-joy.knob / 2}px 0 0 ${-joy.knob / 2}px` }}
+        />
       </div>
+      {buttonsEnabled && (
       <div className="ctl-touch-buttons">
         <button type="button" className="ui-hud-chip" aria-pressed={run} onClick={() => setRun((v) => !v)}>
           Chạy
@@ -240,6 +249,7 @@ function TouchControls() {
           {focus ? focus.verb : 'Tương tác'}
         </button>
       </div>
+      )}
     </>
   );
 }

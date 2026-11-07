@@ -12,6 +12,8 @@ import { worldPointFromRay } from '../layout/floorPointer';
 import { getControls, ROOM_BOUNDS, useControlSnapshot, useGtaPlayer, wrapAngle, type GtaAutopilot } from './controls';
 import { useCameraBodyVisibility, useCameraSafety } from './controls/gtaCamera';
 import { playerPose } from './controls/playerPose';
+import { getSettings } from '../settings';
+import { isTapToWalk, type PointerDownRecord } from './controls/tapToWalk';
 import { cancelWalkRequest, takeWalkRequest } from './controls/walkRequest';
 import { FLOOR, PLAYER_RADIUS, SPAWN, type Rect } from './layout';
 import { getMyVisual } from './social/DuelFighters';
@@ -185,12 +187,21 @@ export function Player({
     };
   }, []);
 
+  // Ghi lúc nhấn xuống để onFloorClick biết là chạm cảm ứng và đo thời gian, quãng di chuyển (tapToWalk.ts).
+  const floorDown = useRef<PointerDownRecord | null>(null);
+  const onFloorDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+    floorDown.current = { pointerType: e.pointerType, t: performance.now(), x: e.clientX, y: e.clientY };
+  }, []);
+
   const onFloorClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       // Chỉ chuột trái (hoặc chạm). Kéo không tính là click. Vật thể có stopPropagation chặn trước.
       if (!enabled || e.button !== 0 || e.delta > 5) return;
       const c = getControls();
       if (c.paused || c.seated || getMyVisual().locked) return;
+      const down = floorDown.current;
+      floorDown.current = null;
+      if (!isTapToWalk(down, { t: performance.now(), x: e.clientX, y: e.clientY }, getSettings().touch.tapToWalk)) return;
       const pt = worldPointFromRay(e.ray);
       if (!pt) return;
       // Click sàn thay đích cũ, kể cả walkRequest đang đi (không gọi onArrive của nó).
@@ -229,7 +240,7 @@ export function Player({
   return (
     <>
       {/* Mặt sàn vô hình hứng click. Vật thể có stopPropagation nằm gần camera hơn nên chặn click này. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} onClick={onFloorClick}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} onPointerDown={onFloorDown} onClick={onFloorClick}>
         <planeGeometry args={[FLOOR.width, FLOOR.depth]} />
         <meshBasicMaterial visible={false} />
       </mesh>
