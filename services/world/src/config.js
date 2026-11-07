@@ -25,6 +25,8 @@ export const ANIM_STATES = ['idle', 'walk', 'run', 'jump', 'fall', 'sit', 'emote
 // WebSocket: đường dẫn, kích thước khung tối đa (pose hợp lệ dưới 200 byte), số kết nối.
 export const WS_PATH = '/api/world/ws';
 export const MAX_FRAME_BYTES = 1024;
+// Riêng tin 'voice.signal' (SDP offer/answer có thể vượt 1 KB): trần khung lớn hơn, chỉ chấp nhận đúng loại tin này.
+export const VOICE_MAX_FRAME_BYTES = 8192;
 export const MAX_CONNECTIONS = 2000;
 export const MAX_CONNECTIONS_PER_USER = 2;
 // Bắt tay đang chờ auth cùng lúc. Vượt thì từ chối, để flood không cookie không dồn request vào auth.

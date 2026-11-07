@@ -64,6 +64,8 @@ export interface MemberInfo {
   muted: boolean;
 }
 
+export type VoiceSignalKind = 'offer' | 'answer' | 'ice' | 'bye';
+
 export type ChatChannel = 'room' | 'near';
 
 export interface ChatMessage {
@@ -78,7 +80,7 @@ export interface ChatMessage {
 export type ServerMessage =
   | Snapshot
   | { type: 'ack'; seq: number; tick: number; accepted: { x: number; z: number; yaw: number; anim: string }; corrected: boolean }
-  | { type: 'error'; code: string; seq?: number; requestId?: string; clientMsgId?: string; retryAfterMs?: number }
+  | { type: 'error'; code: string; callId?: string; seq?: number; requestId?: string; clientMsgId?: string; retryAfterMs?: number }
   | { type: 'join'; id: string; name: string; tick: number; appearance?: unknown }
   | { type: 'appearance.ack'; requestId?: string; appearance: unknown }
   | { type: 'poses'; tick: number; serverTime: number; poses: PlayerState[] }
@@ -92,6 +94,8 @@ export type ServerMessage =
   | { type: 'chat.ack'; clientMsgId: string; id: string; at: number; duplicate?: boolean }
   | { type: 'chat.history'; requestId?: string; messages: ChatMessage[] }
   | { type: 'chat.block'; ok: boolean; blocked?: string[]; error?: string }
+  /** TASK 25b: tín hiệu WebRTC do server chuyển tiếp; `from` do server gán. */
+  | { type: 'voice.signal'; from: string; kind: VoiceSignalKind; callId: string; sdp?: string; candidate?: string; sdpMid?: string; sdpMLineIndex?: number }
   | { type: 'role'; role: Role; capabilities: string[] }
   | { type: 'muted'; on: boolean; durationMs: number }
   | { type: 'mod.result'; op: string; requestId?: string; ok: boolean; error?: string }

@@ -17,7 +17,7 @@ export function roleFromAccount(accountRole) {
 // Quyền tối thiểu của từng vai trò; vai trò cao kế thừa vai trò thấp.
 const BASE = {
   guest: ['room.view', 'room.join', 'pose.send', 'chat.read'],
-  member: ['chat.send', 'seat.use', 'object.use', 'social.act'],
+  member: ['chat.send', 'voice.use', 'seat.use', 'object.use', 'social.act'],
   editor: ['layout.edit'],
   owner: ['member.list', 'member.kick', 'member.mute', 'role.set', 'owner.transfer', 'audit.view', 'lease.force_release'],
 };
@@ -45,7 +45,7 @@ export function can(actor, action, resource = {}) {
   if (!perms || !perms.has(action)) return { ok: false, reason: 'forbidden' };
   // Chống truy cập phòng khác bằng đổi ID.
   if (resource.tenantId !== undefined && resource.tenantId !== actor.tenantId) return { ok: false, reason: 'cross_room' };
-  if (action === 'chat.send' && actor.muted) return { ok: false, reason: 'muted' };
+  if ((action === 'chat.send' || action === 'voice.use') && actor.muted) return { ok: false, reason: 'muted' };
   if (action === 'member.kick' || action === 'member.mute' || action === 'role.set' || action === 'owner.transfer') {
     if (resource.targetId === actor.id) return { ok: false, reason: 'cannot_target_self' };
     // Chủ phòng không đụng tới chủ phòng khác: không để phòng mất chủ cuối cùng.

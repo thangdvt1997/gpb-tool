@@ -7,7 +7,7 @@ import { STATUS_CODES } from 'node:http';
 import { WebSocketServer } from 'ws';
 import {
   CLOSE,
-  MAX_FRAME_BYTES,
+  VOICE_MAX_FRAME_BYTES,
   MAX_PENDING_HANDSHAKES,
   REVALIDATE_MS,
   WS_PATH,
@@ -28,8 +28,8 @@ function reject(socket, status) {
 export function attachWorldSocket({ server, config, world, hub, authClient }) {
   const wss = new WebSocketServer({
     noServer: true,
-    // Khung lớn hơn 1 KB: `ws` đóng kết nối với mã 1009.
-    maxPayload: MAX_FRAME_BYTES,
+    // Trần cứng của transport; connection.js siết xuống 1 KB cho mọi tin trừ voice.signal. Quá trần: `ws` đóng 1009.
+    maxPayload: VOICE_MAX_FRAME_BYTES,
     perMessageDeflate: false,
     clientTracking: false,
   });

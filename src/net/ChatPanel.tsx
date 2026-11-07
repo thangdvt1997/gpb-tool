@@ -5,11 +5,12 @@ import type { ChatChannel } from './protocol';
 import { MemberPanel } from './MemberPanel';
 import { SeatLeaseBridge } from './SeatLeaseBridge';
 import { WorldDebugHook } from './WorldDebug';
+import { VoicePanel } from './voice/VoicePanel';
 import type { WorldApi } from './useWorld';
 
 const MAX_CHARS = 250; // khớp CHAT.maxChars của server
 
-export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat' | 'block' | 'blocked' | 'state' | 'muted' | 'role' | 'loadHistory' | 'client' | 'remote' | 'players' | 'leases'> }) {
+export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat' | 'block' | 'blocked' | 'state' | 'muted' | 'role' | 'loadHistory' | 'client' | 'remote' | 'players' | 'leases' | 'subscribe'> }) {
   const [text, setText] = useState('');
   const [channel, setChannel] = useState<ChatChannel>('room');
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -32,10 +33,11 @@ export function ChatPanel({ world }: { world: Pick<WorldApi, 'chat' | 'sendChat'
   return (
     <>
     <section aria-label="Trò chuyện" style={{ width: 300, background: 'rgba(20,20,24,.82)', color: '#fff', borderRadius: 8, padding: 8, font: '13px system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <button type="button" aria-pressed={channel === 'room'} onClick={() => setChannel('room')}>Cả phòng</button>
         <button type="button" aria-pressed={channel === 'near'} onClick={() => setChannel('near')}>Người ở gần</button>
         <button type="button" onClick={world.loadHistory} disabled={!online} style={{ marginLeft: 'auto' }}>Tin cũ</button>
+        <VoicePanel world={world} />
       </div>
       <ul ref={listRef} style={{ listStyle: 'none', margin: 0, padding: 0, height: 160, overflowY: 'auto' }}>
         {world.chat.map((m) => (

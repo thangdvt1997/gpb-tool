@@ -108,6 +108,12 @@ export class SpatialAudioManager {
     return this.status;
   }
 
+  /** Cho nguồn ngoài (thoại WebRTC) nối vào một bus: trả context và nút bus, null khi chưa unlock(). */
+  getBus(name: BusName): { ctx: AudioContext; node: GainNode } | null {
+    const node = this.buses[name];
+    return this.ctx && node ? { ctx: this.ctx, node } : null;
+  }
+
   private buildBuses(ctx: AudioContext): void {
     const master = ctx.createGain();
     master.connect(ctx.destination);
