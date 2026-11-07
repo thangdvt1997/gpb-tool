@@ -33,6 +33,15 @@ export const TOPICS: readonly HelpTopic[] = [
         : `Giữ ${keys.look} rồi kéo để xoay camera. Nhấn ${keys.view} để đổi giữa góc nhìn thứ nhất và thứ ba.`,
   },
   {
+    id: 'overview',
+    title: 'Xem tổng thể văn phòng',
+    keywords: ['tổng thể', 'toàn cảnh', 'trên cao', 'nhìn từ trên', 'bản vẽ', 'ẩn trần', 'overview'],
+    body: ({ touch, keys }) =>
+      touch
+        ? 'Mở menu tạm dừng rồi chạm Toàn cảnh để nhìn cả văn phòng chữ L từ trên cao, trần tự ẩn. Chạm Thoát toàn cảnh để quay lại góc nhìn cũ.'
+        : `Nhấn ${keys.overview} để nhìn cả văn phòng chữ L từ trên cao, trần tự ẩn; vẫn đi và xoay camera được. Nhấn ${keys.overview} lần nữa hoặc ${keys.pause} để quay lại góc nhìn cũ. Đổi phím trong Cài đặt.`,
+  },
+  {
     id: 'interact',
     title: 'Tương tác với đồ vật',
     keywords: ['cửa', 'ghế', 'ngăn kéo', 'cây nước', 'máy in', 'công tắc', 'đèn', 'tv', 'rèm', 'máy tính'],

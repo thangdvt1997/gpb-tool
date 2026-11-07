@@ -7,6 +7,7 @@ import { stateOf, useScene, type ObjState } from './context';
 import { InstancedBoxes, type BoxItem } from './InstancedBoxes';
 import { FLOOR, OUTER_WALL, toWorldX, toWorldZ } from './layout';
 import { OfficeCeiling } from './OfficeCeiling';
+import { useOverviewActive } from './controls/overviewState';
 import { OFFICE_L_PLAN, OFFICE_L_POLYGON } from './officeBounds';
 import { useOfficeEnvMap } from './officeEnv';
 import { OfficeProps } from './OfficeProps';
@@ -157,8 +158,10 @@ function OfficeCeilingL() {
       geo.dispose();
     };
   }, []);
+  // Xem tổng thể: ẩn trần để không che cảnh nhìn từ trên (room.txt mục 7). Thoát thì hiện lại.
+  const overview = useOverviewActive();
   return (
-    <group ref={ref}>
+    <group ref={ref} visible={!overview}>
       <OfficeCeiling />
     </group>
   );
