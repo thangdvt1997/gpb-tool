@@ -64,6 +64,13 @@ useLimbIK(rig.root, (c) => { /* ghi c.targets / applySeatPose(c, ...) theo sessi
 
 Không dùng priority > 0 (tắt render tự động của R3F); thứ tự do đăng ký useFrame cùng priority. Nếu cần foot IK: `limbIK.ground = {...}`.
 
+## 3b. Cập nhật (ngồi, cầm, bật mặc định)
+
+- IK trong MpfbAvatar BẬT mặc định; tắt bằng `?ik=0`. Căn cứ: e2e "?ik=1: cảnh render không lỗi console" và `e2e-new/23-ik.spec.ts` (ngồi ghế, hook `?debug=ik` -> `window.__gpbIK`: frames, sitFrames, nanBones, pelvisY, floorY, footY) đều PASS.
+- Ngồi nối vào MpfbAvatar: animation `sit` (hoặc `locomotion` có `playerLocomotion.sit > 0.5`) -> `applySeatPose` với điểm neo = gốc nhân vật (x, z), mặt ghế 0,46 m trên sàn, yaw theo hướng nhóm. Tay lên bàn: `deskHandPoints(anchor, yaw, deskY)` có sẵn nhưng CHƯA nối trong app (avatar chưa biết độ cao bàn); có test.
+- `grip.ts`: `FingerGrip(handBone)` khép ngón (trục gập dò tự động), `gripAt(ctrl, fingers, 'L'|'R', socket, 'cup'|'phone')` đưa cổ tay tới socket (lùi `palmOffset`). CHƯA nối với hệ vật cầm trong app; có test trên 3 GLB thật.
+- Chibi: chân ngắn nhưng với tới sàn theo test; cần xem bằng mắt.
+
 ## 4. Chưa kiểm chứng
 
 - Chưa chạy trên GLB thật trong trình duyệt; test dùng chuỗi `THREE.Bone` dựng tay (tên và tỷ lệ gần MPFB).
