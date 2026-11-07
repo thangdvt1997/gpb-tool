@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { announce } from '../a11y';
 import { attachSeatLease } from './seatLease';
+import { attachItemLease } from './itemLease';
 import type { WorldApi } from './useWorld';
 
 export function SeatLeaseBridge({ world }: { world: Pick<WorldApi, 'client' | 'state'> }) {
@@ -13,15 +14,16 @@ export function SeatLeaseBridge({ world }: { world: Pick<WorldApi, 'client' | 's
 
   useEffect(() => {
     if (!client) return undefined;
-    const off = attachSeatLease(client, {
-      notify: (m) => {
-        announce(m, 'assertive');
-        setMsg(m);
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => setMsg(''), 3000);
-      },
-    });
+    const notify = (m: string) => {
+      announce(m, 'assertive');
+      setMsg(m);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setMsg(''), 3000);
+    };
+    const off = attachSeatLease(client, { notify });
+    const offItem = attachItemLease(client, { notify });
     return () => {
+      offItem();
       off();
       if (timer.current) clearTimeout(timer.current);
     };

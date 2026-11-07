@@ -39,7 +39,7 @@ export const TOPICS: readonly HelpTopic[] = [
     body: ({ touch, keys }) =>
       touch
         ? 'Mở menu tạm dừng rồi chạm Toàn cảnh để nhìn cả văn phòng chữ L từ trên cao, trần tự ẩn. Chạm Thoát toàn cảnh để quay lại góc nhìn cũ.'
-        : `Nhấn ${keys.overview} để nhìn cả văn phòng chữ L từ trên cao, trần tự ẩn; vẫn đi và xoay camera được. Nhấn ${keys.overview} lần nữa hoặc ${keys.pause} để quay lại góc nhìn cũ. Đổi phím trong Cài đặt.`,
+        : `Nhấn ${keys.overview} để nhìn cả văn phòng chữ L từ trên cao, trần tự ẩn; vẫn đi và xoay camera được. Nhấn ${keys.overview} lần nữa hoặc ${keys.pause} để quay lại góc nhìn cũ. Nhấn ${keys.cameraPreset} để chuyển qua các camera đặt sẵn (toàn cảnh, hành lang trái, hành lang dưới, cụm bàn, phòng họp), hết vòng thì về camera theo nhân vật. Đổi phím trong Cài đặt.`,
   },
   {
     id: 'interact',

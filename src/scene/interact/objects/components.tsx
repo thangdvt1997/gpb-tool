@@ -10,6 +10,7 @@ import { drawerOf, drawerId, drawerOffset } from './drawer';
 import { lightTarget, useLightGroup } from './lightSwitch';
 import { curtainLightIntensity } from './curtain';
 import { fallStep, placementPreviewFor } from './smallItem';
+import { getInspect, inspectAnchor, INSPECT_VIEW } from './itemInspect';
 import { useInteractionSnapshot } from '../controller';
 import { TV_CHANNELS, tvOf, VOLUME_MAX } from './tv';
 import { curtainOf } from './curtain';
@@ -232,6 +233,8 @@ export function PlacePreview(p: { radius?: number; height?: number }) {
   );
 }
 
+const INSPECT_DIR = new Vector3();
+
 /** Đồ nhỏ: ở chỗ gốc/đã đặt thì tại vị trí lưu; trên tay thì bám điểm cầm trước-phải người chơi, damp mượt. */
 export function ItemMesh(p: { id: string; home: { x: number; y: number; z: number }; radius?: number; height?: number; color?: string; preview?: 'ok' | 'bad' | null }) {
   const ref = useRef<Group>(null);
@@ -239,12 +242,27 @@ export function ItemMesh(p: { id: string; home: { x: number; y: number; z: numbe
   const r = p.radius ?? 0.05;
   const h = p.height ?? 0.1;
   const vy = useRef(0);
-  useFrame((_, dt) => {
+  useFrame((rf, dt) => {
     const g = ref.current;
     if (!g) return;
     let tx = st.x;
     let ty = st.y;
     let tz = st.z;
+    const insp = getInspect();
+    if (st.where === 'hand' && insp.active) {
+      // Quan sát: đưa vật ra trước camera, phóng to, xoay theo chuột/phím. Camera đứng yên (đầu vào bị khóa).
+      const cam = rf.camera;
+      cam.getWorldDirection(INSPECT_DIR);
+      const a = inspectAnchor(cam.position, INSPECT_DIR);
+      g.position.set(a.x, a.y - (h * INSPECT_VIEW.scale) / 2, a.z);
+      g.scale.setScalar(INSPECT_VIEW.scale);
+      g.rotation.set(insp.pitch, insp.yaw, 0);
+      return;
+    }
+    if (g.scale.x !== 1) {
+      g.scale.setScalar(1);
+      g.rotation.x = 0;
+    }
     if (st.where === 'hand') {
       const sy = Math.sin(playerPose.yaw);
       const cy = Math.cos(playerPose.yaw);

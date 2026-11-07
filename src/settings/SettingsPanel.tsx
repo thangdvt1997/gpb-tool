@@ -18,6 +18,8 @@ const ACTION_INFO: Record<ActionId, { label: string; wired: boolean }> = {
   cancel: { label: 'Tạm dừng / thoát', wired: true },
   interact: { label: 'Tương tác', wired: false },
   map: { label: 'Bản đồ', wired: false },
+  inspectItem: { label: 'Quan sát vật đang cầm', wired: true },
+  cameraPreset: { label: 'Camera điểm đặt sẵn', wired: true },
   editor: { label: 'Trình biên tập', wired: false },
 };
 

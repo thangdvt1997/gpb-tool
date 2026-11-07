@@ -27,6 +27,9 @@ import { GARMENT_PALETTE } from '../fashion/palette';
 import { PRESETS } from '../fashion/presets';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { ACCESSORY_SLOTS, OUTFIT_SLOTS, PHONE_STATES, type AccessorySlot, type BodyStyle, type CharacterLook, type OutfitSlot, type RingFinger, type Side, type WornAccessory } from '../fashion/types';
+import { COLOR_FAMILY_LABELS, NO_FILTER, colorsIn, filterGarments, stylesIn, type ColorFamily, type GarmentFilter } from './garmentFilter';
+import { LOOK_FILE_NAME, exportLookChecked, importLookChecked } from './lookTransfer';
+import { downloadBlob } from '../photo/download';
 import { SHAPE_SLIDERS, UNSUPPORTED_SHAPE, sliderAvailable, type SliderGroup } from './shapeSliders';
 import { mpfbModelFor } from '../avatar/MpfbAvatar';
 import {
@@ -417,8 +420,82 @@ interface TabProps {
   dispatch: (a: Parameters<typeof wardrobeReducer>[1]) => void;
 }
 
+/** Xuất/nhập JSON riêng cho nhân vật, có checksum; nhập vào là một bước hoàn tác được. */
+function TransferSection({ s, dispatch }: TabProps) {
+  const [text, setText] = useState('');
+  const [msg, setMsg] = useState('');
+  const doImport = async (raw: string): Promise<void> => {
+    const r = await importLookChecked(raw);
+    if (!r.result.ok) {
+      setMsg(r.result.error);
+      return;
+    }
+    const notes = r.result.warnings.map((w) => w.message);
+    if (r.checksum === 'missing') notes.push('Tệp không có checksum nên chưa kiểm được toàn vẹn.');
+    dispatch({ type: 'importLook', look: r.result.look, notes });
+    setMsg(r.checksum === 'ok' ? 'Đã nhập, checksum khớp.' : 'Đã nhập.');
+    setText('');
+  };
+  return (
+    <Section title="Xuất / nhập nhân vật (JSON)">
+      <div style={S.row}>
+        <button
+          type="button"
+          style={btn()}
+          data-testid="look-export"
+          onClick={() => {
+            void exportLookChecked(s.draft).then((json) => {
+              downloadBlob(new Blob([json], { type: 'application/json' }), LOOK_FILE_NAME);
+              setText(json);
+              setMsg('Đã xuất tệp JSON (cũng hiện ở ô bên dưới để sao chép).');
+            });
+          }}
+        >
+          Xuất JSON
+        </button>
+        <label style={{ ...btn(), display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+          Nhập từ tệp
+          <input
+            type="file"
+            accept="application/json,.json"
+            data-testid="look-import-file"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f) return;
+              if (f.size > 64 * 1024) return setMsg('Tệp quá lớn (tối đa 64 KB).');
+              void f.text().then(doImport);
+            }}
+          />
+        </label>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        aria-label="JSON nhân vật"
+        data-testid="look-json"
+        rows={4}
+        spellCheck={false}
+        style={{ width: '100%', boxSizing: 'border-box', background: '#1b1f26', color: C.text, border: `1px solid ${C.line}`, borderRadius: 6, fontFamily: 'monospace', fontSize: 12 }}
+      />
+      <div style={S.row}>
+        <button type="button" style={btn(false, text.trim() === '')} disabled={text.trim() === ''} data-testid="look-import-text" onClick={() => void doImport(text)}>
+          Nhập từ ô dán
+        </button>
+      </div>
+      {msg && (
+        <p role="status" data-testid="look-transfer-msg" style={{ color: C.dim, fontSize: 12 }}>
+          {msg}
+        </p>
+      )}
+    </Section>
+  );
+}
+
 function PresetsTab({ s, dispatch }: TabProps) {
   return (
+    <>
     <Section title="Bộ mẫu (giữ nguyên hình thể của bạn)">
       <div style={{ display: 'grid', gap: 8 }}>
         {PRESETS.map((p) => (
@@ -429,13 +506,24 @@ function PresetsTab({ s, dispatch }: TabProps) {
         ))}
       </div>
     </Section>
+    <TransferSection s={s} dispatch={dispatch} />
+    </>
   );
 }
 
 function OutfitTab({ s, dispatch }: TabProps) {
   const worn = s.draft.outfit[s.slot];
   const wornDef = worn ? getGarment(worn.garmentId) : undefined;
-  const list = garmentsInGroup(s.slot);
+  const all = garmentsInGroup(s.slot);
+  const [rawFilter, setFilter] = useState<GarmentFilter>(NO_FILTER);
+  const styleOpts = stylesIn(all);
+  const colorOpts = colorsIn(all);
+  // Đổi ô trang phục: bỏ lựa chọn lọc không còn tồn tại ở ô mới.
+  const filter: GarmentFilter = {
+    style: rawFilter.style && styleOpts.includes(rawFilter.style) ? rawFilter.style : null,
+    color: rawFilter.color && colorOpts.includes(rawFilter.color) ? rawFilter.color : null,
+  };
+  const list = filterGarments(all, filter);
   return (
     <>
       <div style={S.row} role="group" aria-label="Ô trang phục">
@@ -470,6 +558,37 @@ function OutfitTab({ s, dispatch }: TabProps) {
       )}
 
       <Section title={GARMENT_GROUP_LABELS[s.slot]}>
+        <div style={S.row} role="group" aria-label="Lọc theo phong cách và màu">
+          <select
+            aria-label="Phong cách"
+            data-testid="filter-style"
+            value={filter.style ?? ''}
+            onChange={(e) => setFilter({ ...filter, style: (e.target.value || null) as GarmentFilter['style'] })}
+            style={btn()}
+          >
+            <option value="">Mọi phong cách</option>
+            {styleOpts.map((t) => (
+              <option key={t} value={t}>
+                {STYLE_TAG_LABELS[t]}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Màu"
+            data-testid="filter-color"
+            value={filter.color ?? ''}
+            onChange={(e) => setFilter({ ...filter, color: (e.target.value || null) as ColorFamily | null })}
+            style={btn()}
+          >
+            <option value="">Mọi màu</option>
+            {colorOpts.map((c) => (
+              <option key={c} value={c}>
+                {COLOR_FAMILY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {list.length === 0 && <p style={{ color: C.dim }}>Không có món nào khớp bộ lọc.</p>}
         <div style={{ display: 'grid', gap: 6 }}>
           {list.map((g) => {
             const sup = garmentSupport(g, s.draft.bodyStyle);

@@ -28,7 +28,7 @@ Ký hiệu: CÓ = đủ; MỘT PHẦN = có nhưng thiếu ý nào đó (ghi rõ
 | Máy tính: chỉ dùng khi ở vị trí/đang ngồi; camera gần; giao diện; bật tắt, tài liệu, ghi chú, hình nền; Esc; gõ chữ không đi | CÓ | `computer.ts:80` `canUseComputer`, `ComputerPanel.tsx`, camera `inspect` (`gtaCamera.ts:172,643`), `holdPause`, `isTypingTarget` (`useGtaControls.ts:33`) |
 | Tủ/ngăn kéo: từng ngăn riêng, trượt ray, hành trình, khóa, vật bên trong đi theo | CÓ | `drawer.ts`; cánh tủ xoay bản lề: dùng `door.ts` (không có mẫu cánh tủ trong khu mẫu) - MỘT PHẦN |
 | Đồ nhỏ: cầm, xoay, đặt, trả về chỗ cũ | CÓ | `smallItem.ts` (`pickupItem`, `returnItem`), `ItemMesh`, IK tay `ikHold` |
-| Đồ nhỏ: cầm, "quan sát" (xoay vật trên tay) | THIẾU | không có chế độ xem vật; lý do: cần camera/UI xem riêng, để dành |
+| Đồ nhỏ: cầm, "quan sát" (xoay vật trên tay) | MỚI | `objects/itemInspect.ts`, `ItemInspectHud.tsx`: phím theo cài đặt `inspectItem` (mặc định R, hiện trong HUD), kéo chuột hoặc mũi tên/WASD xoay, Esc hoặc phím lần nữa thoát. Vật được đưa ra trước camera trong `ItemMesh` (không thêm mesh, không thêm draw call); `holdPause` khóa nhân vật và camera nên camera đứng nguyên chỗ cũ. Test `itemInspect.vitest.test.ts` |
 | Đặt xuống: xem trước xanh/đỏ | MỚI | `evaluatePlacement` + `PlacePreview` (`components.tsx`), test `extras.vitest.test.ts` |
 | Chỉ đặt lên bề mặt phù hợp, không xuyên/chồng | CÓ | `validatePlacement` (`smallItem.ts:62`) |
 | Thả tự do dùng vật lý (rơi, va chạm sàn) | MỚI (một phần) | `dropLanding`, `fallStep` (rơi theo trọng lực 9,8 m/s2), hành động "Thả rơi" trên mặt đặt; không mô phỏng lăn/nảy, không khối lượng. Test `extras.vitest.test.ts` |
@@ -64,7 +64,7 @@ Ký hiệu: CÓ = đủ; MỘT PHẦN = có nhưng thiếu ý nào đó (ghi rõ
 | Khung dùng chung, mỗi vật khai báo ID/loại/hành động/khoảng cách/điểm/điều kiện/trạng thái | CÓ | `registry.ts`, `framework.ts` |
 | Tách phát hiện, hành động, giao diện, animation, lưu | CÓ | `selection.ts`, `controller.ts`, `InteractionHud.tsx`, `components.tsx`, `persist/manager.ts` |
 | Trạng thái nhân vật rõ ràng | CÓ | `characterState.ts` (6 trạng thái) |
-| Xác nhận quyền dùng khi nhiều người | MỘT PHẦN | lease ghế nối được (`net/seatLease.ts`); lease vật cầm có ở server (TASK 24) nhưng chưa nối vào `pickupItem` |
+| Xác nhận quyền dùng khi nhiều người | CÓ (MỚI cho vật cầm) | lease ghế (`net/seatLease.ts`); lease vật cầm `held:<id>` nối vào hành động Cầm (`net/itemLease.ts`, gắn trong `SeatLeaseBridge` nên chỉ chạy khi `?world=1`): chỉ cầm khi server cấp lease, trả lease khi đặt/thả/trả, mất lease thì trả vật về chỗ cũ. Không có world thì hành vi cũ. Test `itemLease.vitest.test.ts` |
 | Lưu vị trí, cửa, rèm, thiết bị; nút đặt lại | MỚI (nút) | lưu: `persist/manager.ts:16,115`. Nút "Đặt lại vật" trong `InteractionHelp` + `resetObjects.ts`, test `extras.vitest.test.ts` |
 
 ### Mục 6. Khu mẫu và kiểm tra
@@ -95,7 +95,7 @@ Phần này chỉ đối chiếu ở mức tính năng (không so ảnh mặt b�
 | Ánh sáng trắng trung tính + ánh sáng tự nhiên | CÓ (MỚI cho phần tự nhiên ở khu mẫu) | `lighting/presets.ts` |
 | PBR, bóng tiếp xúc | MỘT PHẦN | `env/contactShadow.ts`; tủ hồ sơ/đạo cụ `OfficeProps` không có bóng tiếp xúc, không có normal map |
 | Chế độ xem tổng thể (ẩn trần, hạ tường) | CÓ | `toggleOverview` (`gtaCamera.ts:177`), e2e `28-overview` |
-| Điểm camera đặt sẵn (toàn cảnh, hành lang trái/dưới, cụm bàn, phòng họp) | THIẾU | không có bộ preset camera trong `scene/` hay `photo/` (photo có preset kiểu khác). Làm được bằng mã nhưng chạm `ITOffice.tsx`/camera, nằm ngoài phạm vi worktree này (BRIEF hạn chế sửa) |
+| Điểm camera đặt sẵn (toàn cảnh, hành lang trái/dưới, cụm bàn, phòng họp) | MỚI | `scene/controls/cameraPresets.ts` (tọa độ suy từ `OFFICE_L_PLAN_RECTS` và vị trí mr1, desk_B), chạy trên chế độ overview (trần ẩn); phím `cameraPreset` (mặc định C) đi vòng các preset rồi về camera theo nhân vật, thanh `CameraPresetBar` chọn trực tiếp, Esc/O thoát. Không sửa `ITOffice.tsx` (nối trong `useGtaCamera`). Góc nhìn thực tế chưa so mắt với ảnh; test `cameraPresets.vitest.test.ts` kiểm điểm nằm trong L và nằm trong giới hạn overview |
 | GLB nội thất | THIẾU (cần asset) | không có GLB nội thất được cấp phép |
 | Instancing, vật liệu chung | CÓ | `InstancedBoxes.tsx`, census |
 | Trần draw call 200 (~208) | QĐ 3 (giữ 200, chỉ cảnh báo) | |
@@ -126,9 +126,9 @@ Phần này chỉ đối chiếu ở mức tính năng (không so ảnh mặt b�
 | Tab Cơ thể, Mặt, Tóc, Xăm & Sẹo, Trang phục, Phụ kiện, Bộ đã lưu | MỘT PHẦN | tab thực tế: Bộ mẫu, Trang phục, Màu, Hình thể, Kiểu tạo hình, Phụ kiện, Họa tiết (`wardrobeState.ts:50`); xăm có công cụ riêng `TattooPainter`. Tên khác đặc tả, đủ chức năng |
 | Camera tự chuyển tới vùng đang chỉnh | CÓ | `WardrobeRoom.tsx:67` `focusFor` |
 | Hoàn tác/làm lại, đặt lại, ngẫu nhiên, so sánh trước/sau | CÓ | `wardrobeState.ts` (`undo`, `redo`, `compare`) |
-| Lọc đồ theo phong cách/loại/màu/khả năng phối | MỘT PHẦN | lọc theo loại/slot; lọc theo phong cách và màu: chưa xác nhận trong UI |
+| Lọc đồ theo phong cách/loại/màu/khả năng phối | MỘT PHẦN (MỚI: phong cách, màu) | lọc theo loại/slot; thêm lọc phong cách (`GarmentDef.styles`) và họ màu (suy từ `defaultColors`) trong tab Trang phục (`wardrobe/garmentFilter.ts`). "Khả năng phối" vẫn chỉ hiện nhãn (hạn chế) |
 | Lưu bộ phối, "Vào văn phòng" | CÓ | `WardrobeRoom.tsx` (Ctrl+Enter), `fashion/persistence.ts` |
-| Xuất/nhập JSON | MỘT PHẦN | `fashion/persistence.ts`, gói sao lưu (TASK 20); nút xuất/nhập riêng cho nhân vật: chưa xác nhận |
+| Xuất/nhập JSON | MỚI | tab Bộ mẫu có "Xuất JSON", "Nhập từ tệp", ô dán (`wardrobe/lookTransfer.ts`): dùng `fashion/persistence.ts` và checksum SHA-256 như gói sao lưu; tệp sửa tay bị từ chối, tệp không checksum nhập được kèm cảnh báo; nhập là một bước hoàn tác. Test `wardrobeTransfer.vitest.test.ts` |
 | Tạm dừng điều khiển khi mở, khôi phục khi đóng | CÓ | `holdPause('wardrobe')`, `holdPause.vitest.test.ts` |
 | Kiểm tra tư thế vận động, ngồi tại vai, khuỷu, hông, gối | THIẾU (cần người xem) | `WARDROBE.md` mục 7 "chưa kiểm chứng" |
 | Mũ, mép cổ áo | MỘT PHẦN | mũ dựng (`accessoryHat.ts`), tóc né mũ vừa làm; mép cổ áo đã sửa (39ffb11) |
@@ -138,10 +138,7 @@ Phần này chỉ đối chiếu ở mức tính năng (không so ảnh mặt b�
 
 | Yêu cầu | Lý do |
 |---|---|
-| Quan sát/xoay đồ nhỏ trên tay | cần camera/UI xem vật; không có asset; để đợt sau |
 | Cha/con (đồ trên bàn đi theo bàn), kéo ghế và tủ hồ sơ | cần đổi schema layout và quy tắc server (`services/world`); ngoài phạm vi worktree |
-| Lease vật cầm (đa người) nối vào `pickupItem` | server đã có (TASK 24), nối client chạm `net/` và `App.tsx` |
-| Camera đặt sẵn (room mục 7) | sửa `ITOffice.tsx`/camera; BRIEF hạn chế |
 | Cột, tranh slogan, rèm cuốn mọi cửa sổ | thiếu vị trí có căn cứ từ bản vẽ trong repo |
 | GLB nội thất, animation nhìn/chụp điện thoại, morph bắp tay/đùi | cần asset ngoài |
 | Họa tiết từ ảnh tải lên | chưa có quyết định; xung đột nguyên tắc "không tải ảnh" |
@@ -155,3 +152,12 @@ Phần này chỉ đối chiếu ở mức tính năng (không so ảnh mặt b�
 4. Nút "Đặt lại vật" (`resetAllObjects`): đưa mọi vật về trạng thái đầu; từ chối khi đang ngồi hoặc dùng giao diện.
 
 Test: `src/scene/interact/objects/extras.vitest.test.ts`. Draw call: `scripts/perf/static-census.mjs` thêm 1 vị trí mesh (xem trước) nhưng `visible=false` khi không cầm đồ nên không vẽ; thêm 1 pointLight (không phải draw call, tăng chi phí shader).
+
+## 6. Đã triển khai đợt `wt3/tuong4`
+
+1. Quan sát đồ nhỏ (phím `inspectItem`, mặc định R; kéo chuột/mũi tên xoay; Esc thoát; camera không dời).
+2. Lease vật cầm `held:<id>` nối vào Cầm khi `?world=1` (`net/itemLease.ts`).
+3. Camera điểm đặt sẵn (phím `cameraPreset`, mặc định C; thanh chọn; thoát về camera theo nhân vật). Thêm hai action vào cài đặt phím (`schema.ts`), có thể đổi phím.
+4. Phòng thay đồ: lọc phong cách/màu; xuất/nhập JSON nhân vật có checksum.
+
+Draw call: không thêm mesh hay material mới (vật quan sát dùng lại mesh của `ItemMesh`; thanh preset và gợi ý là DOM). Chưa kiểm bằng mắt: góc nhìn từng preset, vị trí vật quan sát trên màn hình.

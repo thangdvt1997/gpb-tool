@@ -13,6 +13,7 @@ export interface KeyNames {
   interact: string;
   view: string;
   overview: string;
+  cameraPreset: string;
   map: string;
   editor: string;
   pause: string;
@@ -27,6 +28,7 @@ export function keyNamesFrom(b: Bindings, mode: ControlMode = 'rightMouse'): Key
     interact: keyLabel(b.interact),
     view: keyLabel(b.firstPerson),
     overview: keyLabel(b.overview),
+    cameraPreset: keyLabel(b.cameraPreset),
     map: keyLabel(b.map),
     editor: keyLabel(b.editor),
     pause: keyLabel(b.cancel),
