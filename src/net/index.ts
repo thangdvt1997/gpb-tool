@@ -5,3 +5,5 @@ export { ChatPanel } from './ChatPanel';
 export { ConnectionBanner } from './ConnectionBanner';
 export { PoseSender } from './PoseSender';
 export { worldEnabled, shouldSendPose } from './poseThrottle';
+export { attachSeatLease, seatResource } from './seatLease';
+export { MemberPanel } from './MemberPanel';

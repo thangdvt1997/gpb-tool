@@ -135,3 +135,28 @@ test('cross-room: owner phòng A không kick/đổi vai trò người phòng B',
   o.send({ type: 'mod.kick', target: 'b1' });
   assert.equal(o.conn.last('mod.result').error, 'target_not_found');
 });
+
+test('member.list: owner thấy mọi người kèm vai trò, member bị từ chối, không lộ role tài khoản', () => {
+  const { connect } = setup();
+  const o = connect(OWNER);
+  const m = connect(MEMBER);
+  const e = connect(EDITOR);
+  m.send({ type: 'member.list', requestId: 'l0' });
+  assert.equal(m.conn.last('mod.result').error, 'forbidden');
+  o.send({ type: 'member.list', requestId: 'l1' });
+  const list = o.conn.last('member.list');
+  assert.equal(list.requestId, 'l1');
+  const byId = Object.fromEntries(list.members.map((x) => [x.id, x]));
+  assert.equal(byId[OWNER.id].role, 'owner');
+  assert.equal(byId[MEMBER.id].role, 'member');
+  assert.equal(byId[EDITOR.id].role, 'editor');
+  assert.equal(byId[MEMBER.id].muted, false);
+  assert.equal(JSON.stringify(list).includes('accountRole'), false);
+  o.send({ type: 'mod.mute', target: MEMBER.id, durationMs: 60000 });
+  o.send({ type: 'role.set', target: MEMBER.id, role: 'editor' });
+  o.send({ type: 'member.list' });
+  const again = o.conn.all('member.list').pop().members.find((x) => x.id === MEMBER.id);
+  assert.equal(again.muted, true);
+  assert.equal(again.role, 'editor');
+  void e;
+});
