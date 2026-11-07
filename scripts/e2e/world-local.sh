@@ -12,6 +12,11 @@ case "${1:-start}" in
     if [ ! -d "$ROOT/services/world/node_modules" ]; then ln -s /home/cc/gpb-dev/services/world/node_modules "$ROOT/services/world/node_modules"; fi
     mkdir -p /tmp/gpb-world-data
     cd "$ROOT/services/world"
+    # Thoại (25b): nạp TURN_SECRET từ coturn cục bộ nếu có, để /api/world/turn không trả 503. Không in secret.
+    if [ -r /home/cc/gpb-turn/.env ]; then
+      TURN_SECRET="$(sed -n 's/^TURN_SECRET=//p' /home/cc/gpb-turn/.env | head -1)"
+      export TURN_SECRET TURN_URLS="${TURN_URLS:-turn:198.204.229.10:3478?transport=udp,turn:198.204.229.10:3478?transport=tcp}"
+    fi
     HOST=127.0.0.1 PORT=$PORT AUTH_URL=http://127.0.0.1:3902 ALLOWED_ORIGINS= WORLD_ALLOW_LOCALHOST=1 \
       WORLD_DATA_DIR=/tmp/gpb-world-data nohup node src/index.js >"$LOG" 2>&1 &
     echo $! >"$PIDFILE"

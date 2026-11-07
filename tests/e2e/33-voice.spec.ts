@@ -53,6 +53,9 @@ async function login(page: Page, acc: { email: string; password: string }) {
   await expect.poll(() => page.evaluate(() => (window as unknown as { __gpbWorld: { state: string } }).__gpbWorld.state), { timeout: 150_000 }).toBe('connected');
 }
 
+// Micro giả cho Chromium (cấu hình e2e chính không có cờ này).
+test.use({ launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } });
+
 test.describe.serial('thoại WebRTC (TASK 25b), hai trình duyệt', () => {
   let ctxA: BrowserContext, ctxB: BrowserContext, A: Page, B: Page;
 
