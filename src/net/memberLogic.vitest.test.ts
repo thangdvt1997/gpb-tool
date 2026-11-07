@@ -32,3 +32,11 @@ describe('memberLogic', () => {
     expect(s).toMatch(/useFocusTrap/);
   });
 });
+
+import { ASSIGNABLE as ASSIGNABLE_ROLES } from './memberLogic';
+describe('ASSIGNABLE', () => {
+  it('cho gán khách, thành viên, biên tập; không cấp chủ phòng', () => {
+    expect([...ASSIGNABLE_ROLES].sort()).toEqual(['editor', 'guest', 'member']);
+    expect(ASSIGNABLE_ROLES).not.toContain('owner');
+  });
+});

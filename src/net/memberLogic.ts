@@ -4,8 +4,8 @@ import type { MemberInfo, Role } from './protocol';
 
 export const ROLE_LABEL: Record<Role, string> = { guest: 'Khách', member: 'Thành viên', editor: 'Biên tập', owner: 'Chủ phòng' };
 
-/** Vai trò mà owner được gán (không cấp owner, khớp cannot_grant_owner). */
-export const ASSIGNABLE: readonly Role[] = ['member', 'editor'];
+/** Vai trò mà owner được gán (không cấp owner, khớp cannot_grant_owner). Khách = chỉ xem chat, không ngồi ghế. */
+export const ASSIGNABLE: readonly Role[] = ['guest', 'member', 'editor'];
 
 const MANAGE: readonly Role[] = ['owner'];
 
