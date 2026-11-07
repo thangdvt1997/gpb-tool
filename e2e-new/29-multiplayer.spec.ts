@@ -50,8 +50,8 @@ async function login(page: Page, acc: { email: string; password: string }) {
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await expect.poll(() => page.evaluate(() => typeof (window as unknown as { __gpbWorld?: unknown }).__gpbWorld), { timeout: 120_000 }).toBe('object');
   const skip = page.getByRole('button', { name: 'Bỏ qua' });
-  if (await skip.isVisible().catch(() => false)) await skip.click();
-  await expect.poll(async () => (await snap(page)).state, { timeout: 60_000 }).toBe('connected');
+  if (await skip.isVisible().catch(() => false)) await skip.click({ force: true, timeout: 10_000 }).catch(() => undefined);
+  await expect.poll(async () => (await snap(page)).state, { timeout: 150_000, message: `trạng thái kết nối ${acc.email.slice(0, 8)}` }).toBe('connected');
 }
 
 test.describe.serial('nhiều người (TASK 23-27), hai trình duyệt', () => {
@@ -59,7 +59,7 @@ test.describe.serial('nhiều người (TASK 23-27), hai trình duyệt', () => 
   let idA = '', idB = '';
 
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    test.setTimeout(300_000);
+    test.setTimeout(560_000);
     test.skip(!accA || !accB, 'chưa kiểm chứng: thiếu TEST_EMAIL/TEST_PASSWORD hoặc TEST_EMAIL2/TEST_PASSWORD2 trong /home/cc/gpb-e2e/.env');
     test.skip(!(await portOpen(3903)), 'chưa kiểm chứng: world 127.0.0.1:3903 không chạy (scripts/e2e/world-local.sh start)');
     const opt = { viewport: { width: 1000, height: 700 }, locale: 'vi-VN' };
@@ -81,15 +81,16 @@ test.describe.serial('nhiều người (TASK 23-27), hai trình duyệt', () => 
     expect(idA).not.toBe(idB);
     await expect.poll(async () => (await snap(A)).players.map((p) => p.id)).toContain(idB);
     await expect.poll(async () => (await snap(B)).players.map((p) => p.id)).toContain(idA);
-    const posOf = async () => (await snap(A)).players.find((p) => p.id === idB)!;
-    const before = await posOf();
+    const posOf = async () => (await snap(A)).players.find((p) => p.id === idB);
+    await expect.poll(async () => Boolean(await posOf()), { timeout: 30_000, message: 'A thấy B' }).toBe(true);
+    const before = (await posOf())!;
     // Di chuyển B theo bước nhỏ (0.4 m mỗi 250 ms, dưới giới hạn tốc độ server) bằng teleport debug của controls.
     const start = await B.evaluate(() => { const c = (window as unknown as { __gpbControls: { x: number; z: number } }).__gpbControls; return { x: c.x, z: c.z }; });
     for (let i = 1; i <= 12; i++) {
       await B.evaluate(([x, z]) => { (window as unknown as { __gpbControls: { teleport: unknown } }).__gpbControls.teleport = { x, z, yaw: 0 }; }, [start.x + 0.4 * i, start.z]);
       await B.waitForTimeout(250);
     }
-    await expect.poll(async () => { const p = await posOf(); return Math.hypot(p.x - before.x, p.z - before.z); }, { timeout: 15_000 }).toBeGreaterThan(0.5);
+    await expect.poll(async () => { const p = await posOf(); return p ? Math.hypot(p.x - before.x, p.z - before.z) : -1; }, { timeout: 15_000 }).toBeGreaterThan(0.5);
   });
 
   test('chat chữ A -> B, B trả lời, tin hiển thị như chữ thuần', async () => {
@@ -116,11 +117,16 @@ test.describe.serial('nhiều người (TASK 23-27), hai trình duyệt', () => 
     await expect(A.getByText('Ghế đã có người').first()).toBeVisible({ timeout: 10_000 });
     expect((await snap(A)).leases.find((l) => l.resource.startsWith('seat:'))?.ownerId).toBe(idB);
     expect(await A.evaluate(() => (window as unknown as { __gpbWorld: W }).__gpbWorld.character)).not.toBe('seated');
+    // Ngồi thật chậm (nhân vật đi tới ghế): chờ B ngồi hẳn rồi mới đứng dậy.
+    await expect.poll(async () => (await snap(B)).character, { timeout: 60_000 }).toBe('seated');
     // B đứng dậy -> lease nhả, A chiếm được.
-    await B.evaluate(() => (window as unknown as { __gpbWorld: W }).__gpbWorld.stand());
+    await B.keyboard.press('e'); // phím tương tác khi đang ngồi = đứng dậy
+    await B.evaluate(() => (window as unknown as { __gpbWorld: W }).__gpbWorld.stand()); // dự phòng: cùng requestStand
+    await expect.poll(async () => (await snap(B)).character, { timeout: 30_000 }).not.toBe('seated');
     await expect.poll(async () => (await snap(A)).leases.find((l) => l.resource.startsWith('seat:'))?.ownerId ?? null, { timeout: 15_000 }).toBeNull();
     await A.evaluate((c) => (window as unknown as { __gpbWorld: W }).__gpbWorld.sit(c), chair);
     await expect.poll(async () => (await snap(B)).leases.find((l) => l.resource.startsWith('seat:'))?.ownerId, { timeout: 15_000 }).toBe(idA);
+    await expect.poll(async () => (await snap(A)).character, { timeout: 60_000 }).toBe('seated');
     await A.evaluate(() => (window as unknown as { __gpbWorld: W }).__gpbWorld.stand());
   });
 

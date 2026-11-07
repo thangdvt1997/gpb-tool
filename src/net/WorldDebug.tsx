@@ -1,6 +1,7 @@
 // Hook quan sát/điều khiển cho e2e nhiều người: window.__gpbWorld. Chỉ mount khi bật ?world=1 VÀ URL có debug=world hoặc debug=controls.
 // Chỉ đọc trạng thái world, cộng sit(id)/stand() gọi hành động tương tác sẵn có (đi qua cầu nối lease).
 import { useEffect, useRef } from 'react';
+import { requestStand } from '../scene/controls/session';
 import { contextOf, getInteractable, listInteractables } from '../scene/interact/registry';
 import { getObjectState } from '../scene/interact/objectStates';
 import { getCharacterState } from '../scene/interact/characterState';
@@ -18,6 +19,7 @@ export interface WorldDebug {
   occupant(chairId: string): string;
   sit(chairId: string): boolean;
   stand(): boolean;
+  standViaAction(): boolean;
   /** Đóng WebSocket hiện tại (giả lập rớt mạng); client tự kết nối lại và resume. */
   dropSocket(): void;
 }
@@ -58,6 +60,10 @@ export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'cli
         return true;
       },
       stand() {
+        requestStand();
+        return true;
+      },
+      standViaAction() {
         for (const def of listInteractables()) {
           const a = def.kind === 'chair' ? def.actions.find((x) => x.id === 'stand') : undefined;
           if (a && getObjectState(def.id).occupant) { a.run(contextOf(def)); return true; }
