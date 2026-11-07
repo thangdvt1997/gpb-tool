@@ -139,3 +139,18 @@ world (15, 26, 27), ik (03), auth22 (22), remote (avatar từ xa phát hành đ�
 (48631c6 gồm thanh hình thể bằng xương và fashion đợt 3: mép cổ, điện thoại trong túi, tóc né mũ.)
 
 Không tạo PROJECT_COMPLETE.txt: 22–27 cần deploy service auth/world (ngoài phạm vi quy trình deploy chỉ cho web), 25b cần TURN/SFU, 01/02 cần asset, 12 cần trình đọc màn hình thật. Cần chủ dự án quyết định có cho deploy services/auth và services/world hay không.
+
+## 2026-11-07 — Lần lặp 3, đợt 1
+
+Bắt đầu từ main 39280bf (chỉ tài liệu sau 48631c6; 48631c6 đã PASS acceptance, đã deploy, test production 4/4 PASS).
+
+TASK_STATUS: Thời trang → ĐÃ LÀM (39ffb11 đã có trên production). Nội thất và trần, Hình chữ L → ĐÃ LÀM theo PENDING_DECISIONS mục 1, 2, 3.
+
+| Subagent | Worktree / nhánh | Task | Cổng preview |
+|---|---|---|---|
+| multi | /home/cc/wt/multi, wt3/multi | 23–27: kiểm hai trình duyệt bằng service world cục bộ 127.0.0.1:3903 + auth kiểm thử 3902 (không đụng production) | 4191 |
+| assets3 | /home/cc/wt/assets3, wt3/assets3 | 01, 02: GLB bàn/ghế/phụ kiện và clip bake từ mã, socket neck/foot, rotationDeg | 4192 |
+| tuong3 | /home/cc/wt/tuong3, wt3/tuong3 | Đối chiếu tuongtac/room/fashion với mã, làm phần còn thiếu | 4193 |
+| a11y3 | /home/cc/wt/a11y3, wt3/a11y3 | 12: axe toàn bộ panel, bàn phím, aria snapshot; checklist trình đọc màn hình | 4194 |
+
+Vẫn chặn ngoài phạm vi quy trình deploy (chỉ dịch vụ web): deploy services/auth (22) và services/world + route gateway (23–27) lên production; 25b cần TURN/SFU.
