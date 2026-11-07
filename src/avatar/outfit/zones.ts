@@ -56,6 +56,9 @@ export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: num
  * Shader chọn màu vùng phụ ở mảnh có band >= 0, nên biên cổ/gấu là đường đẳng trị thẳng chứ không bậc thang theo tam giác.
  * Đỉnh không thuộc dải cổ/gấu: zoneB = zone, band = -1.
  */
+/** Giá trị band (m) của đỉnh ngoài thân. */
+const OUT_BAND = 0.002;
+
 export function vertexZoneBlend(
   cls: Classification,
   spec: ShellClass,
@@ -64,22 +67,23 @@ export function vertexZoneBlend(
   const n = cls.vertexCount;
   const zone = vertexZones(cls, spec, normals);
   const zoneB = Uint8Array.from(zone);
-  const band = new Float32Array(n).fill(-1);
   const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
+  // Sentinel nhỏ (m) cho đỉnh ngoài thân (tay, bàn tay...): giá trị -1 cũ làm đường band = 0 nội suy lệch về phía đỉnh thân.
+  const band = new Float32Array(n).fill(-OUT_BAND);
   if (spec.part !== 'top' && spec.part !== 'full') return { zone, zoneB, band };
   const BODY = IDX.body;
+  const top = spec.part === 'top';
   for (let v = 0; v < n; v++) {
     const r = cls.region[v];
     const u = cls.u[v];
-    if ((r === Region.torso || r === Region.neck) && u > spec.neckU - 0.06 - 0.02) {
-      zone[v] = BODY;
-      zoneB[v] = IDX.collar;
-      band[v] = (u - (spec.neckU - 0.06)) * span;
-    } else if (spec.part === 'top' && (r === Region.pelvis || r === Region.thigh) && u < spec.hemU + 0.06 + 0.02) {
-      zone[v] = BODY;
-      zoneB[v] = IDX.hem;
-      band[v] = (spec.hemU + 0.06 - u) * span;
-    }
+    if (!(r === Region.torso || r === Region.neck || (top && (r === Region.pelvis || r === Region.thigh)))) continue;
+    // Band liên tục theo độ cao cho MỌI đỉnh thân/chậu/đùi: dương trong dải cổ hoặc dải gấu, âm ở giữa. Vùng phụ là cổ ở nửa trên,
+    // gấu ở nửa dưới, nên màu vùng phụ nội suy giữa hai đỉnh kề nhau luôn cùng loại (không có bậc thang ở ranh giới vùng của lưới).
+    const cb = (u - (spec.neckU - 0.06)) * span;
+    const hb = top ? (spec.hemU + 0.06 - u) * span : -Infinity;
+    band[v] = Math.max(cb, hb);
+    zoneB[v] = cb >= hb ? IDX.collar : IDX.hem;
+    if (band[v] > -0.02 * span) zone[v] = BODY;
   }
   return { zone, zoneB, band };
 }

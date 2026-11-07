@@ -7,6 +7,7 @@ import { loadBodyData } from './glbBody.testutil';
 import { bodyPatterns, drawPatterns, patternSignature, type Ctx2D } from './patternTexture';
 import { Region, classifyBody } from './regions';
 import { SHELL_CLASSES } from './shellClass';
+import { vertexZoneBlend } from './zones';
 
 function fakeCtx(): Ctx2D & { texts: string[]; ops: number } {
   const c = {
@@ -82,5 +83,55 @@ describe('mép quần ở hông liên tục với cạp', () => {
       n++;
     }
     expect(n).toBeGreaterThan(0);
+  });
+});
+
+describe('băng gấu áo: liên tục qua ranh giới thân/chậu', () => {
+  const data = loadBodyData('male_real');
+  const cls = classifyBody(data);
+  const spec = SHELL_CLASSES.find((c) => c.key === 'outer:bomber')!;
+  it('mọi đỉnh thân, chậu, đùi thấp hơn gấu + 0,08 đều có band >= 0 (không còn bậc thang giữa các vùng)', () => {
+    const { band } = vertexZoneBlend(cls, spec, data.normals);
+    let n = 0;
+    for (let v = 0; v < cls.vertexCount; v++) {
+      const r = cls.region[v];
+      if (r !== Region.torso && r !== Region.pelvis && r !== Region.thigh) continue;
+      if (cls.u[v] < spec.hemU + 0.06) {
+        expect(band[v], `đỉnh ${v} vùng ${r} u=${cls.u[v]}`).toBeGreaterThanOrEqual(0);
+        n++;
+      }
+    }
+    expect(n).toBeGreaterThan(100);
+  });
+});
+
+describe('họa tiết: hướng lấy mẫu texture', () => {
+  it('shader lấy mẫu theo puv (v lên trên = đỉnh canvas), không lật dọc', async () => {
+    const { createShellMaterial } = await import('./threeShell');
+    const m = createShellMaterial(0);
+    const shader = { uniforms: {}, vertexShader: '#include <common>\n#include <morphtarget_vertex>', fragmentShader: '#include <common>\n#include <clipping_planes_fragment>\n#include <color_fragment>' };
+    (m.onBeforeCompile as (s: unknown) => void)(shader);
+    expect(shader.fragmentShader).toContain('texture2D(uPatMap, puv)');
+    expect(shader.fragmentShader).not.toContain('1.0 - puv.y');
+  });
+});
+
+describe('đẩy đỉnh vỏ theo pháp tuyến', () => {
+  it('thành phần hướng xuống của pháp tuyến bị giảm (gấu áo không võng xuống ở đũng/nách thành dải đen)', async () => {
+    const { createShellMaterial } = await import('./threeShell');
+    const m = createShellMaterial(0);
+    const shader = { uniforms: {}, vertexShader: '#include <common>\n#include <morphtarget_vertex>', fragmentShader: '#include <common>\n#include <clipping_planes_fragment>\n#include <color_fragment>' };
+    (m.onBeforeCompile as (s: unknown) => void)(shader);
+    expect(shader.vertexShader).toContain('sn.y *= (sn.y < 0.0 ? 0.3 : 1.0)');
+    expect(shader.vertexShader).toContain('normalize(sn) * aOff');
+    expect(shader.vertexShader).not.toContain('normalize(normal) * aOff');
+  });
+  it('mô phỏng CPU: đỉnh đũng có pháp tuyến hướng xuống (ny -0.9) dịch xuống ít hơn 70% so với trước', () => {
+    const n = [0, -0.9, 0.4];
+    const sn = [n[0], n[1] * 0.3, n[2]];
+    const len = Math.hypot(sn[0], sn[1], sn[2]);
+    const downShift = (sn[1] / len) * 0.065;
+    const before = (n[1] / Math.hypot(n[0], n[1], n[2])) * 0.065;
+    expect(Math.abs(downShift)).toBeLessThan(Math.abs(before) * 0.7);
   });
 });

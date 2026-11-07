@@ -108,7 +108,7 @@ export function skinGeometryKey(baseUuid: string, index: Uint32Array): string {
 /* Vật liệu                                                            */
 /* ------------------------------------------------------------------ */
 
-const SHELL_PROGRAM_KEY = 'gpb-outfit-shell-v5';
+const SHELL_PROGRAM_KEY = 'gpb-outfit-shell-v7';
 
 /** Độ nhám và kim loại theo chất liệu thời trang. */
 export const MATERIAL_PARAMS: Readonly<Record<FashionMaterial, { roughness: number; metalness: number }>> = {
@@ -151,12 +151,12 @@ export function createShellMaterial(layerRank: number): THREE.MeshStandardMateri
     shader.uniforms.uPatOn = pat.on;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\nattribute float aOff;\nattribute vec4 aShell;\nuniform vec3 uZoneColors[${ZONE_SLOTS}];\nvarying vec3 vZoneColor;\nvarying vec3 vZoneColorB;\nvarying float vBand;\nvarying float vCut;\nvarying vec3 vPPos;\nvarying vec3 vPN;`)
-      .replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n  vPPos = position;\n  vPN = normal;\n  transformed += normalize(normal) * aOff;\n  vZoneColor = uZoneColors[int(aShell.x + 0.5)];\n  vZoneColorB = uZoneColors[int(aShell.y + 0.5)];\n  vBand = aShell.z;\n  vCut = aShell.w;');
+      .replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n  vPPos = position;\n  vPN = normal;\n  vec3 sn = normal;\n  sn.y *= (sn.y < 0.0 ? 0.3 : 1.0);\n  transformed += normalize(sn) * aOff;\n  vZoneColor = uZoneColors[int(aShell.x + 0.5)];\n  vZoneColorB = uZoneColors[int(aShell.y + 0.5)];\n  vBand = aShell.z;\n  vCut = aShell.w;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vZoneColor;\nvarying vec3 vZoneColorB;\nvarying float vBand;\nvarying float vCut;\nvarying vec3 vPPos;\nvarying vec3 vPN;\nuniform sampler2D uPatMap;\nuniform vec4 uPatRect;\nuniform float uPatOn;`)
       // Cắt mép trang phục theo đường đẳng trị lề = 0 (đầu main, trước mọi tính toán khác).
       .replace('#include <clipping_planes_fragment>', '  if (vCut < 0.0) discard;\n#include <clipping_planes_fragment>')
-      .replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= (vBand >= 0.0 ? vZoneColorB : vZoneColor);\n  if (uPatOn > 0.5 && vPN.z > 0.15) {\n    vec2 puv = (vPPos.xy - uPatRect.xy) / uPatRect.zw + 0.5;\n    if (puv.x > 0.0 && puv.x < 1.0 && puv.y > 0.0 && puv.y < 1.0) {\n      vec4 pt = texture2D(uPatMap, vec2(puv.x, 1.0 - puv.y));\n      diffuseColor.rgb = mix(diffuseColor.rgb, pt.rgb, pt.a * smoothstep(0.15, 0.45, vPN.z));\n    }\n  }');
+      .replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= (vBand >= 0.0 ? vZoneColorB : vZoneColor);\n  if (uPatOn > 0.5 && vPN.z > 0.15) {\n    vec2 puv = (vPPos.xy - uPatRect.xy) / uPatRect.zw + 0.5;\n    if (puv.x > 0.0 && puv.x < 1.0 && puv.y > 0.0 && puv.y < 1.0) {\n      vec4 pt = texture2D(uPatMap, puv);\n      diffuseColor.rgb = mix(diffuseColor.rgb, pt.rgb, pt.a * smoothstep(0.15, 0.45, vPN.z));\n    }\n  }');
   };
   mat.customProgramCacheKey = () => SHELL_PROGRAM_KEY;
   return mat;
