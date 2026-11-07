@@ -157,6 +157,22 @@ services:
     volumes:
       - layout-data:/data
 
+  world:
+    build:
+      context: ./services/world
+    image: gpb-tool/world:local
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PORT: "3011"
+      HOST: 127.0.0.1
+      # world kiểm cookie phiên qua auth (/api/auth/me). Dùng 127.0.0.1 vì network_mode: host.
+      AUTH_URL: http://127.0.0.1:3001
+      # Vai trò phòng lưu bền ở volume world-data (thư mục thuộc user node, xem services/world/Dockerfile).
+      WORLD_DATA_DIR: /data
+    volumes:
+      - world-data:/data
+
   gateway:
     build:
       context: .
@@ -179,3 +195,4 @@ volumes:
   display-data:
   plants-data:
   layout-data:
+  world-data:
