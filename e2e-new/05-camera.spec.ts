@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ctl, openScene, teleport } from './helpers';
+import { ctl, openScene, teleport } from './camera-helpers';
 
 // Task 05: camera lùi sát tường / vào góc không xuyên tường; phục hồi khi ra ngoài vùng sàn.
 // Sàn 58 x 30 m, gốc giữa sàn; tường ngoài dày 0,3 m => trong nhà |x| < 28,7, |z| < 14,7.

@@ -165,3 +165,24 @@ sqlite3 /data/app.db '.schema user_characters' '.schema user_profiles'
 Ghi nhận hiện trạng (không phải lỗi mới): server **không có** middleware CSRF/Origin. Bảo vệ dựa vào cookie `SameSite=Lax` và việc PUT chỉ nhận `application/json` (form chéo trang nhận 415). Origin lạ không được chấp nhận hay từ chối riêng; không có header CORS. Ghi nhận một lần 409 cũng tính vào giới hạn 2 giây (throttle ghi nhận trước khi kiểm revision).
 
 `ProfilePanel` (`src/profile/`): sửa tên, chọn ảnh đại diện (`none` hoặc `character`), xem tóm tắt nhân vật cloud, đồng bộ nhân vật hiện tại (hỏi xác nhận trước khi ghi đè bản cloud khác), nạp bản cloud (qua `validate()` của `rules.ts`), xóa bản cloud, xử lý 401/409/413/422/429. API chưa có trường giới thiệu, trạng thái hay quyền riêng tư nên panel không làm các mục này. Bộ phối (outfit presets) vẫn chỉ ở cục bộ.
+
+## 10. Giới thiệu, trạng thái, quyền riêng tư và kiểm Origin (bổ sung)
+
+### Bảng mới `user_about` (chỉ thêm, `CREATE TABLE IF NOT EXISTS`, không đụng bảng cũ)
+`bio` (tối đa 280 ký tự), `status` (`free|busy|meeting|away`), `status_text` (tối đa 60), `profile_visibility`, `character_visibility` (`everyone|colleagues|self`, mặc định `colleagues`), `revision` (riêng, 0 = chưa có dòng), `updated_at`. Dùng bảng riêng để revision của hồ sơ cũ không đổi nghĩa.
+
+### API (đều cần `sid`; route mới nên server cũ trả 404)
+- `GET /api/auth/profile/about` -> `{ok, about:{bio, presence, statusText, profileVisibility, characterVisibility, revision, updatedAt}}`.
+- `PUT /api/auth/profile/about` body `{revision, bio?, presence?, statusText?, profileVisibility?, characterVisibility?}`. Trường tên `presence` (không dùng `status` vì `status` là trường tài khoản bị cấm). Văn bản: NFC, gộp khoảng trắng, không ký tự điều khiển, không URL, qua `findBlocked` (422 `content_rejected`), quá dài 422 `too_long`. Mã lỗi khác như `PUT /profile` (403, 409, 415, 422, 429). Giới hạn ghi 1 lần/2 giây/người.
+- `GET /api/auth/profile/about/:userId` -> thẻ `{id, name, department, avatarRef, bio, presence, statusText, character}` theo quyền của chủ hồ sơ. Không có email. `403 profile_private` nếu không được xem; `404` nếu id sai hoặc tài khoản bị khóa. `character` là `null` nếu `characterVisibility` không cho phép hoặc chưa có. Chủ luôn xem được chính mình.
+- Ý nghĩa mức: `everyone` mọi người đã đăng nhập; `colleagues` cùng `tenant_id` (tenant `personal` không tính là đồng nghiệp); `self` chỉ chủ.
+- Route cũ `/profile/character/:id` vẫn 404.
+
+### Kiểm Origin/Referer (`services/auth/origin.js`)
+Áp cho `POST/PUT/PATCH/DELETE` dưới `/api/auth`, chạy trước parser và phiên. Có `Origin` (hoặc, nếu không, `Referer`) mà không thuộc danh sách thì `403 origin_forbidden`; `Origin: null` cũng bị chặn. Cho qua nếu: không có cả hai header (curl, máy-máy), origin nằm trong danh sách, hoặc trùng `Host` của chính server. Danh sách: `ALLOWED_ORIGINS` (phân tách dấu phẩy, thay thế mặc định); mặc định `https://gp.daisoncoop.com`, `PUBLIC_BASE_URL` và `localhost`/`127.0.0.1`/`[::1]` mọi cổng. Khi đặt `ALLOWED_ORIGINS`, localhost chỉ được phép nếu `ALLOW_LOCALHOST_ORIGINS=true`. GET không bị chặn. Lưu ý triển khai: đặt `ALLOWED_ORIGINS` đủ mọi domain thật nếu có nhiều (qua proxy cần chuyển đúng header `Origin`).
+
+### Client và tương thích
+`getMyAbout()` trả `null` khi server trả 404/405 (bản auth cũ trên production); `ProfilePanel` khi đó ẩn mục giới thiệu, trạng thái, quyền riêng tư và không báo lỗi. Các lỗi khác ở mục này cũng chỉ ẩn mục, không chặn phần hồ sơ cũ. Chưa có UI xem thẻ người khác (`GET about/:userId` chưa được client gọi).
+
+### Kiểm thử
+`cd services/auth && node --test test/` (41 test, gồm Origin, about, quyền riêng tư giữa chủ/đồng nghiệp/ngoài tenant). Vitest: `buildAboutPatch`, `getMyAbout` với 404.

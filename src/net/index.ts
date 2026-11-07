@@ -7,3 +7,5 @@ export { PoseSender } from './PoseSender';
 export { worldEnabled, shouldSendPose } from './poseThrottle';
 export { attachSeatLease, seatResource } from './seatLease';
 export { MemberPanel } from './MemberPanel';
+export { createWorldSocialTransport, type SocialNetDeps } from './socialTransport';
+export { createAppearanceSender, useAppearanceSync } from './appearanceSync';

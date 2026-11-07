@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Pose } from '../emotes/types';
 import type { Appearance } from './appearance';
 import type { AvatarAnimation } from './animation';
 import type { CharacterLook } from '../fashion/types';
@@ -27,13 +28,15 @@ export interface AvatarProps {
   look?: CharacterLook | null;
   /** true: dùng MPFB kể cả khi chưa có look (look suy ra từ appearance bằng appearanceToLook). */
   mpfb?: boolean;
+  /** Nguồn tư thế riêng (avatar từ xa): ghi tư thế vào out, trả true nếu đang điều khiển. Chỉ nhân vật dự phòng dùng. */
+  poseSource?: (out: Pose, nowMs: number) => boolean;
 }
 
 /**
  * Nhân vật người chơi. Thứ tự: url (VRM) > look hoặc mpfb (MPFB) > nhân vật hình học dự phòng.
  * VRM và MPFB đều tự về FallbackAvatar khi đang tải hoặc tải lỗi.
  */
-export function Avatar({ appearance, displayName, animation = 'idle', url, emote = false, look, mpfb = false }: AvatarProps) {
+export function Avatar({ appearance, displayName, animation = 'idle', url, emote = false, look, mpfb = false, poseSource }: AvatarProps) {
   const useMpfb = !url && (Boolean(look) || mpfb);
   const resolvedLook = useMemo<CharacterLook | null>(() => {
     if (!useMpfb) return null;
@@ -50,5 +53,5 @@ export function Avatar({ appearance, displayName, animation = 'idle', url, emote
       <MpfbAvatar appearance={appearance} look={resolvedLook} displayName={displayName} animation={animation} emote={emote} />
     );
   }
-  return <FallbackAvatar appearance={appearance} displayName={displayName} animation={animation} emote={emote} />;
+  return <FallbackAvatar appearance={appearance} displayName={displayName} animation={animation} emote={emote} poseSource={poseSource} />;
 }

@@ -38,6 +38,8 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
   const [blocked, setBlocked] = useState<string[]>([]);
   const remote = useMemo(() => new RemoteStore(), []);
   const clientRef = useRef<WorldClient | null>(null);
+  // Bus tin server ổn định qua các lần tạo lại client: cho tính năng ngoài hook (ví dụ hành động xã hội) nghe.
+  const tapRef = useRef(new Set<(m: ServerMessage) => void>());
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -48,6 +50,7 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
     clientRef.current = client;
     const offState = client.onState(setState);
     const offMsg = client.onMessage((m: ServerMessage) => {
+      for (const fn of [...tapRef.current]) fn(m);
       switch (m.type) {
         case 'snapshot':
           remote.syncClock(m.serverTime, Date.now());
@@ -138,9 +141,17 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
     clientRef.current?.send({ type: 'chat.history', limit: 30 });
   }, []);
 
+  const subscribe = useCallback((fn: (m: ServerMessage) => void) => {
+    tapRef.current.add(fn);
+    return () => {
+      tapRef.current.delete(fn);
+    };
+  }, []);
+
   return {
     state,
     client: clientRef,
+    subscribe,
     remote,
     players,
     leases,

@@ -1,3 +1,5 @@
+import type { SocialMessage } from '../emotes/social/logic';
+
 // Giao thức message của world service (xem docs/design/WORLD_SYNC.md). Chỉ kiểu dữ liệu, không logic.
 
 export interface PlayerState {
@@ -8,6 +10,8 @@ export interface PlayerState {
   yaw: number;
   anim: string;
   seq: number;
+  /** Tùy chọn: ngoại hình (world gửi đã lọc trong snapshot/join và poses khi đổi; client vẫn chuẩn hóa). */
+  appearance?: unknown;
   /** Thời điểm server nhận pose (ms, đồng hồ server). */
   t: number;
 }
@@ -75,7 +79,8 @@ export type ServerMessage =
   | Snapshot
   | { type: 'ack'; seq: number; tick: number; accepted: { x: number; z: number; yaw: number; anim: string }; corrected: boolean }
   | { type: 'error'; code: string; seq?: number; requestId?: string; clientMsgId?: string; retryAfterMs?: number }
-  | { type: 'join'; id: string; name: string; tick: number }
+  | { type: 'join'; id: string; name: string; tick: number; appearance?: unknown }
+  | { type: 'appearance.ack'; requestId?: string; appearance: unknown }
   | { type: 'poses'; tick: number; serverTime: number; poses: PlayerState[] }
   | { type: 'leave'; id: string; reason: string; tick: number }
   | { type: 'pong'; t: number | null; serverTime: number; tick: number }
@@ -91,7 +96,10 @@ export type ServerMessage =
   | { type: 'muted'; on: boolean; durationMs: number }
   | { type: 'mod.result'; op: string; requestId?: string; ok: boolean; error?: string }
   | { type: 'member.list'; requestId?: string; members: MemberInfo[] }
-  | { type: 'audit.list'; entries: Record<string, unknown>[] };
+  | { type: 'audit.list'; entries: Record<string, unknown>[] }
+  /** TASK 15: server chuyển tiếp thông điệp xã hội; social.denied khi server từ chối (xa quá, bận, quá nhanh...). */
+  | SocialMessage
+  | { type: 'social.denied'; code: string; inviteId?: string; retryAfterMs?: number };
 
 // Mã đóng kết nối của world.
 export const CLOSE_CODES = {

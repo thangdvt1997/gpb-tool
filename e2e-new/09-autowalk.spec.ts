@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ctl, openScene } from './helpers';
+import { ctl, openScene } from './camera-helpers';
 
 // Task 09: minimap (M) -> chọn đích -> bật tự đi -> nhân vật tiến gần đích; bấm phím di chuyển thì dừng.
 async function pickDestination(page: import('@playwright/test').Page): Promise<void> {

@@ -82,6 +82,19 @@ export function MemberPanel({ world }: { world: Pick<WorldApi, 'client' | 'role'
                       {m.muted ? 'Bật tiếng' : 'Tắt tiếng'}
                     </button>
                   ) : null}
+                  {a.transfer ? (
+                    <button
+                      type="button"
+                      aria-label={`Chuyển quyền chủ phòng cho ${m.name || m.id}`}
+                      onClick={() => {
+                        if (window.confirm(`Chuyển quyền chủ phòng cho ${m.name || m.id}? Bạn sẽ trở thành người biên tập.`)) {
+                          client?.send({ type: 'owner.transfer', target: m.id, confirm: true, requestId: client.newId('m') });
+                        }
+                      }}
+                    >
+                      Chuyển quyền
+                    </button>
+                  ) : null}
                   {a.kick ? (
                     <button type="button" aria-label={`Mời ${m.name || m.id} ra khỏi phòng`} onClick={() => client?.send({ type: 'mod.kick', target: m.id, requestId: client.newId('m') })}>
                       Mời ra
