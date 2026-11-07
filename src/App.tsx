@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud } from './scene/interact';
-import { HelpCenter, HelpLayer, HelpReplayButton } from './help';
+import { HelpCenter, HelpLayer, HelpReplayButton, openHelpCenter } from './help';
 import { ProfilePanel } from './profile';
 import { WardrobeRoom } from './wardrobe';
 import { TattooStudio } from './tattoo/TattooStudio';
@@ -626,6 +626,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             </button>
             <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)}>
               Cài đặt
+            </button>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" onClick={openHelpCenter}>
+              Trợ giúp
             </button>
             <button type="button" className="btn btn-ghost" aria-expanded={backupOpen} onClick={() => setBackupOpen((v) => !v)}>
               Sao lưu

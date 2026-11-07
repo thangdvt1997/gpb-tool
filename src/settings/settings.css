@@ -9,5 +9,15 @@
 .sp-row > :first-child { flex: 1; }
 .sp-note { color: #9aa; font-size: 12px; }
 .sp-warn { background: #4a3a12; padding: 8px; border-radius: 6px; margin: 8px 0; }
-.sp-todo { color: #e0a; font-size: 12px; }
+.sp-todo { color: #f0a8d8; font-size: 12px; }
 @media (prefers-reduced-motion: reduce) { .sp-dialog * { transition: none !important; animation: none !important; } }
+/* Cảm ứng: nút, ô nhập, hàng chọn đủ 44 px (WCAG 2.5.5); chữ 16 px để iOS không tự phóng to khi focus. */
+@media (pointer: coarse) {
+  .sp-dialog { font-size: 16px; max-height: 92vh; max-height: 92dvh; overscroll-behavior: contain; }
+  .sp-dialog button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
+  .sp-dialog input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; font-size: 16px; }
+  .sp-row { min-height: 44px; }
+  .sp-dialog input[type="checkbox"], .sp-dialog input[type="radio"] { width: 24px; height: 24px; }
+  .sp-dialog input[type="range"] { min-height: 44px; }
+  .sp-tabs { gap: 8px; }
+}

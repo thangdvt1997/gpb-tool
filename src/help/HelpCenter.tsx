@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSettings } from '../settings';
+import { trapFocus } from '../a11y/focusTrap';
 import { keyNamesFrom } from './keys';
 import { openTour } from './helpState';
 import { useGamepadConnected, useTouch } from './useEnv';
@@ -29,7 +30,7 @@ function subscribe(cb: () => void): () => void {
 /**
  * Trang trợ giúp tra cứu: danh sách chủ đề + ô tìm không dấu. Mở bằng F1 hoặc ? (tự gắn listener
  * keydown một lần khi mount, gỡ khi unmount), đóng bằng Esc hoặc nút Đóng. Là hộp thoại modal nhẹ:
- * focus vào ô tìm khi mở và trả lại khi đóng.
+ * bẫy focus, focus vào ô tìm khi mở và trả lại khi đóng.
  */
 export function HelpCenter({ role }: { role?: string }) {
   const open = useSyncExternalStore(subscribe, isHelpCenterOpen, isHelpCenterOpen);
@@ -49,13 +50,14 @@ export function HelpCenter({ role }: { role?: string }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const dialog = useRef<HTMLDivElement>(null);
+  // Hộp thoại modal đúng chuẩn: bẫy focus (Tab vòng), Esc đóng, trả focus về nút đã mở (trapFocus).
   useEffect(() => {
-    if (!open) return undefined;
-    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    input.current?.focus({ preventScroll: true });
+    if (!open || !dialog.current) return undefined;
+    const release = trapFocus(dialog.current, { id: 'panel:help', initialFocus: input.current, onClose: closeHelpCenter });
     return () => {
       setQuery('');
-      if (before && before.isConnected) before.focus({ preventScroll: true });
+      release();
     };
   }, [open]);
 
@@ -66,15 +68,10 @@ export function HelpCenter({ role }: { role?: string }) {
   return (
     <div
       className="help-center ui-panel ui-panel-float"
+      ref={dialog}
       role="dialog"
-      aria-modal="false"
+      aria-modal="true"
       aria-labelledby="help-center-title"
-      onKeyDown={(e) => {
-        if (e.key !== 'Escape' || e.nativeEvent.isComposing) return;
-        e.stopPropagation();
-        e.preventDefault();
-        closeHelpCenter();
-      }}
     >
       <div className="help-center-head">
         <h2 id="help-center-title" className="help-title">
