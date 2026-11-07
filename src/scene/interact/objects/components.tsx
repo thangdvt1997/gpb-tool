@@ -8,6 +8,9 @@ import { doorOf } from './door';
 import { computerOf, screenGlow } from './computer';
 import { drawerOf, drawerId, drawerOffset } from './drawer';
 import { lightTarget, useLightGroup } from './lightSwitch';
+import { curtainLightIntensity } from './curtain';
+import { fallStep, placementPreviewFor } from './smallItem';
+import { useInteractionSnapshot } from '../controller';
 import { TV_CHANNELS, tvOf, VOLUME_MAX } from './tv';
 import { curtainOf } from './curtain';
 import { itemOf } from './smallItem';
@@ -182,8 +185,10 @@ export function CurtainMesh(p: { id: string; position: P3; yaw: number; width: n
   const open = curtainOf(useObjectState(p.id));
   const h = p.height ?? 2.4;
   const k = useRef(open);
+  const sun = useRef<PointLight>(null);
   useFrame((_, dt) => {
     k.current = MathUtils.damp(k.current, open, 5, dt);
+    if (sun.current) sun.current.intensity = curtainLightIntensity(k.current);
     const m = ref.current;
     if (!m) return;
     const sx = Math.max(0.08, 1 - k.current * 0.92);
@@ -197,7 +202,33 @@ export function CurtainMesh(p: { id: string; position: P3; yaw: number; width: n
         <boxGeometry args={[p.width, h, 0.04]} />
         <meshStandardMaterial color={p.color ?? '#7a8fa8'} roughness={0.95} />
       </mesh>
+      <pointLight ref={sun} position={[0, Math.min(1.9, h - 0.4), 0.7]} distance={5} color="#eaf3ff" intensity={curtainLightIntensity(open)} />
     </group>
+  );
+}
+
+/** Xem trước đặt đồ: xanh nếu hợp lệ, đỏ nếu bị chặn. Chỉ hiện khi đang cầm đồ và nhìn vào mặt đặt; ẩn thì không tốn draw call. */
+export function PlacePreview(p: { radius?: number; height?: number }) {
+  const ref = useRef<Mesh>(null);
+  const { focus } = useInteractionSnapshot();
+  const surfaceId = focus && focus.kind === 'surface' ? focus.id : null;
+  const r = p.radius ?? 0.04;
+  const h = p.height ?? 0.1;
+  useFrame(() => {
+    const m = ref.current;
+    if (!m) return;
+    const ev = surfaceId ? placementPreviewFor(surfaceId) : null;
+    m.visible = ev !== null;
+    if (!ev) return;
+    const y = ev.res.ok ? ev.res.y : ev.surfaceY;
+    m.position.set(ev.x, y + h / 2, ev.z);
+    (m.material as MeshStandardMaterial).color.set(ev.res.ok ? '#40c060' : '#e04040');
+  });
+  return (
+    <mesh ref={ref} visible={false}>
+      <cylinderGeometry args={[r, r, h, 12]} />
+      <meshStandardMaterial color="#40c060" transparent opacity={0.5} depthWrite={false} />
+    </mesh>
   );
 }
 
@@ -207,6 +238,7 @@ export function ItemMesh(p: { id: string; home: { x: number; y: number; z: numbe
   const st = itemOf(useObjectState(p.id), p.home);
   const r = p.radius ?? 0.05;
   const h = p.height ?? 0.1;
+  const vy = useRef(0);
   useFrame((_, dt) => {
     const g = ref.current;
     if (!g) return;
@@ -228,7 +260,15 @@ export function ItemMesh(p: { id: string; home: { x: number; y: number; z: numbe
       }
     }
     g.position.x = MathUtils.damp(g.position.x, tx, 18, dt);
-    g.position.y = MathUtils.damp(g.position.y, ty, 18, dt);
+    // Thả rơi: từ tay xuống thấp hơn thì rơi tự do theo trọng lực thay vì trượt mượt.
+    if (st.where !== 'hand' && g.position.y > ty + 0.02) {
+      const f = fallStep(g.position.y, vy.current, ty, Math.min(dt, 0.05));
+      g.position.y = f.y;
+      vy.current = f.vy;
+    } else {
+      vy.current = 0;
+      g.position.y = MathUtils.damp(g.position.y, ty, 18, dt);
+    }
     g.position.z = MathUtils.damp(g.position.z, tz, 18, dt);
     g.rotation.y = st.yaw;
     if (st.where === 'hand') {

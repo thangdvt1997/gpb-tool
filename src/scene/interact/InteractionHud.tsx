@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { activateFocus, chooseAction, closeMenu, useInteractionSnapshot } from './controller';
 import { updateInteractSettings, useInteractSettings } from './settings';
+import { resetAllObjects } from './objects/resetObjects';
 import './interaction.css';
 
 /** Thiết bị cảm ứng (con trỏ thô hoặc có điểm chạm). Theo dõi đổi chế độ (máy lai, giả lập DevTools). */
@@ -129,6 +130,14 @@ export function InteractionHelp() {
           onClick={() => updateInteractSettings({ keyHints: !keyHints })}
         >
           Hướng dẫn phím: {keyHints ? 'Bật' : 'Tắt'}
+        </button>
+        <button
+          type="button"
+          className="ix-toggle"
+          title="Đưa cửa, ngăn kéo, đèn, rèm, TV và đồ nhỏ về trạng thái ban đầu"
+          onClick={() => resetAllObjects()}
+        >
+          Đặt lại vật
         </button>
       </div>
     </div>

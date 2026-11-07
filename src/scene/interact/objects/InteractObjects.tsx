@@ -8,7 +8,7 @@ import { playerPose } from '../../controls/playerPose';
 import type { ZoneObject } from '../../../content/types';
 import { chairInteractables } from '../chairs';
 import { registerObjects, type ObjectsConfig } from './index';
-import { ObjectsTicker, DoorMesh, DrawerCabinetMesh, GroupLight, SwitchMesh, WaterCoolerMesh, PrinterMesh, ItemMesh, ComputerMesh, CurtainMesh } from './components';
+import { ObjectsTicker, DoorMesh, DrawerCabinetMesh, GroupLight, SwitchMesh, WaterCoolerMesh, PrinterMesh, ItemMesh, ComputerMesh, CurtainMesh, PlacePreview } from './components';
 import { openComputerUi } from './computerUi';
 import type { Footprint } from '../registry';
 import type { Rect } from '../../layout';
@@ -102,6 +102,7 @@ export function buildSampleConfig(objects: readonly ZoneObject[], blocked: (x: n
         footprint: low.fp,
         getPlayer: player,
         itemInfo: (id) => (id === 'sample_cup' ? { r: 0.04, home: cupHome(low) } : null),
+        floorBlocked: blocked,
       },
     ],
   };
@@ -245,6 +246,7 @@ export function InteractObjects(p: { objects: readonly ZoneObject[]; blocked: (x
       <WindowMesh />
       <CurtainMesh id={SAMPLE_CURTAIN.id} position={[SAMPLE_CURTAIN.x, 0, SAMPLE_CURTAIN.z]} yaw={SAMPLE_CURTAIN.yaw} width={SAMPLE_CURTAIN.width} height={SAMPLE_CURTAIN.height} />
       <ItemMesh id="sample_cup" home={cupHome(g.low)} radius={0.04} height={0.1} />
+      <PlacePreview radius={0.04} height={0.1} />
     </group>
   );
 }

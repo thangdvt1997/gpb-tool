@@ -57,3 +57,9 @@ export function curtainInteractable(o: CurtainOptions): InteractableDef {
     ],
   };
 }
+
+/** Cường độ đèn "ánh sáng ngày" sau cửa sổ (đơn vị đèn three): tỷ lệ với curtainDaylight, rèm kín còn MIN_DAYLIGHT. */
+export const WINDOW_LIGHT_MAX = 5;
+export function curtainLightIntensity(open: number, max: number = WINDOW_LIGHT_MAX): number {
+  return Math.round(max * curtainDaylight(open) * 1000) / 1000;
+}
