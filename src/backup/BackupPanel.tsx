@@ -34,7 +34,9 @@ function download(name: string, text: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+import { useReturnFocus } from '../a11y/useReturnFocus';
 export function BackupPanel({ service, onClose }: Props) {
+  useReturnFocus();
   const [backups, setBackups] = useState<MetaBackup[]>(() => service.ring.list());
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -165,7 +167,7 @@ export function BackupPanel({ service, onClose }: Props) {
         <legend>Xuất</legend>
         <p className="muted">Gói JSON gồm nhân vật, cài đặt, văn phòng. Token và email được loại trước khi xuất.</p>
         <button type="button" onClick={doExport} aria-label="Xuất toàn bộ dữ liệu ra tệp JSON">
-          Xuất ra tệp
+          Xuất toàn bộ dữ liệu
         </button>
       </fieldset>
 
@@ -226,7 +228,7 @@ export function BackupPanel({ service, onClose }: Props) {
       <fieldset disabled={busy}>
         <legend>Bản sao lưu cục bộ (giữ {service.ring.max} bản gần nhất)</legend>
         <button type="button" onClick={doBackup} aria-label="Tạo bản sao lưu cục bộ ngay">
-          Sao lưu ngay
+          Tạo bản sao lưu cục bộ
         </button>
         {backups.length === 0 ? (
           <p className="muted">Chưa có bản sao lưu.</p>

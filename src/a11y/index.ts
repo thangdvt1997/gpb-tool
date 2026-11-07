@@ -10,6 +10,7 @@ export {
 } from './focusLogic';
 export { getTabbables, releasePointerLock, trapFocus, type TrapOptions } from './focusTrap';
 export { useFocusTrap } from './useFocusTrap';
+export { useReturnFocus, shouldRestoreFocus } from './useReturnFocus';
 export {
   announce,
   announcer,
