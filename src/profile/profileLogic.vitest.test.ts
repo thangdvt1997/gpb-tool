@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   avatarRefToChoice,
+  buildAboutPatch,
   buildProfilePatch,
   checkDisplayName,
   mapProfileError,
@@ -110,5 +111,27 @@ describe('summarizeLook và planSync', () => {
     expect(planSync(has, '{"a":1}', '{"a":1}')).toBe('same');
     expect(planSync(has, '{"a":1}', '{"a":2}')).toBe('confirm_overwrite');
     expect(planSync({ look: null, revision: 4, corrupt: true }, '{"a":1}', null)).toBe('confirm_overwrite');
+  });
+});
+
+describe('buildAboutPatch', () => {
+  const base = {
+    bio: 'a',
+    presence: 'free' as const,
+    statusText: '',
+    profileVisibility: 'colleagues' as const,
+    characterVisibility: 'colleagues' as const,
+    revision: 3,
+  };
+  it('chỉ gửi trường đổi, kèm revision', () => {
+    const r = buildAboutPatch(base, { ...base, presence: 'busy', bio: ' a ' });
+    expect(r).toEqual({ patch: { revision: 3, presence: 'busy' } });
+  });
+  it('không đổi thì empty', () => {
+    expect(buildAboutPatch(base, base)).toEqual({ empty: true });
+  });
+  it('quá dài hoặc có URL thì báo lỗi theo trường', () => {
+    expect(buildAboutPatch(base, { ...base, bio: 'x'.repeat(281) })).toHaveProperty('errors.bio');
+    expect(buildAboutPatch(base, { ...base, statusText: 'xem http://a.b' })).toHaveProperty('errors.statusText');
   });
 });

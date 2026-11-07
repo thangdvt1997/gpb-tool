@@ -344,9 +344,7 @@ test('danh bạ không lộ email; hồ sơ không lộ băm mật khẩu hay to
   assert.ok(!text.includes(sid.a.token));
 });
 
-test('CSRF/Origin: server không kiểm Origin; chỉ dựa SameSite=Lax (ghi nhận hiện trạng)', async () => {
-  // Hiện index.js không có middleware CSRF/Origin. PUT cần Content-Type: application/json (form chéo trang
-  // không gửi được loại này mà không qua preflight), nhưng Origin lạ vẫn được chấp nhận nếu có cookie.
+test('CSRF/Origin: GET không bị chặn; không bật CORS; form chéo trang bị 415', async () => {
   await sleep(WRITE_GAP);
   const r = await call('GET', '/api/auth/profile', { token: sid.a.token, headers: { Origin: 'https://evil.example' } });
   assert.equal(r.status, 200);
@@ -380,4 +378,128 @@ test('phiên tạm (onboarding) và tài khoản bị khóa không dùng đượ
 test('log của server không chứa token phiên', () => {
   assert.ok(!logs.includes(sid.a.token));
   assert.ok(!logs.includes(sid.b.token));
+});
+
+test('Origin/Referer: request ghi từ origin lạ bị 403, origin cho phép và không có Origin thì qua', async () => {
+  const u = makeUser('o@test.local', 'Ông Origin');
+  const put = (headers, rev = 0) => call('PUT', '/api/auth/profile/about', { token: u.token, body: { revision: rev, bio: 'xin chào' }, headers });
+  let r = await put({ Origin: 'https://evil.example' });
+  assert.equal(r.status, 403);
+  assert.equal(r.json.code, 'origin_forbidden');
+  r = await put({ Origin: 'null' });
+  assert.equal(r.status, 403);
+  r = await put({ Referer: 'https://evil.example/trang' });
+  assert.equal(r.status, 403);
+  r = await put({ Origin: 'https://gp.daisoncoop.com.evil.example' });
+  assert.equal(r.status, 403, 'không khớp tiền tố');
+  // POST và DELETE cũng bị chặn, kể cả khi chưa đăng nhập (chặn trước phiên).
+  assert.equal((await call('POST', '/api/auth/logout', { headers: { Origin: 'https://evil.example' }, body: {} })).status, 403);
+  assert.equal((await call('DELETE', '/api/auth/profile/character', { token: u.token, headers: { Origin: 'https://evil.example' } })).status, 403);
+  // Chưa có dòng nào được ghi do các request bị chặn.
+  assert.equal(dbh.prepare('SELECT COUNT(*) AS n FROM user_about WHERE user_id = ?').get(u.id).n, 0);
+  // GET từ origin lạ không bị chặn (chỉ chặn ghi).
+  assert.equal((await call('GET', '/api/auth/profile/about', { token: u.token, headers: { Origin: 'https://evil.example' } })).status, 200);
+  r = await put({ Origin: 'https://gp.daisoncoop.com' });
+  assert.equal(r.status, 200);
+  await sleep(WRITE_GAP);
+  r = await put({ Origin: 'http://localhost:5173' }, 1);
+  assert.equal(r.status, 200);
+  await sleep(WRITE_GAP);
+  r = await put({ Referer: 'http://127.0.0.1:4187/x' }, 2);
+  assert.equal(r.status, 200);
+  await sleep(WRITE_GAP);
+  r = await put({ Origin: base }, 3);
+  assert.equal(r.status, 200, 'cùng origin với chính máy chủ');
+});
+
+test('about: mặc định, ghi, kiểm tra đầu vào, từ cấm, conflict', async () => {
+  const u = makeUser('p@test.local', 'Phạm Phương');
+  const put = (body) => call('PUT', '/api/auth/profile/about', { token: u.token, body });
+  let r = await call('GET', '/api/auth/profile/about', { token: u.token });
+  assert.equal(r.status, 200);
+  assert.deepEqual(
+    { ...r.json.about, updatedAt: null },
+    { bio: '', presence: 'free', statusText: '', profileVisibility: 'colleagues', characterVisibility: 'colleagues', revision: 0, updatedAt: null },
+  );
+  // Kiểm tra (trước giới hạn tần suất)
+  assert.equal((await put({ revision: 0, presence: 'ngu' })).json.code, 'invalid_input');
+  assert.equal((await put({ revision: 0, profileVisibility: 'all' })).status, 422);
+  assert.equal((await put({ revision: 0, bio: 'x'.repeat(281) })).json.code, 'too_long');
+  assert.equal((await put({ revision: 0, statusText: 'y'.repeat(61) })).json.code, 'too_long');
+  assert.equal((await put({ revision: 0, bio: 'xem http://x.example' })).status, 422);
+  assert.equal((await put({ revision: 0, bio: 'a\u0000b' })).status, 422);
+  assert.equal((await put({ revision: 0, role: 'admin' })).status, 403);
+  assert.equal((await put({ revision: 0, foo: 1 })).json.code, 'unknown_field');
+  assert.equal((await put({ revision: 0 })).json.code, 'empty_update');
+  assert.equal((await put({ revision: 0, bio: 'đụ má mày' })).json.code, 'content_rejected');
+  assert.equal((await put({ revision: 0, statusText: 'địt mẹ' })).json.code, 'content_rejected');
+  assert.equal(dbh.prepare('SELECT COUNT(*) AS n FROM user_about WHERE user_id = ?').get(u.id).n, 0);
+
+  r = await put({ revision: 0, bio: '  Dev  frontend\n\n\n\nthích mèo ', presence: 'meeting', statusText: 'Họp  sprint', profileVisibility: 'everyone', characterVisibility: 'self' });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.about.bio, 'Dev frontend\n\nthích mèo');
+  assert.equal(r.json.about.statusText, 'Họp sprint');
+  assert.equal(r.json.about.revision, 1);
+  assert.equal((await put({ revision: 1, presence: 'busy' })).status, 429);
+  await sleep(WRITE_GAP);
+  r = await put({ revision: 0, presence: 'busy' });
+  assert.equal(r.status, 409);
+  assert.equal(r.json.currentRevision, 1);
+  await sleep(WRITE_GAP);
+  r = await put({ revision: 1, presence: 'busy' });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.about.bio, 'Dev frontend\n\nthích mèo', 'trường không gửi giữ nguyên');
+  assert.equal(r.json.about.presence, 'busy');
+  assert.equal(r.json.about.revision, 2);
+  // Không ảnh hưởng revision hồ sơ cũ
+  assert.equal((await call('GET', '/api/auth/profile', { token: u.token })).json.profile.revision, 0);
+  // Chưa đăng nhập
+  assert.equal((await call('GET', '/api/auth/profile/about')).status, 401);
+  assert.equal((await call('PUT', '/api/auth/profile/about', { body: { revision: 0, bio: 'x' } })).status, 401);
+});
+
+test('about: quyền riêng tư giữa chủ, đồng nghiệp, người ngoài tenant', async () => {
+  dbh.prepare("INSERT OR IGNORE INTO tenants (id, type, name) VALUES ('t-other', 'business', 'Other')").run();
+  const owner = makeUser('own@test.local', 'Chủ Hồ Sơ');
+  const mate = makeUser('mate@test.local', 'Đồng Nghiệp');
+  const out = makeUser('out@test.local', 'Người Ngoài');
+  dbh.prepare("UPDATE users SET tenant_id = 't-other' WHERE id = ?").run(out.id);
+  const card = (viewer, id = owner.id) => call('GET', `/api/auth/profile/about/${id}`, { token: viewer.token });
+  const ownerPut = (body) => call('PUT', '/api/auth/profile/about', { token: owner.token, body });
+
+  // Mặc định colleagues: đồng nghiệp thấy, người ngoài không.
+  let r = await card(mate);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.profile.name, 'Chủ Hồ Sơ');
+  assert.ok(!JSON.stringify(r.json).includes('@'), 'không lộ email');
+  assert.equal(r.json.profile.character, null);
+  r = await card(out);
+  assert.equal(r.status, 403);
+  assert.equal(r.json.code, 'profile_private');
+
+  // Lưu nhân vật + mở nhân vật cho mọi người, hồ sơ mọi người.
+  await sleep(WRITE_GAP);
+  assert.equal((await call('PUT', '/api/auth/profile/character', { token: owner.token, body: { revision: 0, look: sampleLook('Bộ của chủ') } })).status, 200);
+  assert.equal((await ownerPut({ revision: 0, bio: 'Xin chào', presence: 'away', profileVisibility: 'everyone', characterVisibility: 'colleagues' })).status, 200);
+  r = await card(out);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.profile.bio, 'Xin chào');
+  assert.equal(r.json.profile.presence, 'away');
+  assert.equal(r.json.profile.character, null, 'người ngoài không thấy nhân vật');
+  r = await card(mate);
+  assert.equal(r.json.profile.character.meta.name, 'Bộ của chủ');
+
+  // Chỉ mình tôi.
+  await sleep(WRITE_GAP);
+  assert.equal((await ownerPut({ revision: 1, profileVisibility: 'self' })).status, 200);
+  assert.equal((await card(mate)).status, 403);
+  assert.equal((await card(out)).status, 403);
+  r = await card(owner);
+  assert.equal(r.status, 200, 'chủ luôn xem được bản thân');
+  assert.equal(r.json.profile.character.meta.name, 'Bộ của chủ');
+
+  // id không hợp lệ / không tồn tại
+  assert.equal((await card(mate, 'abc')).status, 404);
+  assert.equal((await card(mate, 999999)).status, 404);
+  assert.equal((await call('GET', `/api/auth/profile/about/${owner.id}`)).status, 401);
 });

@@ -231,6 +231,18 @@ CREATE TABLE IF NOT EXISTS user_characters (
   revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
   updated_at INTEGER NOT NULL
 );
+
+-- Giới thiệu, trạng thái, quyền riêng tư (PROFILE.md mục 10). Bảng riêng, chỉ thêm, không đụng bảng cũ.
+CREATE TABLE IF NOT EXISTS user_about (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  bio TEXT NOT NULL DEFAULT '' CHECK (length(bio) <= 1200),
+  status TEXT NOT NULL DEFAULT 'free' CHECK (status IN ('free', 'busy', 'meeting', 'away')),
+  status_text TEXT NOT NULL DEFAULT '' CHECK (length(status_text) <= 300),
+  profile_visibility TEXT NOT NULL DEFAULT 'colleagues' CHECK (profile_visibility IN ('everyone', 'colleagues', 'self')),
+  character_visibility TEXT NOT NULL DEFAULT 'colleagues' CHECK (character_visibility IN ('everyone', 'colleagues', 'self')),
+  revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+  updated_at INTEGER NOT NULL
+);
 `);
 
 // Tạo tenant nếu chưa có. Không ghi đè server/tunnel đã cấu hình.

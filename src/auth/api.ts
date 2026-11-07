@@ -414,3 +414,66 @@ export async function deleteCloudCharacter(): Promise<boolean> {
   const data = await request<{ ok: boolean; deleted?: boolean }>('/api/auth/profile/character', 'DELETE');
   return data.deleted === true;
 }
+
+// ---------- Giới thiệu, trạng thái, quyền riêng tư (PROFILE.md mục 10) ----------
+// Máy chủ auth cũ chưa có các route này (404). Hàm getMyAbout trả null khi đó để giao diện ẩn các trường mới.
+
+export type Presence = 'free' | 'busy' | 'meeting' | 'away';
+export type Visibility = 'everyone' | 'colleagues' | 'self';
+
+export interface MyAbout {
+  bio: string;
+  presence: Presence;
+  statusText: string;
+  profileVisibility: Visibility;
+  characterVisibility: Visibility;
+  revision: number;
+  updatedAt: number | null;
+}
+
+const PRESENCES: readonly string[] = ['free', 'busy', 'meeting', 'away'];
+const VISIBILITIES: readonly string[] = ['everyone', 'colleagues', 'self'];
+
+function toAbout(raw: unknown): MyAbout {
+  const r = isRecord(raw) ? raw : {};
+  return {
+    bio: typeof r.bio === 'string' ? r.bio : '',
+    presence: typeof r.presence === 'string' && PRESENCES.includes(r.presence) ? (r.presence as Presence) : 'free',
+    statusText: typeof r.statusText === 'string' ? r.statusText : '',
+    profileVisibility:
+      typeof r.profileVisibility === 'string' && VISIBILITIES.includes(r.profileVisibility)
+        ? (r.profileVisibility as Visibility)
+        : 'colleagues',
+    characterVisibility:
+      typeof r.characterVisibility === 'string' && VISIBILITIES.includes(r.characterVisibility)
+        ? (r.characterVisibility as Visibility)
+        : 'colleagues',
+    revision: numberOrNull(r.revision) ?? 0,
+    updatedAt: numberOrNull(r.updatedAt),
+  };
+}
+
+/** null khi máy chủ chưa hỗ trợ (404 hoặc 405). Lỗi khác (401, mạng, 5xx) vẫn ném ra. */
+export async function getMyAbout(): Promise<MyAbout | null> {
+  try {
+    const data = await request<{ ok: boolean; about?: unknown }>('/api/auth/profile/about', 'GET');
+    return isRecord(data) && isRecord(data.about) ? toAbout(data.about) : null;
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 405)) return null;
+    throw e;
+  }
+}
+
+export interface AboutPatch {
+  revision: number;
+  bio?: string;
+  presence?: Presence;
+  statusText?: string;
+  profileVisibility?: Visibility;
+  characterVisibility?: Visibility;
+}
+
+export async function putMyAbout(input: AboutPatch): Promise<MyAbout> {
+  const data = await request<{ ok: boolean; about?: unknown }>('/api/auth/profile/about', 'PUT', input);
+  return toAbout(data.about);
+}
