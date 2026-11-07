@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { CharacterLook, OutfitSlot } from '../../fashion/types';
+import type { CharacterLook, GarmentPattern, OutfitSlot } from '../../fashion/types';
 import { deriveBodyMorphWeights, writeBodyMorphs } from './bodyMorphs';
 import { hiddenSkinTriangles, resolveLayers, visibleSkinIndex } from './coverage';
+import { bodyPatterns, drawPatterns, patternSignature, PATTERN_CANVAS_SIZE } from './patternTexture';
+import { MpfbAccessories } from './MpfbAccessories';
 import { planOutfit, type PiecePlan } from './plan';
 import {
   analyzeBody,
@@ -12,6 +14,7 @@ import {
   deriveGeometry,
   geometryPool,
   setShellMaterialParams,
+  setShellPattern,
   setShellZoneColors,
   shellGeometryKey,
   skinGeometryKey,
@@ -51,7 +54,7 @@ export function colorSignature(look: CharacterLook | null): string {
   const parts: string[] = [];
   for (const slot of Object.keys(look.outfit) as OutfitSlot[]) {
     const w = look.outfit[slot];
-    if (w) parts.push(`${slot}:${JSON.stringify(w.colors)}:${JSON.stringify(w.materials)}`);
+    if (w) parts.push(`${slot}:${JSON.stringify(w.colors)}:${JSON.stringify(w.materials)}:${patternSignature(w.patterns)}`);
   }
   return parts.join('|');
 }
@@ -62,6 +65,9 @@ interface Shell {
   material: THREE.MeshStandardMaterial;
   geoKey: string;
   plan: PiecePlan;
+  /** Hình vuông in họa tiết trên thân: [tâm x, tâm y, cạnh, cạnh] ở toạ độ bind. */
+  rect: [number, number, number, number];
+  patternTex: THREE.CanvasTexture | null;
 }
 
 function applyColors(shell: Shell, look: CharacterLook): void {
@@ -70,6 +76,31 @@ function applyColors(shell: Shell, look: CharacterLook): void {
   setShellZoneColors(shell.material, ZONE_LIST.map((z) => resolveZoneColor(worn.colors, z)));
   const main = worn.materials.body ?? worn.materials.upper ?? worn.materials.leg ?? Object.values(worn.materials)[0] ?? 'cotton';
   setShellMaterialParams(shell.material, main);
+  applyPatterns(shell, worn.patterns);
+}
+
+/** Vẽ lại canvas họa tiết cho áo/bộ liền (chỉ họa tiết vùng thân, in mặt trước). */
+function applyPatterns(shell: Shell, patterns: GarmentPattern[]): void {
+  const part = shell.plan.spec.part;
+  const list = part === 'top' || part === 'full' ? bodyPatterns(patterns) : [];
+  if (list.length === 0 || typeof document === 'undefined') {
+    shell.patternTex?.dispose();
+    shell.patternTex = null;
+    setShellPattern(shell.material, null, shell.rect);
+    return;
+  }
+  if (!shell.patternTex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = PATTERN_CANVAS_SIZE;
+    canvas.height = PATTERN_CANVAS_SIZE;
+    shell.patternTex = new THREE.CanvasTexture(canvas);
+    shell.patternTex.colorSpace = THREE.SRGBColorSpace;
+  }
+  const canvas = shell.patternTex.image as HTMLCanvasElement;
+  const g = canvas.getContext('2d');
+  if (g) drawPatterns(g, list);
+  shell.patternTex.needsUpdate = true;
+  setShellPattern(shell.material, shell.patternTex, shell.rect);
 }
 
 /**
@@ -141,7 +172,8 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
       mesh.updateMorphTargets();
       if (body.morphTargetInfluences) mesh.morphTargetInfluences = body.morphTargetInfluences;
       parent.add(mesh);
-      const shell: Shell = { slot: p.slot, mesh, material, geoKey: key, plan: p };
+      const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
+      const shell: Shell = { slot: p.slot, mesh, material, geoKey: key, plan: p, rect: [0, cls.yPelvis + 0.6 * span, span * 0.95, span * 0.95], patternTex: null };
       applyColors(shell, current);
       shells.push(shell);
     });
@@ -152,6 +184,7 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
       for (const s of shells) {
         parent.remove(s.mesh);
         s.material.dispose();
+        s.patternTex?.dispose();
         (s.mesh.customDepthMaterial as THREE.Material | undefined)?.dispose();
         (s.mesh.customDistanceMaterial as THREE.Material | undefined)?.dispose();
       }
@@ -176,5 +209,5 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
     writeBodyMorphs(body.morphTargetInfluences, body.morphTargetDictionary, w);
   });
 
-  return null;
+  return <MpfbAccessories body={body} look={look} />;
 }
