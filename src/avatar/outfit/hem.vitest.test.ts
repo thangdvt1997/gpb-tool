@@ -4,7 +4,8 @@ import { coverMargin, hiddenSkinTriangles, resolveLayers, type PieceInput } from
 import { loadBodyData } from './glbBody.testutil';
 import { classifyBody, Region } from './regions';
 import { SHELL_CLASSES } from './shellClass';
-import { createShellMaterial, deriveGeometry } from './threeShell';
+import { vertexZoneBlend, ZONE_LIST } from './zones';
+import { createShellMaterial, createShellShadowMaterials, deriveGeometry } from './threeShell';
 
 const data = loadBodyData('male_real');
 const cls = classifyBody(data);
@@ -30,11 +31,14 @@ describe('mép trang phục: lề cắt liên tục', () => {
       zone: new Uint8Array(3),
       cut: Float32Array.from([0.01, -0.01, 0]),
     });
-    expect(g.getAttribute('aCut').count).toBe(3);
+    const sh = g.getAttribute('aShell');
+    expect(sh.count).toBe(3);
+    expect(sh.getW(0)).toBeCloseTo(0.01);
+    expect(sh.getW(1)).toBeCloseTo(-0.01);
     const m = createShellMaterial(0);
     const shader = { uniforms: {}, vertexShader: '#include <common>\n#include <morphtarget_vertex>', fragmentShader: '#include <common>\n#include <clipping_planes_fragment>\n#include <color_fragment>' };
     (m.onBeforeCompile as (s: unknown) => void)(shader);
-    expect(shader.vertexShader).toContain('vCut = aCut');
+    expect(shader.vertexShader).toContain('vCut = aShell.w');
     expect(shader.fragmentShader).toContain('if (vCut < 0.0) discard');
   });
 
@@ -125,5 +129,43 @@ describe('mép trang phục: lề cắt liên tục', () => {
       }
     }
     expect(maxJump).toBeLessThan(CAP);
+  });
+});
+
+describe('mép trang phục: bóng đổ', () => {
+  it('vật liệu bóng bỏ mảnh có aCut < 0 (không đổ bóng phần đã cắt)', () => {
+    const { depth, distance } = createShellShadowMaterials();
+    for (const m of [depth, distance]) {
+      const shader = { vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <clipping_planes_fragment>' };
+      (m.onBeforeCompile as (s: unknown) => void)(shader);
+      expect(shader.vertexShader).toContain('vCut = aShell.w');
+      expect(shader.fragmentShader).toContain('if (vCut < 0.0) discard');
+      m.dispose();
+    }
+  });
+});
+
+describe('vùng màu: biên cổ/gấu mượt', () => {
+  it('band đơn điệu theo độ cao, vùng phụ là cổ ở trên và gấu ở dưới; đỉnh khác band = -1', () => {
+    const s = spec('inner:polo');
+    const zb = vertexZoneBlend(cls, s, data.normals);
+    const span = cls.yNeck - cls.yPelvis;
+    let collar = 0;
+    let hem = 0;
+    for (let v = 0; v < cls.vertexCount; v++) {
+      const r = cls.region[v];
+      if (zb.band[v] === -1) continue;
+      if (r === Region.torso || r === Region.neck) {
+        expect(zb.zoneB[v]).toBe(ZONE_LIST.indexOf('collar'));
+        expect(zb.band[v]).toBeCloseTo((cls.u[v] - (s.neckU - 0.06)) * span, 5);
+        collar++;
+      } else {
+        expect(zb.zoneB[v]).toBe(ZONE_LIST.indexOf('hem'));
+        expect(zb.band[v]).toBeCloseTo((s.hemU + 0.06 - cls.u[v]) * span, 5);
+        hem++;
+      }
+    }
+    expect(collar).toBeGreaterThan(100);
+    expect(hem).toBeGreaterThan(100);
   });
 });

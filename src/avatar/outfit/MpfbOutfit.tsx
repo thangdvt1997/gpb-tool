@@ -8,6 +8,7 @@ import { planOutfit, type PiecePlan } from './plan';
 import {
   analyzeBody,
   createShellMaterial,
+  createShellShadowMaterials,
   deriveGeometry,
   geometryPool,
   setShellMaterialParams,
@@ -15,7 +16,7 @@ import {
   shellGeometryKey,
   skinGeometryKey,
 } from './threeShell';
-import { vertexZones, ZONE_LIST, resolveZoneColor } from './zones';
+import { vertexZoneBlend, ZONE_LIST, resolveZoneColor } from './zones';
 
 /** Phần của rig MpfbAvatar mà MpfbOutfit cần (cấu trúc, không import kiểu nội bộ của MpfbAvatar). */
 export interface OutfitRigLike {
@@ -118,14 +119,17 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
     order.forEach(({ p, i }, rank) => {
       const r = results[i];
       if (r.index.length === 0) return;
-      const zones = vertexZones(cls, p.spec, data.normals);
+      const zb = vertexZoneBlend(cls, p.spec, data.normals);
       const key = shellGeometryKey(baseGeo.uuid, `${p.garmentId}|${p.variant.fit}|${p.variant.tucked ? 1 : 0}`, r.index, r.offset, r.cut);
-      const geo = geometryPool.acquire(key, () => deriveGeometry(baseGeo, r.index, { offset: r.offset, zone: zones, cut: r.cut }));
+      const geo = geometryPool.acquire(key, () => deriveGeometry(baseGeo, r.index, { offset: r.offset, zone: zb.zone, zoneB: zb.zoneB, band: zb.band, cut: r.cut }));
       acquired.push(key);
       const material = createShellMaterial(rank);
       const mesh = new THREE.SkinnedMesh(geo, material);
       mesh.name = `outfit:${p.slot}`;
       mesh.frustumCulled = false;
+      const shadow = createShellShadowMaterials();
+      mesh.customDepthMaterial = shadow.depth;
+      mesh.customDistanceMaterial = shadow.distance;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.position.copy(body.position);
@@ -148,6 +152,8 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
       for (const s of shells) {
         parent.remove(s.mesh);
         s.material.dispose();
+        (s.mesh.customDepthMaterial as THREE.Material | undefined)?.dispose();
+        (s.mesh.customDistanceMaterial as THREE.Material | undefined)?.dispose();
       }
       for (const k of acquired) geometryPool.release(k);
       body.geometry = baseGeo;

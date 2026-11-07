@@ -51,6 +51,39 @@ export function zoneOfVertex(cls: Classification, spec: ShellClass, normalY: num
   return 'body';
 }
 
+/**
+ * Vùng màu có biên mượt: mỗi đỉnh có vùng chính (zone), vùng phụ (zoneB: cổ áo hoặc gấu) và lề band (m, theo độ cao).
+ * Shader chọn màu vùng phụ ở mảnh có band >= 0, nên biên cổ/gấu là đường đẳng trị thẳng chứ không bậc thang theo tam giác.
+ * Đỉnh không thuộc dải cổ/gấu: zoneB = zone, band = -1.
+ */
+export function vertexZoneBlend(
+  cls: Classification,
+  spec: ShellClass,
+  normals: ArrayLike<number>,
+): { zone: Uint8Array; zoneB: Uint8Array; band: Float32Array } {
+  const n = cls.vertexCount;
+  const zone = vertexZones(cls, spec, normals);
+  const zoneB = Uint8Array.from(zone);
+  const band = new Float32Array(n).fill(-1);
+  const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
+  if (spec.part !== 'top' && spec.part !== 'full') return { zone, zoneB, band };
+  const BODY = IDX.body;
+  for (let v = 0; v < n; v++) {
+    const r = cls.region[v];
+    const u = cls.u[v];
+    if ((r === Region.torso || r === Region.neck) && u > spec.neckU - 0.06 - 0.02) {
+      zone[v] = BODY;
+      zoneB[v] = IDX.collar;
+      band[v] = (u - (spec.neckU - 0.06)) * span;
+    } else if (spec.part === 'top' && (r === Region.pelvis || r === Region.thigh) && u < spec.hemU + 0.06 + 0.02) {
+      zone[v] = BODY;
+      zoneB[v] = IDX.hem;
+      band[v] = (spec.hemU + 0.06 - u) * span;
+    }
+  }
+  return { zone, zoneB, band };
+}
+
 /** Chỉ số vùng cho mọi đỉnh. normals có thể rỗng (đế giày khi đó không nhận ra). */
 export function vertexZones(cls: Classification, spec: ShellClass, normals: ArrayLike<number>): Uint8Array {
   const out = new Uint8Array(cls.vertexCount);
