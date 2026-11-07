@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatChannel, ChatMessage, LeaseView, ServerMessage } from './protocol';
+import { pushServerReposition } from '../scene/controls/serverReposition';
 import { RemoteStore } from './remoteState';
 import { WorldClient, type ConnState } from './worldClient';
 
@@ -54,6 +55,12 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
           setPlayers(remote.ids());
           setLeases(Object.fromEntries(m.leases.map((l) => [l.resource, l])));
           setRole(m.role);
+          // Nối lại phiên: server trả vị trí đã lưu thì nhân vật theo đó.
+          if (m.resumed?.ok && m.resumed.spawn) pushServerReposition(m.resumed.spawn);
+          break;
+        case 'ack':
+          // Server sửa vị trí của mình: nhân vật và camera phải theo (useCameraSafety lấy ở khung kế tiếp).
+          if (m.corrected) pushServerReposition(m.accepted);
           break;
         case 'poses':
           remote.syncClock(m.serverTime, Date.now());
