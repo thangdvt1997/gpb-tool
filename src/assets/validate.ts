@@ -359,7 +359,9 @@ function checkAsset(ctx: Ctx, a: AssetEntry, i: number, m: AssetManifest, opts: 
     if (mat.alphaMode === 'MASK' && typeof mat.alphaCutoff !== 'number') {
       push(ctx, 'warning', 'ALPHA_CUTOFF', id, `${mp}.alphaCutoff`, 'MASK không ghi alphaCutoff (glTF mặc định 0.5).', 'Ghi rõ alphaCutoff.');
     }
-    if (mat.alphaMode === 'BLEND' && !mat.blendApproved) {
+    // File gốc xuất BLEND nhưng loader ép OPAQUE/MASK lúc chạy (runtimeAlphaMode): không còn rủi ro thứ tự vẽ.
+    const overridden = mat.runtimeAlphaMode === 'OPAQUE' || mat.runtimeAlphaMode === 'MASK';
+    if (mat.alphaMode === 'BLEND' && !mat.blendApproved && !overridden) {
       push(ctx, 'warning', 'BLEND_UNAPPROVED', id, `${mp}.alphaMode`, `Material "${mat.name}" dùng BLEND (dễ lỗi thứ tự vẽ, không ghi depth).`, 'Da/thân dùng OPAQUE; lông mày, mi, tóc dùng MASK; chỉ giữ BLEND cho kính và đặt blendApproved = true.');
     }
   });

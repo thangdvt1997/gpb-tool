@@ -83,6 +83,8 @@ export interface MaterialSpec {
   maps: Array<'baseColor' | 'normal' | 'metallicRoughness' | 'occlusion' | 'emissive' | 'alpha'>;
   /** true khi đã duyệt việc dùng BLEND (kính, tóc). Mặc định validator cảnh báo BLEND. */
   blendApproved?: boolean;
+  /** Chế độ alpha runtime thực dùng khi file gốc xuất BLEND (loader ép lại, ví dụ fixMaterials trong MpfbAvatar). */
+  runtimeAlphaMode?: 'OPAQUE' | 'MASK';
   /** ID material dùng chung (ví dụ "real.wood.oak"), nếu có. */
   shared?: string;
 }
