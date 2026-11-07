@@ -115,3 +115,14 @@ Phím trong phòng: `1` đến `5` chuyển tab, `Ctrl+Z` hoàn tác, `Ctrl+Y` h
 - Chiều dài xương (chân, tay, cổ) không đổi được nên không có cập nhật skinning/attachment.
 - Bộ nhớ GPU: mỗi geometry vỏ có texture morph riêng (khoảng 4 MB với 14 517 đỉnh x 18 morph); bộ đồ 5 món + da khoảng 25 MB, chia sẻ giữa các nhân vật cùng bộ. Chưa đo thực tế.
 - Giao diện `WardrobeRoom` chưa chạy thử (chưa mở trong trình duyệt, chưa thử cảm ứng); logic bên dưới được test.
+
+## Hình thể bằng xương (tay, chân, cổ, lưng)
+
+GLB MPFB không có morph cho tay, chân, cổ, lưng, nên các thanh này đổi tỷ lệ xương (`src/avatar/boneShape.ts`), dùng chung skeleton 53 xương của cả `male_real`, `female_real`, `chibi`.
+
+- Dữ liệu: `look.body.arms.{left,right}.length`, `legs.{left,right}.length`, `torso.neckLength`, `torso.back` (đã có sẵn trong look nên look cũ không cần đổi phiên bản; trường thiếu được `validate` đưa về 0 = không đổi).
+- Dài tay/chân/cổ: scale trục dọc xương gốc đoạn (upperarm, thigh, neck_01), xương con kế thừa; bàn tay, bàn chân, đầu bù ngược (gần đúng với bàn chân và đầu vì hướng giãn không trùng hẳn một trục). Hệ số = 1 + 0,3 x trọng số (tay, chân; tối đa +-15%), 1 + 0,4 x trọng số (cổ; kẹp 0,7 đến 1,25). Cong lưng: xoay spine_01..03 quanh trục ngang, tổng +-0,2 rad (dương gù, âm ưỡn).
+- Chân và cổ làm đổi chiều cao thật: `shapedHeightM` (tầm mắt camera, Player.tsx) và `footDrop` (mặt sàn và độ cao hông trong `MpfbAvatar`, IK chân đọc chiều dài xương từ ma trận mỗi khung nên theo). Cong lưng không đổi chiều cao (sai lệch khoảng 1 cm, bỏ qua).
+- Vỏ trang phục, hình xăm, phụ kiện bám skeleton nên tự theo; kiểm trong `boneShape.vitest.test.ts` trên 3 GLB thật.
+- UI: tab Hình thể, nhóm "Tay, chân, cổ, lưng", chỉ hiện khi `modelSupportsBoneShape`/`rigSupportsBoneShape` đúng.
+- Chưa làm/hạn chế: bắp tay, cẳng tay, đùi, bắp chân, cỡ bàn tay/chân vẫn cần morph. Khi tay/chân bẻ khớp mạnh, kéo giãn theo trục xương cha gây méo nhẹ ở khuỷu/gối (biên độ giới hạn 15% để hạn chế). Chưa kiểm bằng mắt trên trình duyệt ngoài e2e.

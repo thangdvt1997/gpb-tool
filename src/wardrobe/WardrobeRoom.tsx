@@ -27,7 +27,8 @@ import { GARMENT_PALETTE } from '../fashion/palette';
 import { PRESETS } from '../fashion/presets';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { ACCESSORY_SLOTS, OUTFIT_SLOTS, PHONE_STATES, type AccessorySlot, type BodyStyle, type CharacterLook, type OutfitSlot, type RingFinger, type Side, type WornAccessory } from '../fashion/types';
-import { SHAPE_SLIDERS, UNSUPPORTED_SHAPE, type SliderGroup } from './shapeSliders';
+import { SHAPE_SLIDERS, UNSUPPORTED_SHAPE, sliderAvailable, type SliderGroup } from './shapeSliders';
+import { mpfbModelFor } from '../avatar/MpfbAvatar';
 import {
   REMOVABLE_SLOTS,
   WARDROBE_TABS,
@@ -217,7 +218,7 @@ const SLOT_SHORT: Readonly<Record<OutfitSlot, string>> = {
   hat: GARMENT_GROUP_LABELS.hat,
 };
 
-const SLIDER_GROUP_LABEL: Readonly<Record<SliderGroup, string>> = { overall: 'Tổng thể', torso: 'Thân', head: 'Đầu' };
+const SLIDER_GROUP_LABEL: Readonly<Record<SliderGroup, string>> = { overall: 'Tổng thể', torso: 'Thân', limbs: 'Tay, chân, cổ, lưng', head: 'Đầu' };
 
 const POSES: readonly { id: AvatarAnimation; label: string }[] = [
   { id: 'idle', label: 'Đứng' },
@@ -560,7 +561,8 @@ function ColorTab({ s, dispatch }: TabProps) {
 function ShapeTab({ s, dispatch }: TabProps) {
   const style = s.draft.bodyStyle;
   const frame = s.draft.body.frame;
-  const groups: SliderGroup[] = ['overall', 'torso', 'head'];
+  const groups: SliderGroup[] = ['overall', 'torso', 'limbs', 'head'];
+  const model = mpfbModelFor(style, frame);
   return (
     <>
       <Section title="Mesh gốc">
@@ -574,9 +576,9 @@ function ShapeTab({ s, dispatch }: TabProps) {
         </div>
         {style === 'chibi' && <p style={{ color: C.dim, fontSize: 12 }}>Chibi dùng chung một mesh cho nam và nữ; chỉ khác khoảng chiều cao.</p>}
       </Section>
-      {groups.map((g) => (
+      {groups.filter((g) => SHAPE_SLIDERS.some((d) => d.group === g && sliderAvailable(d, model))).map((g) => (
         <Section key={g} title={SLIDER_GROUP_LABEL[g]}>
-          {SHAPE_SLIDERS.filter((d) => d.group === g).map((d) => {
+          {SHAPE_SLIDERS.filter((d) => d.group === g && sliderAvailable(d, model)).map((d) => {
             const eff = d.effective(style, frame);
             const full = d.range(style, frame);
             const value = d.get(s.draft);

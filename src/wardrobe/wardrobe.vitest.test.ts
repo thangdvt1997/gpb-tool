@@ -1,3 +1,4 @@
+import { boneShapeOf } from '../avatar/boneShape';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { cloneLook, makeDefaultLook, wear } from '../fashion/defaults';
@@ -68,6 +69,10 @@ describe('shapeSliders: thanh hình thể', () => {
         expect(next.body.heightCm).toBe(Math.round(target));
         continue;
       }
+      if (d.support === 'bone') {
+        expect(JSON.stringify(boneShapeOf(next)), d.id).not.toBe(JSON.stringify(boneShapeOf(base)));
+        continue;
+      }
       const w1 = deriveBodyMorphWeights(next);
       const changed = Object.keys(w0).some((k) => w0[k as keyof typeof w0] !== w1[k as keyof typeof w1]);
       expect(changed, d.id).toBe(true);
@@ -91,9 +96,10 @@ describe('shapeSliders: thanh hình thể', () => {
     expect(setSliderValue(base, 'chest', Number.NaN)).toBe(base);
   });
 
-  it('danh sách chưa hỗ trợ nêu rõ cổ, lưng, tay, chân', () => {
+  it('danh sách chưa hỗ trợ còn bắp tay/đùi/bàn tay; cổ, lưng, dài tay, dài chân đã có thanh xương', () => {
     const ids = UNSUPPORTED_SHAPE.map((u) => u.id);
-    for (const id of ['neckLength', 'back', 'arms', 'legs']) expect(ids).toContain(id);
+    for (const id of ['arms', 'legs']) expect(ids).toContain(id);
+    for (const id of ['neckLength', 'back', 'armLength', 'legLength']) expect(getSlider(id)?.support).toBe('bone');
     for (const u of UNSUPPORTED_SHAPE) expect(getSlider(u.id)).toBeUndefined();
   });
 

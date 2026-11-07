@@ -4,15 +4,18 @@
  * - 'scale': đổi chiều cao (scale đồng đều trong MpfbAvatar, chiều cao đích kẹp theo kiểu).
  * - 'morph': ghi thẳng vào một morph thân (chỉ có một chiều).
  * - 'composite': cộng vào các morph thân (cân nặng, lượng mỡ, cơ bắp), xem avatar/outfit/bodyMorphs.ts.
- * Trường chưa có morph hay xương tương ứng (cổ, lưng, tay, chân, tỉ lệ đầu thân) nằm trong UNSUPPORTED_SHAPE để
+ * - 'bone': đổi tỷ lệ xương trên skeleton MPFB (dài tay, dài chân, dài cổ, cong lưng), xem avatar/boneShape.ts.
+ *   Chỉ hiện khi rig hỗ trợ (modelSupportsBoneShape / rigSupportsBoneShape).
+ * Trường chưa có morph hay xương tương ứng (bắp tay, đùi, bàn tay/chân, tỉ lệ đầu thân) nằm trong UNSUPPORTED_SHAPE để
  * UI hiển thị rõ lý do thay vì làm thanh giả.
  */
 import { BODY_LIMITS_BY_STYLE, FACE_STRUCTURE_LIMITS_BY_STYLE, validate, type Range } from '../fashion/rules';
 import { cloneLook } from '../fashion/defaults';
+import { modelSupportsBoneShape } from '../avatar/boneShape';
 import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 
-export type SliderSupport = 'scale' | 'morph' | 'composite';
-export type SliderGroup = 'overall' | 'torso' | 'head';
+export type SliderSupport = 'scale' | 'morph' | 'composite' | 'bone';
+export type SliderGroup = 'overall' | 'torso' | 'head' | 'limbs';
 
 export interface SliderDef {
   id: string;
@@ -82,6 +85,28 @@ function bodySlider(key: BodyKey, label: string, half: 'both' | 'pos'): SliderDe
   };
 }
 
+function boneSlider(id: string, label: string, range: (s: BodyStyle) => Range, get: SliderDef['get'], write: SliderDef['write']): SliderDef {
+  return { id, label, group: 'limbs', support: 'bone', unit: '', step: 0.01, range, effective: range, get, write };
+}
+
+/** Các thanh hình thể bằng xương. Tay/chân ghi cả hai bên (đối xứng). */
+export const BONE_SLIDERS: readonly SliderDef[] = [
+  boneSlider('armLength', 'Chiều dài tay', (s) => BODY_LIMITS_BY_STYLE[s].arm.length, (l) => l.body.arms.left.length, (l, v) => {
+    l.body.arms.left.length = v;
+    l.body.arms.right.length = v;
+  }),
+  boneSlider('legLength', 'Chiều dài chân', (s) => BODY_LIMITS_BY_STYLE[s].leg.length, (l) => l.body.legs.left.length, (l, v) => {
+    l.body.legs.left.length = v;
+    l.body.legs.right.length = v;
+  }),
+  boneSlider('neckLength', 'Chiều dài cổ', (s) => BODY_LIMITS_BY_STYLE[s].torso.neckLength, (l) => l.body.torso.neckLength, (l, v) => {
+    l.body.torso.neckLength = v;
+  }),
+  boneSlider('back', 'Độ cong lưng (gù / ưỡn)', (s) => BODY_LIMITS_BY_STYLE[s].torso.back, (l) => l.body.torso.back, (l, v) => {
+    l.body.torso.back = v;
+  }),
+];
+
 /** Các thanh có tác dụng thật. */
 export const SHAPE_SLIDERS: readonly SliderDef[] = [
   {
@@ -120,16 +145,20 @@ export const SHAPE_SLIDERS: readonly SliderDef[] = [
       l.face.structure.headSize = v;
     },
   },
+  ...BONE_SLIDERS,
 ];
 
 /** Trường hình thể có trong dữ liệu nhưng chưa có morph/xương nối tới mô hình. */
 export const UNSUPPORTED_SHAPE: readonly { id: string; label: string; reason: string }[] = [
-  { id: 'neckLength', label: 'Chiều dài cổ', reason: 'Cần đổi độ dài xương cổ, MpfbAvatar chưa hỗ trợ.' },
-  { id: 'back', label: 'Lưng', reason: 'Mô hình chưa có morph lưng.' },
-  { id: 'arms', label: 'Tay (bắp tay, cẳng tay, chiều dài, bàn tay)', reason: 'Chưa có morph tay; chiều dài tay cần đổi xương.' },
-  { id: 'legs', label: 'Chân (đùi, bắp chân, chiều dài, bàn chân)', reason: 'Chưa có morph chân; chiều dài chân cần đổi xương.' },
+  { id: 'arms', label: 'Tay (bắp tay, cẳng tay, bàn tay)', reason: 'Chưa có morph tay; chiều dài tay đã chỉnh được bằng xương.' },
+  { id: 'legs', label: 'Chân (đùi, bắp chân, bàn chân)', reason: 'Chưa có morph chân; chiều dài chân đã chỉnh được bằng xương.' },
   { id: 'headsTall', label: 'Số đầu trên chiều cao', reason: 'Là số suy ra, mô hình chỉ có hai tỉ lệ cố định (người thật, chibi).' },
 ];
+
+/** Thanh có dùng được với mô hình này không: thanh xương chỉ hiện khi rig hỗ trợ. */
+export function sliderAvailable(d: SliderDef, model: string): boolean {
+  return d.support !== 'bone' || modelSupportsBoneShape(model);
+}
 
 export function getSlider(id: string): SliderDef | undefined {
   return SHAPE_SLIDERS.find((s) => s.id === id);

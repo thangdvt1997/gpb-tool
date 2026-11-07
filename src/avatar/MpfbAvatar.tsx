@@ -20,6 +20,7 @@ import type { EmoteId } from '../emotes/types';
 import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
+import { applyBoneShape, boneShapeOf, footDrop, REST_SPANS } from './boneShape';
 import { FallbackAvatar } from './FallbackAvatar';
 import {
   FingerGrip,
@@ -495,10 +496,15 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
 
   const heightM = targetHeightM(style, frame, look?.body.heightCm);
   const scale = heightM / rig.nativeHeight;
+  // Hình thể bằng xương (tay, chân, cổ, lưng): áp lên skeleton dùng chung với vỏ trang phục.
+  const shape = useMemo(() => boneShapeOf(look), [look]);
+  useEffect(() => applyBoneShape(rig.root, shape), [rig, shape]);
+  // Chân dài/ngắn đổi vị trí bàn chân thấp nhất: tính lại mặt sàn và độ cao hông (IK chân và camera theo đó).
+  const drop = footDrop(REST_SPANS[mpfbModelFor(style, frame)], shape);
   // Chân chạm y = 0: dịch lên bù đáy chân của mesh (khoảng 2,4 đến 2,7 cm ở tệp gốc).
-  const groundY = -rig.minY * scale;
+  const groundY = -(rig.minY - drop) * scale;
   // rootY của AvatarPose tính theo hông 0,86 m của rig dự phòng: quy đổi theo độ cao hông thật.
-  const rootYScale = (rig.hipY * scale) / POSE_HIP_HEIGHT;
+  const rootYScale = ((rig.hipY + drop) * scale) / POSE_HIP_HEIGHT;
 
   const expressionBase = EXPRESSION_FACE[look?.face.expression ?? 'neutral'] ?? {};
 
