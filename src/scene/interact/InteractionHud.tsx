@@ -3,6 +3,7 @@ import { activateFocus, chooseAction, closeMenu, useInteractionSnapshot } from '
 import { updateInteractSettings, useInteractSettings } from './settings';
 import { resetAllObjects } from './objects/resetObjects';
 import { ItemInspectHud } from './objects/ItemInspectHud';
+import { CameraPresetBar } from '../controls/CameraPresetBar';
 import './interaction.css';
 
 /** Thiết bị cảm ứng (con trỏ thô hoặc có điểm chạm). Theo dõi đổi chế độ (máy lai, giả lập DevTools). */
@@ -48,6 +49,7 @@ export function InteractionHud() {
     <>
       <InteractionHudMain />
       <ItemInspectHud />
+      <CameraPresetBar />
     </>
   );
 }

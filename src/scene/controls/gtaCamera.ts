@@ -32,6 +32,7 @@ import {
 } from './safePosition';
 import { getControls, setPaused, subscribeControls } from './session';
 import { pushServerReposition, takeServerReposition } from './serverReposition';
+import { cyclePreset, getActivePreset, setActivePresetId, setPresetApplier } from './cameraPresets';
 
 export const CAM = {
   minDist: 2.5,
@@ -677,6 +678,11 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
         toggleOverview();
         return;
       }
+      if (isAction(e.code, 'cameraPreset') && !e.repeat && !e.isComposing && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target) && !getControls().paused) {
+        e.preventDefault();
+        cyclePreset();
+        return;
+      }
       if (!isAction(e.code, 'cancel') || e.isComposing || isTyping(e.target) || getControls().paused) return;
       if (!cameraModes.canEscape()) return;
       e.preventDefault();
@@ -684,12 +690,32 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
       cameraModes.escape();
     };
     window.addEventListener('keydown', onKey, true);
+    // Preset camera: vào overview rồi đặt điểm bám, góc, khoảng cách; null = thoát về camera theo nhân vật.
+    setPresetApplier((pre) => {
+      if (pre === null) {
+        setActivePresetId(null);
+        cameraModes.release(MODE_SOURCE.overview);
+        return;
+      }
+      cameraModes.request('overview', MODE_SOURCE.overview, { escapable: true });
+      setActivePresetId(pre.id);
+      const pol = MODE_POLICY.overview;
+      rig.yaw = pre.yaw;
+      rig.pitchGoal = Math.min(pol.maxPitch, Math.max(pol.minPitch, pre.pitch));
+      rig.wantDist = Math.min(pol.maxDist, Math.max(pol.minDist, pre.dist));
+    });
+    const offPresetMode = cameraModes.subscribe((c) => {
+      if (c.to !== 'overview') setActivePresetId(null);
+    });
     // Cho CSS và kiểm thử trình duyệt biết chế độ camera hiện tại (data-camera-mode trên <body>).
     const markMode = (): void => { document.body.dataset.cameraMode = cameraModes.getMode(); };
     markMode();
     const unsubMode = cameraModes.subscribe(markMode);
     return () => {
       unsubMode();
+      offPresetMode();
+      setPresetApplier(null);
+      setActivePresetId(null);
       delete document.body.dataset.cameraMode;
       window.removeEventListener('keydown', onKey, true);
       detach();
@@ -702,7 +728,9 @@ export function useGtaCamera({ rig, positionRef, obstacles, bounds, getFrame, en
     if (!enabled) return;
     const mode = syncModes(cameraModes);
     const p = positionRef.current;
-    updateGtaCamera(rig, state.camera, p.x, p.y, p.z, dt, obstacles, bounds, getFrame(), mode);
+    // Camera điểm đặt sẵn: chỉ trong overview, bám điểm của preset thay cho nhân vật (thoát overview thì tự bỏ).
+    const pre = mode === 'overview' ? getActivePreset() : null;
+    updateGtaCamera(rig, state.camera, pre ? pre.x : p.x, p.y, pre ? pre.z : p.z, dt, obstacles, bounds, getFrame(), mode);
 
     // Near-clip: gần khi camera ở mắt hoặc sát nhân vật, có trễ để không đổi qua lại.
     const cam = state.camera as PerspectiveCamera;
