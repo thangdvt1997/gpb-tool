@@ -94,16 +94,39 @@ for (const p of PROFILES) {
   }
 }
 
-// PHÁT HIỆN: App chỉ mount InteractionHud/InteractionHelp; TouchControls (joystick .ctl-joystick) nằm trong
-// InteractPrompt.tsx (InteractHelp) và KHÔNG được mount ở đâu, dù gợi ý nói "Joystick để đi". Trên điện thoại
-// hiện chưa có joystick. Sửa nằm ở src/scene/interact (ngoài phạm vi worktree này). Bỏ fixme khi đã nối.
-test.fixme('joystick cảm ứng hiện trên điện thoại (chưa được mount trong App)', async ({ browser }) => {
+// Joystick cảm ứng: kéo thì nhân vật di chuyển (đọc vị trí qua ?debug=controls). Dùng chuột Playwright sinh
+// pointer events (joystick lắng nghe PointerEvent, không phân biệt loại con trỏ).
+test('joystick cảm ứng hiện và kéo thì nhân vật di chuyển', async ({ browser }) => {
   const ctx = await browser.newContext({ ...devices['Pixel 7'] });
   const page = await ctx.newPage();
+  const errors = collectErrors(page);
   await mockSession(page);
-  await page.goto('/');
+  await page.goto('/?debug=controls');
   await waitForRenderedCanvas(page);
+  const skip = page.getByRole('button', { name: 'Bỏ qua' });
+  await skip.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => undefined);
   await skipTour(page);
-  await expect(page.locator('.ctl-joystick')).toBeVisible();
+  const joy = page.locator('.ctl-joystick');
+  await expect(joy).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nhảy', exact: true })).toBeVisible();
+  const pos = () => page.evaluate(() => {
+    const h = (window as unknown as { __gpbControls: { x: number; z: number } }).__gpbControls;
+    return { x: h.x, z: h.z };
+  });
+  await expect.poll(async () => (await pos()).x !== 0 || (await pos()).z !== 0, { timeout: 30_000 }).toBe(true);
+  const a = await pos();
+  const box = (await joy.boundingBox())!;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx, cy - box.width / 2 + 2, { steps: 5 });
+  await page.waitForTimeout(2500);
+  const b = await pos();
+  await page.mouse.up();
+  const moved = Math.hypot(b.x - a.x, b.z - a.z);
+  expect(moved, `nhân vật phải di chuyển khi kéo joystick (${moved.toFixed(2)} m)`).toBeGreaterThan(0.2);
+  await page.screenshot({ path: `${SHOTS}/joystick.png` });
+  expect(errors, errors.join('\n')).toEqual([]);
   await ctx.close();
 });

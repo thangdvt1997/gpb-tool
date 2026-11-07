@@ -52,8 +52,7 @@ test('axe + cây truy cập: panel chính (Trợ giúp, Cài đặt, Thư viện
     }
     const snap = await page.accessibility?.snapshot?.({ root: await dlg.elementHandle() as never }).catch(() => null);
     if (snap) expect(snap.role).toBe('dialog');
-    // Ngoại lệ đã biết, ngoài phạm vi task này: Thư viện (src/library) có li[role=option] chứa nút (nested-interactive).
-    const v = (await axe(page, '[role=dialog]')).filter((x) => !(dlgName === 'Thư viện asset' && x.id === 'nested-interactive'));
+    const v = await axe(page, '[role=dialog]');
     if (v.length) found.push({ dlg: dlgName, v });
     await page.screenshot({ path: `${SHOTS}/axe-${btn}.png` });
     await dlg.getByRole('button', { name: close }).click();

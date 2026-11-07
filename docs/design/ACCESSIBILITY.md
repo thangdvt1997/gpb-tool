@@ -48,9 +48,6 @@ Spec ở `e2e-new/mobile.spec.ts` và `e2e-new/a11y.spec.ts` (Playwright, Chromi
 - axe-core (cài ngoài repo, `/tmp/axe-dir`, biến `AXE_PATH`) trên màn đăng nhập, Trợ giúp, Cài đặt, Thư viện: không còn lỗi critical/serious. Đã sửa: tương phản `.sp-todo` trong Cài đặt.
 - HelpCenter là dialog modal: focus vào ô tìm khi mở, Tab không thoát khỏi hộp, Esc đóng, trả focus về nút mở.
 
-Phát hiện còn mở (ngoài phạm vi, cần người phụ trách module):
-- Joystick cảm ứng (`TouchControls` trong `src/scene/interact/InteractPrompt.tsx`) không được mount trong App (App dùng `InteractionHud`/`InteractionHelp`), dù gợi ý ghi "Joystick để đi". Test `fixme` trong mobile.spec.ts.
-- Thư viện: `li[role=option]` chứa nút (axe nested-interactive, serious).
-- Màn ngang thấp (915x412): nhiều lớp nổi (biểu cảm, chụp ảnh, hướng dẫn, nút tương tác) chồng lên nhau và lên cột công cụ.
+Đã xử lý ở lượt sau: joystick cảm ứng được mount lại (`TouchLayer` trong App, dùng chung `touchInput`, `touch.joystickSize`, `buttonsEnabled` với useGtaPlayer; nút tương tác do InteractionHud đảm nhiệm), e2e kéo joystick thì nhân vật di chuyển; Thư viện `li[role=option]` tự là phần tử tương tác (hết nested-interactive); cột công cụ cuộn được và nằm trên các nút nổi (dưới tour) nên chạm được "Cài đặt" ở màn ngang 915x412.
 
 CHƯA KIỂM CHỨNG: NVDA, VoiceOver, TalkBack thật; điện thoại thật (cảm ứng đa điểm, bàn phím ảo, WebGL iOS, vùng an toàn tai thỏ); chỉ có giả lập Chromium và axe.

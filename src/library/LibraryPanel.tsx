@@ -142,14 +142,16 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
       </p>
       <ul ref={gridRef} role="listbox" aria-label="Danh sách asset" onKeyDown={onGridKey} style={gridStyle}>
         {result.items.map((it, i) => (
-          <li key={it.id} role="option" aria-selected={selected === it.id}>
-            <div
-              data-card
-              role="button"
-              tabIndex={i === focusIdx ? 0 : -1}
-              onClick={() => open(it.id)}
-              style={{ ...cardStyle, opacity: it.usable ? 1 : 0.6, outline: selected === it.id ? '2px solid #4f8cff' : undefined }}
-            >
+          <li
+            key={it.id}
+            data-card
+            role="option"
+            aria-selected={selected === it.id}
+            tabIndex={i === focusIdx ? 0 : -1}
+            onClick={() => open(it.id)}
+            style={{ ...cardStyle, opacity: it.usable ? 1 : 0.6, outline: selected === it.id ? '2px solid #4f8cff' : undefined }}
+          >
+            <div>
               <strong style={{ fontSize: 13 }}>{favs.includes(it.id) ? '★ ' : ''}{it.name}</strong>
               <div style={{ fontSize: 11, color: '#9aa8c7' }}>{KIND_LABELS[it.kind]}{it.bytes !== null ? ` · ${formatBytes(it.bytes)}` : ''}</div>
               {!it.usable && <div style={{ fontSize: 11, color: '#f2b632' }}>Không dùng được</div>}

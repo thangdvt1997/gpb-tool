@@ -11,7 +11,7 @@ export {
   type InteractTarget,
 } from './geometry';
 export { InteractTracker, useInteractSelect } from './InteractTracker';
-export { InteractHelp, InteractPrompt } from './InteractPrompt';
+export { InteractHelp, InteractPrompt, TouchLayer } from './InteractPrompt';
 export { useInteractSnapshot } from './store';
 // Khung mới (thay InteractTracker, InteractPrompt, InteractHelp): xem docs/design/INTERACTIONS.md.
 export { InteractionLayer } from './InteractionLayer';
