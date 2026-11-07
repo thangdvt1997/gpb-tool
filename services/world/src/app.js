@@ -2,7 +2,7 @@ import express from 'express';
 import { createAuthMiddleware } from './auth.js';
 
 // HTTP chỉ còn health và snapshot đọc. Kênh realtime là WebSocket (wsServer.js), không còn SSE.
-export function createApp({ world, hub, presence, authClient }) {
+export function createApp({ world, hub, presence, authClient, turn }) {
   const app = express();
   app.disable('x-powered-by');
 
@@ -20,6 +20,13 @@ export function createApp({ world, hub, presence, authClient }) {
 
   app.get('/api/world/presence', (req, res) => {
     res.json({ ok: true, ...world.snapshot(req.user) });
+  });
+
+  // Credential TURN ngắn hạn cho thoại WebRTC. Chỉ người đã đăng nhập (middleware ở trên).
+  app.get('/api/world/turn', (req, res) => {
+    const out = turn && turn.issue(req.user);
+    if (!out) return res.status(503).json({ ok: false, error: 'turn_unavailable' });
+    return res.json({ ok: true, ...out });
   });
 
   app.use((_req, res) => {

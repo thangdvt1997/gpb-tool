@@ -1,0 +1,47 @@
+# Bản sao cấu hình chạy thật ở /home/cc/gpb-turn (không có .env). .env chỉ cần: TURN_SECRET=<openssl rand -hex 32>, chmod 600.
+# World cần cùng secret: TURN_SECRET, TURN_URLS=turn:198.204.229.10:3478?transport=udp,turn:198.204.229.10:3478?transport=tcp
+# coturn cho thoại WebRTC của GP văn phòng 3D (task 25b). Tên project: gpb-turn.
+# Publish 3478 udp+tcp và relay 49160-49200/udp (docker bỏ qua ufw với cổng publish).
+# Gỡ: docker compose down (xem README trong báo cáo).
+name: gpb-turn
+services:
+  coturn:
+    image: coturn/coturn:4.6.2
+    container_name: gpb-turn-coturn
+    restart: unless-stopped
+    network_mode: bridge  # mạng mặc định: pool địa chỉ docker đã cạn, không tạo network mới
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49160-49200:49160-49200/udp"
+    command:
+      - -n
+      - --log-file=stdout
+      - --realm=gp.daisoncoop.com
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --listening-port=3478
+      - --external-ip=198.204.229.10/172.17.0.2
+      - --min-port=49160
+      - --max-port=49200
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      - --user-quota=4
+      - --total-quota=100
+      - --max-bps=262144
+      - --stale-nonce=600
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+      - --denied-peer-ip=224.0.0.0-255.255.255.255
+    deploy:
+      resources:
+        limits:
+          memory: 256M
