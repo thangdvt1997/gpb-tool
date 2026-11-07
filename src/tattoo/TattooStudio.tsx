@@ -8,7 +8,9 @@ import { emptyDoc, type TattooDoc } from './schema';
 
 export interface TattooStudioProps { model: ModelId; onClose: () => void }
 
+import { useReturnFocus } from '../a11y/useReturnFocus';
 export function TattooStudio({ model, onClose }: TattooStudioProps) {
+  useReturnFocus();
   const [masks, setMasks] = useState<RegionMask[] | null>(null);
   const [error, setError] = useState('');
   const [doc, setDoc] = useState<TattooDoc>(() => getTattooDoc(model));

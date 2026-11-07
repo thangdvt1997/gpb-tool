@@ -22,7 +22,9 @@ export interface LibraryPanelProps {
   items?: readonly LibraryItem[];
 }
 
+import { useReturnFocus } from '../a11y/useReturnFocus';
 export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
+  useReturnFocus();
   const lib = useMemo(() => (given ? { items: [...given], duplicates: [] as string[] } : buildDefaultLibrary()), [given]);
   const byId = useMemo(() => new Map(lib.items.map((i) => [i.id, i])), [lib]);
   const facets = useMemo(() => collectFacets(lib.items), [lib]);
