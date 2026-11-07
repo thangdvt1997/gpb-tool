@@ -18,12 +18,14 @@ export interface MemberActions {
   kick: boolean;
   mute: boolean;
   setRole: boolean;
+  /** Chuyển quyền chủ phòng (owner.transfer). */
+  transfer: boolean;
 }
 
 /** Nút nào dùng được cho một thành viên: không với chính mình hoặc owner khác. */
 export function actionsFor(selfRole: string, selfId: string | null, m: MemberInfo): MemberActions {
   const ok = canManage(selfRole) && m.id !== selfId && m.role !== 'owner';
-  return { kick: ok, mute: ok, setRole: ok };
+  return { kick: ok, mute: ok, setRole: ok, transfer: ok };
 }
 
 /** Owner trước, rồi theo tên (không phân biệt hoa thường) để danh sách ổn định. */
@@ -39,6 +41,7 @@ const ERR: Record<string, string> = {
   cannot_target_owner: 'Không thể tác động lên chủ phòng',
   cannot_grant_owner: 'Không thể cấp vai trò chủ phòng',
   invalid_role: 'Vai trò không hợp lệ',
+  confirm_required: 'Cần xác nhận để chuyển quyền',
   rate_limited: 'Thao tác quá nhanh, thử lại sau',
 };
 

@@ -14,7 +14,7 @@ describe('memberLogic', () => {
   it('không có nút cho chính mình hoặc owner khác', () => {
     expect(actionsFor('owner', 'o', m('o', 'owner')).kick).toBe(false);
     expect(actionsFor('owner', 'o', m('p', 'owner')).setRole).toBe(false);
-    expect(actionsFor('owner', 'o', m('a', 'member'))).toEqual({ kick: true, mute: true, setRole: true });
+    expect(actionsFor('owner', 'o', m('a', 'member'))).toEqual({ kick: true, mute: true, setRole: true, transfer: true });
     expect(actionsFor('editor', 'e', m('a', 'member')).kick).toBe(false);
   });
   it('sắp xếp owner trước, rồi theo tên', () => {

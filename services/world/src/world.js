@@ -19,6 +19,7 @@ import { createLeaseStore, parseResource } from './leases.js';
 import { PoseError, parsePose } from './pose.js';
 import { PresenceError } from './presence.js';
 import { createRateLimiter } from './rateLimit.js';
+import { RANGE_SLACK, SOCIAL_ACTIONS, createInviteStore, isValidInviteId, publicInvite } from './social.js';
 import { can, capabilitiesOf, createRoleStore } from './roles.js';
 import { createEventLog, createSessions } from './sessions.js';
 
@@ -36,11 +37,14 @@ export function createWorld({
   chat = createChat({ now, config: { ...CHAT, nearRadius: CHAT_NEAR_RADIUS } }),
   sessions = createSessions({ resumeTtlMs: RESUME_TTL_MS }),
   eventLog = createEventLog({ max: EVENT_LOG_MAX }),
+  invites = createInviteStore(),
 }) {
   let tick = 0;
   // Định danh lần chạy của server: đổi khi restart để client biết trạng thái cũ không còn giá trị.
   const epoch = randomBytes(6).toString('base64url');
   const editLimiter = createRateLimiter({ capacity: 10, refillPerSec: 10 });
+  // Hành động xã hội: tối đa 5 tin liên tiếp, nạp 1 tin mỗi giây mỗi người.
+  const socialLimiter = createRateLimiter({ capacity: 5, refillPerSec: 1 });
   const objects = new Map(); // tenant -> Map(resource -> {revision, x?, z?, yaw?, by, at})
   const commitCache = new Map(); // `${tenant}:${user}:${requestId}` -> kết quả (giới hạn 256)
 
@@ -172,6 +176,7 @@ export function createWorld({
    */
   function leave(user, reason) {
     const last = presence.get(user.tenantId, user.id);
+    dropInvites(user);
     if (presence.remove(user.tenantId, user.id)) {
       hub.broadcast(user.tenantId, { type: 'leave', id: user.id, reason, tick });
     }
@@ -191,6 +196,7 @@ export function createWorld({
     for (const { tenantId, id } of presence.sweep(t)) {
       hub.broadcast(tenantId, { type: 'leave', id, reason: 'timeout', tick });
     }
+    invites.sweep(t);
     for (const { tenantId, ownerId, lease } of leases.sweep(t)) {
       leaseEvent(tenantId, lease, 'expired');
       sessions.noteLost({ tenantId, id: ownerId }, lease.resource, 'expired');
@@ -201,6 +207,7 @@ export function createWorld({
     if (tick % 600 === 0) {
       limiter.prune(t);
       editLimiter.prune(t);
+      socialLimiter.prune(t);
       chat.prune();
       sessions.sweep(t);
     }
@@ -310,6 +317,89 @@ export function createWorld({
     return hub.send(client, res);
   }
 
+  // ----- Hành động xã hội (TASK 15) -----
+
+  function sendToUser(tenantId, id, msg) {
+    for (const c of hub.clientsOf({ tenantId, id })) hub.send(c, msg);
+  }
+
+  /** Người rời hoặc bị kick: hủy mọi lời mời liên quan và báo bên kia. */
+  function dropInvites(user) {
+    for (const inv of invites.involving(user.tenantId, user.id)) {
+      invites.remove(user.tenantId, inv.id);
+      if (inv.from === user.id) sendToUser(inv.tenantId, inv.to, { type: 'social_cancel', inviteId: inv.id, by: inv.from });
+      else sendToUser(inv.tenantId, inv.from, { type: 'social_respond', inviteId: inv.id, by: inv.to, answer: 'decline' });
+    }
+  }
+
+  function handleSocial(user, client, m) {
+    const tenantId = user.tenantId;
+    const inviteId = m.type === 'social_invite' ? m.invite && m.invite.id : m.inviteId;
+    const denied = (code) => hub.send(client, { type: 'social.denied', code, inviteId: typeof inviteId === 'string' ? inviteId.slice(0, 64) : undefined });
+    const d = can(roles.actorOf(user), 'social.act', { tenantId });
+    if (!d.ok) return denied(d.reason);
+    const rl = socialLimiter.take(user.id, now());
+    if (!rl.ok) return hub.send(client, { type: 'social.denied', code: 'rate_limited', inviteId: typeof inviteId === 'string' ? inviteId.slice(0, 64) : undefined, retryAfterMs: rl.retryAfterMs });
+    const t = now();
+    const near = (a, b, action) => Boolean(a) && Boolean(b) && dist(a, b) <= action.range * RANGE_SLACK;
+    const blockedByTarget = (targetId) => chat.isBlockedBy(tenantId, targetId, user.id);
+
+    if (m.type === 'social_invite') {
+      const src = m.invite && typeof m.invite === 'object' ? m.invite : {};
+      const action = SOCIAL_ACTIONS[src.actionId];
+      if (!action || !action.consent || !isValidInviteId(src.id) || typeof src.to !== 'string') return denied('invalid_invite');
+      const target = findTarget(user, src.to);
+      if (!target || target.id === user.id) return denied('target_not_found');
+      if (!can(roles.actorOf(target), 'social.act', { tenantId }).ok) return denied('target_not_found');
+      if (!near(presence.get(tenantId, user.id), presence.get(tenantId, target.id), action)) return denied('too_far');
+      // Người nhận đã chặn người mời: coi như bị từ chối, không lộ việc bị chặn.
+      if (blockedByTarget(target.id)) return hub.send(client, { type: 'social_respond', inviteId: src.id, by: target.id, answer: 'decline' });
+      const r = invites.create(tenantId, { id: src.id, actionId: src.actionId, from: user.id, to: target.id }, t);
+      if (!r.ok) {
+        if (r.error === 'target_busy') return hub.send(client, { type: 'social_respond', inviteId: src.id, by: target.id, answer: 'decline' });
+        return denied(r.error);
+      }
+      sendToUser(tenantId, target.id, { type: 'social_invite', invite: publicInvite(r.invite) });
+      return undefined;
+    }
+
+    if (m.type === 'social_play') {
+      const action = SOCIAL_ACTIONS[m.actionId];
+      if (!action || action.consent || typeof m.to !== 'string') return denied('invalid_action');
+      const target = findTarget(user, m.to);
+      if (!target || target.id === user.id) return denied('target_not_found');
+      if (!near(presence.get(tenantId, user.id), presence.get(tenantId, target.id), action)) return denied('too_far');
+      if (blockedByTarget(target.id)) return undefined;
+      sendToUser(tenantId, target.id, { type: 'social_play', actionId: m.actionId, from: user.id, to: target.id, startTime: t });
+      return undefined;
+    }
+
+    const inv = typeof m.inviteId === 'string' ? invites.find(tenantId, m.inviteId) : null;
+    if (!inv) return denied('invite_not_found');
+    if (t >= inv.expiresAt) {
+      invites.remove(tenantId, inv.id);
+      return denied('expired');
+    }
+    if (m.type === 'social_cancel') {
+      if (inv.from !== user.id) return denied('forbidden');
+      invites.remove(tenantId, inv.id);
+      sendToUser(tenantId, inv.to, { type: 'social_cancel', inviteId: inv.id, by: user.id });
+      return undefined;
+    }
+    // social_respond
+    if (inv.to !== user.id) return denied('forbidden');
+    if (m.answer !== 'accept' && m.answer !== 'decline') return denied('invalid_answer');
+    invites.remove(tenantId, inv.id);
+    let answer = m.answer;
+    if (answer === 'accept' && !near(presence.get(tenantId, inv.from), presence.get(tenantId, inv.to), SOCIAL_ACTIONS[inv.actionId])) {
+      // Đi xa trong lúc chờ: hủy cả hai phía thay vì cho chạy hành động chạm tay từ xa.
+      answer = 'decline';
+      denied('too_far');
+    }
+    sendToUser(tenantId, inv.from, { type: 'social_respond', inviteId: inv.id, by: user.id, answer });
+    return undefined;
+  }
+
   function handleChat(user, client, m) {
     const fail = (code, extra) => hub.send(client, { type: 'error', code, clientMsgId: m.clientMsgId, ...extra });
     const d = can(roles.actorOf(user), 'chat.send', { tenantId: user.tenantId });
@@ -359,7 +449,7 @@ export function createWorld({
       return hub.send(client, { type: 'member.list', requestId, members: [...seen.values()] });
     }
     const target = findTarget(user, m.target);
-    const action = { 'mod.kick': 'member.kick', 'mod.mute': 'member.mute', 'role.set': 'role.set' }[m.type];
+    const action = { 'mod.kick': 'member.kick', 'mod.mute': 'member.mute', 'role.set': 'role.set', 'owner.transfer': 'owner.transfer' }[m.type];
     const d = can(actor, action, {
       tenantId: user.tenantId,
       targetId: typeof m.target === 'string' ? m.target : undefined,
@@ -375,6 +465,7 @@ export function createWorld({
     if (m.type === 'mod.kick') {
       roles.kick(user.tenantId, target.id);
       audit(user, action, target.id, 'ok', m);
+      dropInvites(target);
       releaseUser(target, 'kicked');
       sessions.drop(target);
       if (presence.remove(user.tenantId, target.id)) hub.broadcast(user.tenantId, { type: 'leave', id: target.id, reason: 'left', tick });
@@ -388,6 +479,16 @@ export function createWorld({
       audit(user, action, target.id, 'ok', m, on ? `${dur}ms` : 'off');
       for (const c of hub.clientsOf(target)) hub.send(c, { type: 'muted', on, durationMs: on ? dur : 0 });
       return result(true, { target: target.id, on });
+    }
+    if (m.type === 'owner.transfer') {
+      if (m.confirm !== true) return result(false, { error: 'confirm_required' });
+      roles.transferOwner(user.tenantId, user.id, target.id);
+      audit(user, action, target.id, 'ok', m, 'owner->editor');
+      for (const u of [user, target]) {
+        const role = roles.roleOf(u);
+        for (const c of hub.clientsOf(u)) hub.send(c, { type: 'role', role, capabilities: capabilitiesOf(role) });
+      }
+      return result(true, { target: target.id, role: 'owner' });
     }
     // role.set: có hiệu lực ngay với phiên đang mở (thu hồi lease không còn quyền, gửi capability mới).
     roles.setRole(user.tenantId, target.id, m.role);
@@ -415,6 +516,12 @@ export function createWorld({
       case 'edit.commit':
         handleEdit(user, client, m);
         return true;
+      case 'social_invite':
+      case 'social_respond':
+      case 'social_cancel':
+      case 'social_play':
+        handleSocial(user, client, m);
+        return true;
       case 'chat':
         handleChat(user, client, m);
         return true;
@@ -432,6 +539,7 @@ export function createWorld({
       case 'mod.kick':
       case 'mod.mute':
       case 'role.set':
+      case 'owner.transfer':
       case 'audit.list':
       case 'member.list':
         handleModeration(user, client, m);

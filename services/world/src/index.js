@@ -4,6 +4,7 @@ import {
   MAX_CONNECTIONS,
   MAX_CONNECTIONS_PER_USER,
   MAX_PRESENCE_PER_TENANT,
+  KICK_COOLDOWN_MS,
   MAX_SEND_BUFFER_BYTES,
   POSE_RATE,
   PRESENCE_TTL_MS,
@@ -12,6 +13,7 @@ import {
 import { createHub } from './hub.js';
 import { createPresenceStore } from './presence.js';
 import { createRateLimiter } from './rateLimit.js';
+import { createRoleStore } from './roles.js';
 import { createWorld } from './world.js';
 import { attachWorldSocket } from './wsServer.js';
 
@@ -24,7 +26,14 @@ const hub = createHub({
   maxPerUser: MAX_CONNECTIONS_PER_USER,
   maxBufferBytes: MAX_SEND_BUFFER_BYTES,
 });
-const world = createWorld({ presence, limiter, hub });
+// Vai trò phòng lưu bền khi đặt WORLD_DATA_DIR (thư mục ghi được); không đặt thì chỉ giữ trong bộ nhớ.
+const roles = createRoleStore({
+  kickMs: KICK_COOLDOWN_MS,
+  dataDir: process.env.WORLD_DATA_DIR || null,
+  onError: (err) => console.error(`[world] lỗi lưu/đọc vai trò: ${err && err.message ? err.message : 'unknown'}`),
+});
+if (!process.env.WORLD_DATA_DIR) console.warn('[world] WORLD_DATA_DIR chưa đặt: vai trò phòng không được lưu bền');
+const world = createWorld({ presence, limiter, hub, roles });
 const app = createApp({ world, hub, presence, authClient });
 
 world.start();
