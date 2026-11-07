@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { CharacterLook, GarmentPattern, OutfitSlot } from '../../fashion/types';
 import { deriveBodyMorphWeights, writeBodyMorphs } from './bodyMorphs';
 import { hiddenSkinTriangles, resolveLayers, visibleSkinIndex } from './coverage';
 import { bodyPatterns, drawPatterns, patternSignature, PATTERN_CANVAS_SIZE } from './patternTexture';
+import { baseGeometryOf, claimBody, isShellShaderSource, releaseBody } from './outfitGuard';
 import { MpfbAccessories } from './MpfbAccessories';
 import { planOutfit, type PiecePlan } from './plan';
 import {
@@ -113,7 +114,10 @@ function applyPatterns(shell: Shell, patterns: GarmentPattern[]): void {
  * Component không render gì vào cây React; nó thêm mesh vào cha của mesh thân và gỡ khi unmount.
  */
 export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProps) {
+  const gl = useThree((st) => st.gl);
   const body = rig.morphMesh && (rig.morphMesh as THREE.SkinnedMesh).isSkinnedMesh ? (rig.morphMesh as THREE.SkinnedMesh) : null;
+  const token = useRef({}).current;
+  const [shaderFailed, setShaderFailed] = useState(false);
   const lookRef = useRef(look);
   lookRef.current = look;
   const shellsRef = useRef<Shell[]>([]);
@@ -123,12 +127,34 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
   const weightsRef = useRef(weights);
   weightsRef.current = weights;
 
+  // Shader vỏ lỗi biên dịch (GPU/driver không hỗ trợ): bỏ vỏ, trả thân gốc (da không bị ẩn) thay vì mất thân.
+  useEffect(() => {
+    const prev = gl.debug.onShaderError;
+    gl.debug.onShaderError = (g, program, vs, fs) => {
+      prev?.(g, program, vs, fs);
+      const src = (g as WebGL2RenderingContext).getShaderSource(fs);
+      if (isShellShaderSource(src)) {
+        console.error('Shader vỏ trang phục lỗi biên dịch: hiện thân gốc, không dựng vỏ.');
+        setShaderFailed(true);
+      }
+    };
+    return () => {
+      gl.debug.onShaderError = prev;
+    };
+  }, [gl]);
+
   // Dựng/dọn vỏ khi cấu trúc bộ đồ đổi.
   useEffect(() => {
     const current = lookRef.current;
     const parent = body?.parent;
-    if (!body || !parent || !current) return;
-    const baseGeo = body.geometry;
+    if (!body || !parent || !current || shaderFailed) return;
+    // Chỉ một bộ dựng vỏ cho mỗi mesh thân.
+    if (!claimBody(body, token)) {
+      console.warn('Mesh thân đã có bộ dựng trang phục khác, bỏ qua bộ thứ hai.');
+      return;
+    }
+    const baseGeo = baseGeometryOf(body);
+    body.geometry = baseGeo;
     const { data, cls } = analyzeBody(body, baseGeo);
     const plan = planOutfit(current);
     for (const s of plan.skipped.filter((x) => x.slot !== 'hat')) console.warn(`Trang phục chưa dựng được (${s.slot}/${s.garmentId}): ${s.reason}`);
@@ -189,10 +215,10 @@ export function MpfbOutfit({ rig, look, driveBodyMorphs = true }: MpfbOutfitProp
         (s.mesh.customDistanceMaterial as THREE.Material | undefined)?.dispose();
       }
       for (const k of acquired) geometryPool.release(k);
-      body.geometry = baseGeo;
+      releaseBody(body, token);
       if (skinKey) geometryPool.release(skinKey);
     };
-  }, [body, structSig]);
+  }, [body, structSig, shaderFailed]);
 
   // Màu và chất liệu: chỉ cập nhật uniform, không dựng lại.
   useEffect(() => {
