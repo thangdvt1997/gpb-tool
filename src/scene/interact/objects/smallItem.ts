@@ -7,7 +7,8 @@ import { emitInteractEvent } from './interactEvents';
  * Đồ nhỏ (điện thoại, cốc, sách, bình nước): nhặt, cầm, đặt lại trên mặt phẳng hợp lệ, trả về chỗ cũ.
  * - Giới hạn một vật trên tay (getHeldItem quét các vật đã đăng ký).
  * - Đặt: validatePlacement kiểm tra nằm trọn trên mặt đặt (ổn định) và không chồng vật khác.
- * - Vật lý thả rơi tự do chưa làm (xem docs, mục chưa kiểm chứng).
+ * - Thả rơi: dropLanding chọn nơi hạ cánh (mặt đặt hợp lệ hoặc sàn trống), fallStep là rơi tự do theo trọng lực.
+ * - Xem trước đặt: evaluatePlacement dùng chung cho hành động và hình xem trước xanh/đỏ (PlacePreview).
  */
 export interface ItemState {
   /** 'home' = chỗ gốc, 'hand' = trên tay, 'placed' = đã đặt ở x,y,z. */
@@ -78,6 +79,68 @@ export function snapToSurface(x: number, z: number, r: number, s: Surface): { x:
     x: Math.min(Math.max(x, s.minX + r), s.maxX - r),
     z: Math.min(Math.max(z, s.minZ + r), s.maxZ - r),
   };
+}
+
+export interface PlacementEval {
+  x: number;
+  z: number;
+  r: number;
+  yaw: number;
+  /** Cao độ mặt đặt được xét (để vẽ xem trước cả khi bị chặn). */
+  surfaceY: number;
+  res: PlaceResult;
+}
+
+/** Một nguồn sự thật cho "đặt ở đâu và có hợp lệ không": hành động Đặt xuống và hình xem trước cùng gọi hàm này. */
+export function evaluatePlacement(
+  player: { x: number; z: number; yaw: number },
+  surface: Surface,
+  r: number,
+  allSurfaces: readonly Surface[],
+  others: readonly Placed[],
+): PlacementEval {
+  const want = placementSpot(player);
+  const snapped = snapToSurface(want.x, want.z, r, surface);
+  return { x: snapped.x, z: snapped.z, r, yaw: player.yaw, surfaceY: surface.y, res: validatePlacement(snapped.x, snapped.z, r, allSurfaces, others) };
+}
+
+export const GRAVITY = 9.8;
+
+export type DropResult =
+  | { ok: true; x: number; y: number; z: number; onSurface: boolean }
+  | { ok: false; reason: 'blocked' };
+
+/**
+ * Thả tự do tại (x,z): rơi xuống mặt đặt hợp lệ nếu có, ngược lại rơi xuống sàn (y=0) khi chỗ đó không bị chặn
+ * (tường, đồ nội thất) và không đè lên đồ đã đặt trên sàn.
+ */
+export function dropLanding(
+  x: number,
+  z: number,
+  r: number,
+  surfaces: readonly Surface[],
+  others: readonly Placed[],
+  floorBlocked: (x: number, z: number) => boolean,
+): DropResult {
+  const onSurface = validatePlacement(x, z, r, surfaces, others);
+  if (onSurface.ok) return { ok: true, x, y: onSurface.y, z, onSurface: true };
+  if (surfaces.some((s) => x + r > s.minX && x - r < s.maxX && z + r > s.minZ && z - r < s.maxZ)) return { ok: false, reason: 'blocked' };
+  if (floorBlocked(x, z) || others.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + r)) return { ok: false, reason: 'blocked' };
+  return { ok: true, x, y: 0, z, onSurface: false };
+}
+
+/** Một bước rơi tự do: trả độ cao và vận tốc mới; chạm đích thì dừng (landed). */
+export function fallStep(y: number, vy: number, targetY: number, dt: number): { y: number; vy: number; landed: boolean } {
+  if (y <= targetY) return { y: targetY, vy: 0, landed: true };
+  const v = vy - GRAVITY * dt;
+  const ny = y + v * dt;
+  return ny <= targetY ? { y: targetY, vy: 0, landed: true } : { y: ny, vy: v, landed: false };
+}
+
+/** Bộ đánh giá xem trước theo id mặt đặt (đăng ký khi tạo surfaceInteractable). Trả null nếu không cầm gì. */
+const previewers = new Map<string, () => PlacementEval | null>();
+export function placementPreviewFor(surfaceId: string): PlacementEval | null {
+  return previewers.get(surfaceId)?.() ?? null;
 }
 
 // ---- Một vật trên tay ----
@@ -159,6 +222,8 @@ export interface SurfaceOptions {
   /** Bán kính và nhà của vật theo id (để kiểm tra chồng và trả về). */
   itemInfo: (itemId: string) => { r: number; home: { x: number; y: number; z: number } } | null;
   allSurfaces?: () => readonly Surface[];
+  /** (x,z) trên sàn có bị chặn (tường, nội thất) không; dùng cho hành động Thả rơi. Mặc định: không chặn. */
+  floorBlocked?: (x: number, z: number) => boolean;
 }
 
 /** Ưu tiên chọn mặt đặt: cầm đồ thì cao hơn máy in, ngăn kéo cùng chỗ; không cầm thì thấp. */
@@ -178,6 +243,11 @@ export function surfaceInteractable(o: SurfaceOptions): InteractableDef {
     }
     return out;
   };
+  previewers.set(o.id, () => {
+    const id = getHeldItem();
+    const info = id ? o.itemInfo(id) : null;
+    return id && info ? evaluatePlacement(o.getPlayer(), o.surface, info.r, o.allSurfaces?.() ?? [o.surface], others(id)) : null;
+  });
   return {
     id: o.id,
     kind: 'surface',
@@ -199,13 +269,26 @@ export function surfaceInteractable(o: SurfaceOptions): InteractableDef {
           const id = getHeldItem();
           const info = id ? o.itemInfo(id) : null;
           if (!id || !info) return;
+          const ev = evaluatePlacement(o.getPlayer(), o.surface, info.r, o.allSurfaces?.() ?? [o.surface], others(id));
+          if (!ev.res.ok) return emitInteractEvent({ type: 'item.denied', id, x: ev.x, z: ev.z, data: { reason: ev.res.reason } });
+          placeItem(id, ev.x, ev.res.y, ev.z, ev.yaw);
+          emitInteractEvent({ type: 'item.place', id, x: ev.x, z: ev.z });
+        },
+      },
+      {
+        id: 'drop',
+        label: 'Thả rơi',
+        when: holding,
+        run: () => {
+          const id = getHeldItem();
+          const info = id ? o.itemInfo(id) : null;
+          if (!id || !info) return;
           const pl = o.getPlayer();
-          const want = placementSpot(pl);
-          const snapped = snapToSurface(want.x, want.z, info.r, o.surface);
-          const res = validatePlacement(snapped.x, snapped.z, info.r, o.allSurfaces?.() ?? [o.surface], others(id));
-          if (!res.ok) return emitInteractEvent({ type: 'item.denied', id, x: snapped.x, z: snapped.z, data: { reason: res.reason } });
-          placeItem(id, snapped.x, res.y, snapped.z, pl.yaw);
-          emitInteractEvent({ type: 'item.place', id, x: snapped.x, z: snapped.z });
+          const at = placementSpot(pl, 0.5);
+          const res = dropLanding(at.x, at.z, info.r, o.allSurfaces?.() ?? [o.surface], others(id), o.floorBlocked ?? (() => false));
+          if (!res.ok) return emitInteractEvent({ type: 'item.denied', id, x: at.x, z: at.z, data: { reason: res.reason } });
+          placeItem(id, res.x, res.y, res.z, pl.yaw);
+          emitInteractEvent({ type: 'item.place', id, x: res.x, z: res.z, data: { dropped: true } });
         },
       },
       {
