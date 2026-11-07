@@ -16,6 +16,7 @@ import {
 } from './config.js';
 import { createChat, CHAT } from './chat.js';
 import { createLeaseStore, parseResource } from './leases.js';
+import { sanitizeAppearance } from './appearance.js';
 import { PoseError, parsePose } from './pose.js';
 import { PresenceError } from './presence.js';
 import { createRateLimiter } from './rateLimit.js';
@@ -45,6 +46,8 @@ export function createWorld({
   const editLimiter = createRateLimiter({ capacity: 10, refillPerSec: 10 });
   // Hành động xã hội: tối đa 5 tin liên tiếp, nạp 1 tin mỗi giây mỗi người.
   const socialLimiter = createRateLimiter({ capacity: 5, refillPerSec: 1 });
+  // Đổi ngoại hình: tối đa 3 tin liên tiếp, nạp 1 tin mỗi 5 giây mỗi người.
+  const appearanceLimiter = createRateLimiter({ capacity: 3, refillPerSec: 0.2 });
   const objects = new Map(); // tenant -> Map(resource -> {revision, x?, z?, yaw?, by, at})
   const commitCache = new Map(); // `${tenant}:${user}:${requestId}` -> kết quả (giới hạn 256)
 
@@ -160,14 +163,32 @@ export function createWorld({
       throw err;
     }
     try {
-      const { created, entry, corrected } = presence.update(user, pose, t);
-      if (created) hub.broadcast(user.tenantId, { type: 'join', id: entry.id, name: entry.name, tick });
+      const { created, entry, corrected, appearance } = presence.update(user, pose, t);
+      if (created) {
+        hub.broadcast(user.tenantId, { type: 'join', id: entry.id, name: entry.name, tick, ...(appearance ? { appearance } : {}) });
+      }
       const accepted = { x: entry.x, z: entry.z, yaw: entry.yaw, anim: entry.anim };
       return { type: 'ack', seq: entry.seq, tick, accepted, corrected };
     } catch (err) {
       if (err instanceof PresenceError) return { type: 'error', code: err.code, seq };
       throw err;
     }
+  }
+
+  /** Nhận ngoại hình. Lọc theo whitelist; sai định dạng hoặc quá lớn thì từ chối, quá nhanh thì rate_limited. */
+  function handleAppearance(user, client, m) {
+    const rl = appearanceLimiter.take(user.id, now());
+    if (!rl.ok) return deny(client, m, 'rate_limited', { retryAfterMs: rl.retryAfterMs });
+    const look = sanitizeAppearance(m.appearance);
+    if (!look) return deny(client, m, 'invalid_appearance');
+    try {
+      presence.setAppearance(user, look);
+    } catch (err) {
+      if (err instanceof PresenceError) return deny(client, m, err.code);
+      throw err;
+    }
+    // Trả bản đã lọc để client đồng bộ với thứ người khác thấy.
+    return hub.send(client, { type: 'appearance.ack', requestId: reqIdOf(m), appearance: look });
   }
 
   /**
@@ -208,6 +229,7 @@ export function createWorld({
       limiter.prune(t);
       editLimiter.prune(t);
       socialLimiter.prune(t);
+      appearanceLimiter.prune(t);
       chat.prune();
       sessions.sweep(t);
     }
@@ -521,6 +543,9 @@ export function createWorld({
       case 'social_cancel':
       case 'social_play':
         handleSocial(user, client, m);
+        return true;
+      case 'appearance':
+        handleAppearance(user, client, m);
         return true;
       case 'chat':
         handleChat(user, client, m);

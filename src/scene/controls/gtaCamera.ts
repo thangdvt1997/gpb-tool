@@ -31,6 +31,7 @@ import {
   type SafeWorld,
 } from './safePosition';
 import { getControls, setPaused, subscribeControls } from './session';
+import { pushServerReposition, takeServerReposition } from './serverReposition';
 
 export const CAM = {
   minDist: 2.5,
@@ -716,7 +717,7 @@ export function requestSafeReturn(): void {
   safeReturnRequested = true;
 }
 
-export type RecoveryReason = 'manual' | 'invalid' | 'fell' | 'outside';
+export type RecoveryReason = 'manual' | 'invalid' | 'fell' | 'outside' | 'server';
 
 export interface CameraSafetyOptions {
   positionRef: MutableRefObject<{ x: number; y: number; z: number }>;
@@ -903,6 +904,30 @@ export function useCameraSafety({
     const manual = safeReturnRequested;
     safeReturnRequested = false;
     const seated = getControls().seated;
+
+    // Máy chủ ghi đè vị trí (ack corrected / resume): máy chủ là nguồn sự thật, đặt lại và cho camera nhảy thẳng.
+    // Đang ngồi thì giữ yêu cầu tới khi đứng dậy.
+    if (!seated) {
+      const ov = takeServerReposition();
+      if (ov !== null) {
+        p.x = ov.x;
+        p.y = 0;
+        p.z = ov.z;
+        haltMotion(motion);
+        if (ov.yaw !== undefined) {
+          motion.yaw = ov.yaw;
+          rig.yaw = ov.yaw;
+        }
+        rig.initialized = false;
+        st.watch.reset();
+        onRecovered?.({ x: ov.x, z: ov.z, source: 'spawn' }, 'server');
+        st.status.fn?.('Máy chủ đã chỉnh lại vị trí của bạn.');
+        return;
+      }
+    } else {
+      const ov = takeServerReposition();
+      if (ov !== null) pushServerReposition(ov);
+    }
 
     if (seated) {
       // Ngồi: vị trí do ghế quyết định; không lấy mẫu, không phục hồi.

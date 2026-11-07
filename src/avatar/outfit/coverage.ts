@@ -70,8 +70,11 @@ export function coverMargin(cls: Classification, spec: ShellClass, variant: Cove
           else m = cap;
         } else if (r === Region.thigh) {
           if (spec.part === 'top') m = (uv - hem) * span;
-          else if (hasBottom && spec.thigh > 0) m = fin(thighEnd - tv) * (thighEnd === Infinity ? 1 : len);
-          else m = -cap;
+          else if (hasBottom && spec.thigh > 0) {
+            m = fin(thighEnd - tv) * (thighEnd === Infinity ? 1 : len);
+            // Liên tục với cạp: đỉnh đùi sát hông cũng chịu lề theo độ cao, nên đường cạp không bị kéo lệch ở hai bên hông.
+            if (spec.part === 'bottom') m = Math.min(m, (spec.waistU - uv) * span);
+          } else m = -cap;
         } else if (r === Region.calf) {
           if (hasBottom && spec.calf > 0) m = (spec.calf - tv) * len;
           else if (hasBottom && spec.thigh > 0) m = Math.min((Math.min(thighEnd, 1) - 1 - tv) * len, -eps);
@@ -82,6 +85,8 @@ export function coverMargin(cls: Classification, spec: ShellClass, variant: Cove
           else if (hasTop && sUp > 0) m = Math.min((Math.min(sUp, 1) - 1 - tv) * len, -eps);
         }
     }
+    // Đầu: lề âm nhưng nhỏ dần về biên cổ áo, để đường cắt cổ không bị kéo lên đầu ở tam giác vắt qua biên.
+    if (r === Region.head && hasTop) m = Math.min(m, Math.min(-1e-4, (spec.neckU - uv) * span));
     out[v] = Math.max(-cap, Math.min(cap, m));
   }
   return out;

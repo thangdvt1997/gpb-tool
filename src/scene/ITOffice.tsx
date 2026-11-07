@@ -34,7 +34,7 @@ import { Floorplan } from './Floorplan';
 import { Player } from './Player';
 import { SceneContext, stateOf, type ObjState, type SceneState } from './context';
 import { PLAYER_RADIUS, collisionRects, labelY, partsOf, toWorldX, toWorldZ, type Part, type V3 } from './layout';
-import { InteractObjects } from './interact/objects/InteractObjects';
+import { InteractObjects, useInteractBlockers } from './interact/objects/InteractObjects';
 import { onInteractEvent } from './interact/objects/interactEvents';
 import { bridgeInteractAudio, getSpatialAudio } from '../audio/spatial';
 import { OFFICE_PROP_BLOCKERS } from './officePropsLayout';
@@ -285,9 +285,10 @@ export function ITOffice({
 
   const reserved = useMemo(() => zone.objects.filter((o) => o.kind === 'reserved'), [zone]);
   const nocObjects = useMemo(() => zone.objects.filter((o) => o.action === 'noc'), [zone]);
+  const interactBlockers = useInteractBlockers();
   const obstacles = useMemo(
-    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects)],
-    [zone, showPlants],
+    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects), ...interactBlockers],
+    [zone, showPlants, interactBlockers],
   );
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
   // Âm thanh khi dùng vật (TASK 14): bus tương tác -> âm tổng hợp có vị trí.

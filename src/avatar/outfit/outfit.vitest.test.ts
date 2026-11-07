@@ -352,10 +352,10 @@ describe('plan: kế hoạch dựng từ look', () => {
 });
 
 describe('compat: ma trận và đề xuất', () => {
-  it('ma trận phủ 56 món; mũ chưa hỗ trợ; váy/đầm hạn chế', () => {
+  it('ma trận phủ 56 món; mũ hỗ trợ (mesh gắn xương); váy/đầm hạn chế', () => {
     const rows = compatibilityMatrix();
     expect(rows.length).toBe(56);
-    expect(rows.filter((r) => r.group === 'hat').every((r) => r.realistic === 'unsupported' && r.chibi === 'unsupported')).toBe(true);
+    expect(rows.filter((r) => r.group === 'hat').every((r) => r.realistic === 'supported' && r.chibi === 'supported')).toBe(true);
     expect(rows.find((r) => r.garmentId === 'bottom-skirt-office')?.realistic).toBe('limited');
     expect(rows.find((r) => r.garmentId === 'inner-tee')?.realistic).toBe('supported');
   });
@@ -368,13 +368,11 @@ describe('compat: ma trận và đề xuất', () => {
     expect(garmentSupport(def, 'chibi').level).toBe('limited');
   });
 
-  it('mặc mũ bị từ chối, giữ nguyên bộ cũ (cùng tham chiếu) kèm lý do và gợi ý', () => {
+  it('mặc mũ được chấp nhận (mũ là mesh procedural, không cần vỏ thân)', () => {
     const prev = makeDefaultLook();
     const p = proposeGarment(prev, 'hat', 'hat-cap');
-    expect(p.status).toBe('rejected');
-    expect(p.look).toBe(prev);
-    expect(p.message).toContain('Giữ bộ cũ');
-    expect(p.issues[0].code).toBe('no_shell');
+    expect(p.status).toBe('ok');
+    expect(p.look.outfit.hat?.garmentId).toBe('hat-cap');
   });
 
   it('mặc nhầm slot và món lạ bị từ chối', () => {

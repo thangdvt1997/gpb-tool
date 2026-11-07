@@ -10,7 +10,7 @@ export interface PlayerState {
   yaw: number;
   anim: string;
   seq: number;
-  /** Tùy chọn: ngoại hình (world chưa gửi ở phiên bản hiện tại; client chuẩn hóa nếu có). */
+  /** Tùy chọn: ngoại hình (world gửi đã lọc trong snapshot/join và poses khi đổi; client vẫn chuẩn hóa). */
   appearance?: unknown;
   /** Thời điểm server nhận pose (ms, đồng hồ server). */
   t: number;
@@ -79,7 +79,8 @@ export type ServerMessage =
   | Snapshot
   | { type: 'ack'; seq: number; tick: number; accepted: { x: number; z: number; yaw: number; anim: string }; corrected: boolean }
   | { type: 'error'; code: string; seq?: number; requestId?: string; clientMsgId?: string; retryAfterMs?: number }
-  | { type: 'join'; id: string; name: string; tick: number }
+  | { type: 'join'; id: string; name: string; tick: number; appearance?: unknown }
+  | { type: 'appearance.ack'; requestId?: string; appearance: unknown }
   | { type: 'poses'; tick: number; serverTime: number; poses: PlayerState[] }
   | { type: 'leave'; id: string; reason: string; tick: number }
   | { type: 'pong'; t: number | null; serverTime: number; tick: number }
