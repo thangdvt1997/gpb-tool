@@ -102,3 +102,19 @@ Chưa kiểm chứng trên production: đăng nhập thật (tài khoản test e
 ## Production 2026-11-07 — commit 48631c6 (deploy 14:26 UTC)
 
 `playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,3 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 55,7° khi kéo nhanh (giới hạn 70°). Cảnh 3D, HUD, WASD theo camera đều qua. Đăng nhập thật trên production: chưa kiểm chứng (tài khoản test chỉ có ở auth kiểm thử).
+
+## Production 2026-11-07 — commit ab407c7 (deploy khoảng 18:35 UTC, watcher root)
+
+Acceptance PASS 18:15 (e2e 46 + 1 đăng nhập thật qua auth kiểm thử 127.0.0.1:3902). Gateway 18080 trả 200; trang 18081 phục vụ `assets/index-C3KRgaVO.js`, trùng bản build của ab407c7.
+
+`playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,6 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 55,2° khi kéo nhanh (giới hạn 70°), lệch 1,3° khi kéo chậm. Cảnh 3D, HUD, WASD theo camera đều qua. Đăng nhập thật trên production: chưa kiểm chứng (tài khoản test chỉ có ở auth kiểm thử).
+
+## Nhiều người, hai trình duyệt (stack cục bộ, không phải production) — wt3/multi 16d747e
+
+Service world chạy từ mã repo ở 127.0.0.1:3903 (`scripts/e2e/world-local.sh start`), xác thực qua auth kiểm thử 127.0.0.1:3902, vite preview đặt `GPB_PREVIEW_AUTH_API` và `GPB_PREVIEW_WORLD_API`. Hai tài khoản test (e2e-test, e2e-test2 trong DB kiểm thử), hai browser context. Spec `29-multiplayer.spec.ts`: **5/5 PASS** (3,4 phút): presence và di chuyển, chat hai chiều (HTML hiện như chữ thuần), lease ghế (A bị từ chối khi B ngồi, được ngồi sau khi B đứng dậy), vai trò member, rớt kết nối (đóng socket và setOffline) rồi resume. Spec tự bỏ qua khi world 3903 không chạy, nên trong acceptance cả 5 test được skip.
+
+Chưa kiểm chứng: đường qua gateway production (`/api/world`, ws), đổi vai trò và `can()` qua UI (cần tài khoản admin trong DB kiểm thử), kick và mute.
+
+## Khả năng tiếp cận tự động — wt3/a11y3 87ad9d4
+
+Spec `30-a11y-full.spec.ts` trên bản build main 8fb740a: **13/13 PASS**. axe 0 critical/serious ở màn đăng nhập, 7 panel và toàn trang cảnh; mở/đóng panel bằng bàn phím, focus trap, trả focus; ariaSnapshot thanh công cụ; aria-live; prefers-reduced-motion. Trình đọc màn hình thật (NVDA, VoiceOver, TalkBack): chưa kiểm chứng, checklist ở `docs/design/A11Y_VERIFICATION.md`.
