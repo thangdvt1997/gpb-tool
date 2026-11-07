@@ -168,4 +168,6 @@ Hạ tầng: subagent từng chạy `pkill -f playwright`, giết acceptance hai
 
 Chủ dự án cần quyết: (1) có cho deploy services/auth và services/world cùng route gateway `/api/world` không (22–27 chỉ còn thiếu bước này; quy trình deploy hiện chỉ cho web); (2) license chính thức của repo cho asset tự sinh (manifest ghi LicenseRef-GPB-project) và đối chiếu license 3 GLB MPFB; (3) 25b thoại cần TURN/SFU.
 
+| 1235903 (assets3, tuong4) | PASS 19:22 (59 pass, 5 skip) | có | /home/cc/bundles/gpb-1235903.bundle | ~19:45 UTC (watcher root) | 4/4 PASS, GLB mới phục vụ đúng |
+
 Không tạo PROJECT_COMPLETE.txt: 01, 02, 12, 22–27 vẫn MỘT PHẦN vì các lý do trên (asset/license, trình đọc màn hình thật, deploy service).

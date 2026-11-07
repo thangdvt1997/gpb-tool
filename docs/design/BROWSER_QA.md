@@ -122,3 +122,7 @@ Spec `30-a11y-full.spec.ts` trên bản build main 8fb740a: **13/13 PASS**. axe 
 ## Production 2026-11-07 — commit 8fb740a (deploy khoảng 19:15 UTC, watcher root)
 
 Acceptance PASS 18:53 (59 pass, 5 skip là 29-multiplayer khi không có world 3903; 1 đăng nhập thật). Trang 18081 phục vụ `assets/index-i8jpEkJ4.js`, trùng bản build riêng của 8fb740a. `playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,5 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 55,3° khi kéo nhanh.
+
+## Production 2026-11-07 — commit 1235903 (deploy khoảng 19:45 UTC, watcher root)
+
+Acceptance PASS 19:22 (59 pass, 5 skip, 1 đăng nhập thật). Trang phục vụ `assets/index-BiJMpdRh.js`, trùng bản build riêng của 1235903. GLB tự sinh phục vụ đúng (`/models/anim_male_real.glb`, `/models/furn_desk.glb`: 200, `application/octet-stream`, magic `glTF`). `playwright.prod.config.ts --workers=1`: **4/4 PASS** (6,6 phút). Băng rôn: 36 mẫu, 9 khung bị kéo lại, 0 khung lọt. Đầu lệch tối đa 56,4° khi kéo nhanh.
