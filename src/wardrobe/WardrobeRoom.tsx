@@ -6,7 +6,6 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { DEFAULT_APPEARANCE, type Appearance } from '../avatar/appearance';
 import type { AvatarAnimation } from '../avatar/animation';
 import { MpfbAvatar, targetHeightM } from '../avatar/MpfbAvatar';
-import { MpfbOutfitOn } from '../avatar/outfit/MpfbOutfitOn';
 import { garmentSupport } from '../avatar/outfit/compat';
 import {
   ACCESSORY_SIZE_MAX,
@@ -152,7 +151,6 @@ function Preview({ look, appearance, animation, focus, resetToken }: PreviewProp
           <MpfbAvatar appearance={appearance} look={look} animation={animation} />
         </Suspense>
       </group>
-      <MpfbOutfitOn target={avatar} look={look} />
       <OrbitControls ref={controls} makeDefault enablePan={false} minDistance={0.5} maxDistance={6} target={[0, heightM * 0.5, 0]} />
       <CameraRig controls={controls} focus={focus} resetToken={resetToken} heightM={heightM} />
     </>
