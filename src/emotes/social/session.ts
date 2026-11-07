@@ -133,6 +133,8 @@ export class SocialSession {
     const b = this.d.getPosition(me === inv.from ? inv.to : inv.from);
     if (a && b) this.d.face(facePair(a, b).a);
     this.d.play(action.emoteId);
+    // Hành động hai người: người kia cũng đang làm, host phát trên avatar của họ.
+    this.d.onRemotePlay?.(me === inv.from ? inv.to : inv.from, action.emoteId);
   }
 
   private onMessage(m: SocialMessage): void {

@@ -10,6 +10,8 @@ export interface PlayerState {
   yaw: number;
   anim: string;
   seq: number;
+  /** Tùy chọn: ngoại hình (world chưa gửi ở phiên bản hiện tại; client chuẩn hóa nếu có). */
+  appearance?: unknown;
   /** Thời điểm server nhận pose (ms, đồng hồ server). */
   t: number;
 }

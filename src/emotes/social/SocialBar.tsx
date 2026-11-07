@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { announce } from '../../a11y';
 import { playInternalEmote } from '../player';
 import { playerPose } from '../../scene/controls/playerPose';
@@ -7,6 +7,7 @@ import { getControls } from '../../scene/controls/session';
 import { SOCIAL_ACTIONS, type Peer, type SocialDenyReason } from './logic';
 import { SocialSession } from './session';
 import { SocialPrompt } from './SocialPrompt';
+import type { EmoteId } from '../types';
 import { createLocalBus, type SocialTransport } from './transport';
 
 /** Câu báo khi không thực hiện được (đọc qua aria-live). */
@@ -31,13 +32,17 @@ export interface SocialBarProps {
   transport?: SocialTransport;
   /** Đang sắp xếp nội thất: ẩn thanh nút (panel trình biên tập ở cùng góc), vẫn giữ phiên để nhận lời mời. */
   editorOpen?: boolean;
+  /** Người khác làm hành động hướng về mình: host phát emote trên avatar từ xa của họ. `self` là vị trí của mình để avatar quay mặt về. */
+  onRemotePlay?: (fromId: string, emoteId: EmoteId, self: { x: number; z: number }) => void;
 }
 
 /**
  * Thanh hành động xã hội (TASK 15) và hộp lời mời đến. Không chứa múa võ/tập quyền (chờ quyết định).
  * Transport mặc định là bus cục bộ; khi có world thì truyền transport mạng (docs/design/EMOTES_SOCIAL.md).
  */
-export function SocialBar({ selfId, getPeers, nameOf, transport, editorOpen = false }: SocialBarProps) {
+export function SocialBar({ selfId, getPeers, nameOf, transport, editorOpen = false, onRemotePlay }: SocialBarProps) {
+  const remotePlayRef = useRef(onRemotePlay);
+  remotePlayRef.current = onRemotePlay;
   // Tạo trong effect: dispose() gỡ đăng ký transport, StrictMode chạy cleanup rồi effect lại nên cần phiên mới.
   const [session, setSession] = useState<SocialSession | null>(null);
   useEffect(() => {
@@ -47,6 +52,7 @@ export function SocialBar({ selfId, getPeers, nameOf, transport, editorOpen = fa
       now: () => performance.now(),
       getPosition: (id) => (id === selfId ? { x: playerPose.x, z: playerPose.z } : getPeers().find((p) => p.id === id)),
       play: (id) => playInternalEmote(id),
+      onRemotePlay: (from, emoteId) => remotePlayRef.current?.(from, emoteId, { x: playerPose.x, z: playerPose.z }),
       face: (yaw) => requestWalk({ x: playerPose.x, z: playerPose.z, facingYaw: yaw }),
     });
     setSession(s);

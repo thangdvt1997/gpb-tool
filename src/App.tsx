@@ -650,7 +650,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           {tattooOpen && <TattooStudio model={mpfbModelFor(look.bodyStyle, look.body.frame)} onClose={() => setTattooOpen(false)} />}
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
           {/* Đang sắp xếp nội thất: panel trình biên tập chiếm góc phải dưới, ẩn thanh hành động xã hội để không chồng. */}
-          <SocialBar selfId={user.id} transport={socialTransport} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} />
+          <SocialBar selfId={user.id} transport={socialTransport} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} onRemotePlay={(id, emoteId, self) => remote.actions.play(id, emoteId, Date.now(), self)} />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (
