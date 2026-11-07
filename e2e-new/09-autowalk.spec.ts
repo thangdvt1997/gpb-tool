@@ -14,6 +14,7 @@ async function pickDestination(page: import('@playwright/test').Page): Promise<v
 
 const dist = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z);
 
+test.setTimeout(280_000);
 test('tự đi từ minimap tiến gần đích, rồi dừng khi bấm phím di chuyển', async ({ page }) => {
   await openScene(page);
   const start = await ctl(page);
@@ -41,7 +42,7 @@ test('tự đi từ minimap tiến gần đích, rồi dừng khi bấm phím di
   expect(dist(a, b), 'đứng yên sau khi bị tắt tự đi').toBeLessThan(0.3);
 });
 
-test('tự đi chạy hết tuyến thì tới gần đích', async ({ page }) => {
+test('tự đi chạy hết tuyến tới đích (cách đích < 1,5 m hoặc báo tới nơi)', async ({ page }) => {
   await openScene(page);
   await pickDestination(page);
   const dlg = page.getByRole('dialog');
@@ -49,22 +50,14 @@ test('tự đi chạy hết tuyến thì tới gần đích', async ({ page }) =
   await expect(auto).toBeEnabled({ timeout: 10_000 });
   await auto.check();
   await page.keyboard.press('Escape');
-  // Đứng yên 3 s liên tiếp hoặc tới nơi: kiểm tuyến còn lại qua dòng trạng thái khi mở lại bản đồ.
-  await expect.poll(async () => (await ctl(page)).speed, { timeout: 20_000 }).toBeGreaterThan(0);
-  await expect
-    .poll(
-      async () => {
-        const s1 = await ctl(page);
-        await page.waitForTimeout(1500);
-        const s2 = await ctl(page);
-        return dist(s1, s2) < 0.05;
-      },
-      { timeout: 120_000, intervals: [500] },
-    )
-    .toBe(true);
-  await page.keyboard.press('KeyM');
-  const status = page.getByRole('dialog').getByRole('status').first();
-  const text = (await status.textContent()) ?? '';
-  console.log('trạng thái tuyến khi dừng:', text);
-  expect(text).toMatch(/\d/);
+  const nav = () => page.evaluate(() => (window as unknown as { __gpbNav: { goal: { x: number; z: number } | null; dest: { x: number; z: number } | null; autoWalk: boolean; autoWalkStopped: string | null; arrived: boolean; remaining: number | null } }).__gpbNav);
+  // Chờ tự đi tắt (tới nơi thì tắt không kèm lý do lỗi). Máy chậm nên cho tối đa 4 phút.
+  await expect.poll(async () => (await nav()).autoWalk, { timeout: 230_000, intervals: [1000] }).toBe(false);
+  const n = await nav();
+  const c = await ctl(page);
+  const goal = n.goal!;
+  const d = dist(c, goal);
+  console.log('dừng tại', c.x.toFixed(2), c.z.toFixed(2), 'điểm đứng đích', goal.x, goal.z, 'cách', d.toFixed(2), 'còn', n.remaining, 'lý do', n.autoWalkStopped);
+  expect(n.autoWalkStopped, 'không bị tắt vì kẹt').toBeNull();
+  expect(n.arrived || d < 1.5, 'tới nơi hoặc cách đích < 1,5 m').toBe(true);
 });

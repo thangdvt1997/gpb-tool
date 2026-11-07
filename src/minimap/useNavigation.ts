@@ -209,10 +209,19 @@ export function useNavigation(sources: MinimapSources): NavApi {
   // cho Player qua walkRequest (đoạn thẳng đã kiểm tra clearance); dừng khi kẹt 2 s, tới nơi hoặc mất tuyến.
   useEffect(() => {
     if (!autoWalk) return undefined;
-    const state = createAutoWalk({ x: playerPose.x, z: playerPose.z }, performance.now());
+    // Đồng hồ trò chơi: mỗi khung hình cộng tối đa 50 ms (như dt của Player). Máy chậm (vài khung/giây) thì
+    // "kẹt 2 s" tính theo số khung nhân vật thật sự được chạy, không theo giờ tường, để không dừng oan.
+    let clock = 0;
+    let last = performance.now();
+    let raf = requestAnimationFrame(function tickClock(t) {
+      clock += Math.min(50, t - last);
+      last = t;
+      raf = requestAnimationFrame(tickClock);
+    });
+    const state = createAutoWalk({ x: playerPose.x, z: playerPose.z }, clock);
     const id = window.setInterval(() => {
       const r = routeRef.current;
-      const act = stepAutoWalk(state, { route: r, x: playerPose.x, z: playerPose.z, now: performance.now() });
+      const act = stepAutoWalk(state, { route: r, x: playerPose.x, z: playerPose.z, now: clock });
       if (act.type === 'stop') {
         stopAuto(act.reason === 'arrived' ? null : act.reason);
       } else if (act.type === 'walk' && r) {
@@ -227,9 +236,24 @@ export function useNavigation(sources: MinimapSources): NavApi {
     }, TICK_MS);
     return () => {
       window.clearInterval(id);
+      cancelAnimationFrame(raf);
       cancelWalkRequest();
     };
   }, [autoWalk, stopAuto]);
+
+  // Số đo cho Playwright (chỉ khi URL có ?debug=controls): đích, tuyến, lý do dừng tự đi, quãng còn lại.
+  useEffect(() => {
+    if (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('debug') !== 'controls') return;
+    (window as unknown as { __gpbNav?: unknown }).__gpbNav = {
+      goal: route && route.status === 'ok' && route.goal ? { x: route.goal.x, z: route.goal.z } : null,
+      dest: dest ? { x: dest.x, z: dest.z, label: dest.label } : null,
+      points: route && route.status === 'ok' ? route.points : [],
+      autoWalk,
+      autoWalkStopped,
+      remaining,
+      arrived,
+    };
+  }, [route, dest, autoWalk, autoWalkStopped, remaining, arrived]);
 
   // Đẩy tuyến sang store cho NavMarkers (trong Canvas). Tuyến đang chờ tính lại thì giữ tuyến cũ tới khi có mới.
   useEffect(() => {

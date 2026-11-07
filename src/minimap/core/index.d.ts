@@ -189,6 +189,7 @@ export type AutoWalkAction =
 export const STALL_MOVE_M: number;
 export const STALL_MS: number;
 export const AUTOWALK_ARRIVE_M: number;
+export const WAYPOINT_REACHED_M: number;
 export const MOVE_CODES: ReadonlySet<string>;
 export const STOP_TEXT: Record<AutoWalkStopReason, string | null>;
 export function createAutoWalk(pos: XZ, now: number): AutoWalkState;

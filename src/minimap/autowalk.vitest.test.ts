@@ -45,3 +45,14 @@ describe('bộ điều khiển tự đi qua walkRequest', () => {
     expect(takeWalkRequest()).toBeNull();
   });
 });
+
+describe('dừng ngay trước điểm gấp (Player coi là tới ở 0,2 m)', () => {
+  it('không gửi lại điểm đã tới, sang điểm kế tiếp', () => {
+    const st = createAutoWalk({ x: 0, z: 0 }, 0);
+    expect(tick(st, 0, 0, 0)).toMatchObject({ type: 'walk', x: 5, z: 0 });
+    takeWalkRequest()?.onArrive?.();
+    // Dừng cách góc 0,12 m, tiến độ trên tuyến vẫn ở đoạn đầu.
+    const a = tick(st, 4.88, 0.01, 250);
+    expect(a).toMatchObject({ type: 'walk', x: 5, z: 5, index: 2 });
+  });
+});

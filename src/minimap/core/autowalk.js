@@ -10,6 +10,8 @@ export const STALL_MOVE_M = 0.1;
 export const STALL_MS = 2000;
 /** Còn lại dưới khoảng này (m) thì coi là tới nơi. */
 export const AUTOWALK_ARRIVE_M = 0.8;
+/** Cách điểm gấp dưới khoảng này (m) thì coi là đã tới điểm đó (lớn hơn ngưỡng 0,2 m của Player). */
+export const WAYPOINT_REACHED_M = 0.3;
 
 /** Phím di chuyển (KeyboardEvent.code) làm tắt tự đi. */
 export const MOVE_CODES = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -63,7 +65,10 @@ export function stepAutoWalk(state, { route, x, z, now }) {
     return { type: 'stop', reason: 'stall' };
   }
 
-  const index = Math.min(route.points.length - 1, p.segment + 1);
+  let index = Math.min(route.points.length - 1, p.segment + 1);
+  // Player coi là tới điểm gấp khi còn dưới 0,2 m, nên có thể dừng ngay trước góc khi tiến độ trên tuyến vẫn ở
+  // đoạn cũ. Nếu cứ gửi lại điểm đó thì kẹt vĩnh viễn: đã ở trong WAYPOINT_REACHED_M thì sang điểm kế tiếp.
+  while (index < route.points.length - 1 && Math.hypot(route.points[index].x - x, route.points[index].z - z) < WAYPOINT_REACHED_M) index++;
   if (state.issuedRoute === route && state.issuedIndex === index) return { type: 'none' };
   state.issuedRoute = route;
   state.issuedIndex = index;
