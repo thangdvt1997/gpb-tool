@@ -2,6 +2,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { announce } from '../a11y';
 import { holdPause } from '../scene/controls';
+import { cancelEmote, getEmoteState, holdEmotePose, playEmote, releaseHeldPose } from '../emotes/player';
+import itZone from '../content/zones/it.json';
+import type { ZoneDef } from '../content/types';
+import { decorBlockersOf } from '../env';
+import { entryBlockers } from '../scene/entry/placement';
+import { collisionRects, type Rect } from '../scene/layout';
+import { OFFICE_PROP_BLOCKERS } from '../scene/officePropsLayout';
 import { playerPose } from '../scene/controls/playerPose';
 import { OFFICE_L_RECTS } from '../scene/officeBounds';
 import { stepFreeCamera, type Bounds, type FollowParams } from './cameraModes';
@@ -24,7 +31,10 @@ import {
   type CaptureScale,
   type PresetId,
 } from './photoLogic';
+import { escapeBlockers, slideCamera } from './photoCollision';
+import { isPhotoPose, photoPoseOptions } from './photoPose';
 import { usePhotoHudHidden } from './usePhotoHud';
+import type { UserEmoteId } from '../emotes/types';
 
 /**
  * Chế độ chụp ảnh: một kho nhỏ dùng chung giữa phần trong Canvas (PhotoScene) và bảng DOM (PhotoPanel).
@@ -45,11 +55,13 @@ interface PhotoState {
   tilt: number;
   grid: GridKind;
   timer: 0 | 3 | 10;
+  /** Tư thế giữ khi chụp (emote người dùng); '' là không giữ. */
+  pose: UserEmoteId | '';
 }
 
 let state: PhotoState = {
   active: false, cam: 'orbit', front: false, aspect: 'viewport', scale: 1, format: 'png', hideHud: true,
-  fov: 50, tilt: 0, grid: 'none', timer: 0,
+  fov: 50, tilt: 0, grid: 'none', timer: 0, pose: '',
 };
 const listeners = new Set<() => void>();
 const apiRef: { current: PhotoCaptureApi | null } = { current: null };
@@ -94,10 +106,19 @@ const MIN_Y = 0.3;
 const MAX_Y = 3.2;
 const BOUNDS: Bounds = { minX: OFFICE_BOX.minX, maxX: OFFICE_BOX.maxX, minZ: OFFICE_BOX.minZ, maxZ: OFFICE_BOX.maxZ, minY: MIN_Y, maxY: MAX_Y };
 
+/**
+ * Vật cản của camera tự do: cùng nguồn với ITOffice (đồ nội thất, vật trang trí không cây, bàn lối vào, đạo cụ).
+ * Dựng một lần từ it.json; bố cục tự sắp xếp của người dùng không được phản ánh (camera chụp ảnh chỉ là xấp xỉ).
+ */
+const PHOTO_OBSTACLES: readonly Rect[] = (() => {
+  const objects = (itZone as unknown as ZoneDef).objects;
+  return [...collisionRects(objects), ...decorBlockersOf(objects, false), ...entryBlockers(objects), ...OFFICE_PROP_BLOCKERS];
+})();
+
 /** Đặt camera tự do theo preset quanh nhân vật, kẹp vào văn phòng. */
 function applyPreset(id: PresetId): void {
   const r = computePresetPose(id, playerPose);
-  const pos = clampToOfficeBoxes(r.position, OFFICE_L_RECTS, MIN_Y, MAX_Y);
+  const pos = escapeBlockers(clampToOfficeBoxes(r.position, OFFICE_L_RECTS, MIN_Y, MAX_Y), PHOTO_OBSTACLES);
   const a = lookAngles(pos, r.target);
   freeCam.position = pos;
   freeCam.yaw = a.yaw;
@@ -116,8 +137,9 @@ function FreeFly(): null {
   // Vào chế độ bay: khởi tạo từ camera hiện tại để không giật.
   useEffect(() => {
     if (!flying) return;
-    freeCam.position = clampToOfficeBoxes(
-      { x: camera.position.x, y: camera.position.y, z: camera.position.z }, OFFICE_L_RECTS, MIN_Y, MAX_Y,
+    freeCam.position = escapeBlockers(
+      clampToOfficeBoxes({ x: camera.position.x, y: camera.position.y, z: camera.position.z }, OFFICE_L_RECTS, MIN_Y, MAX_Y),
+      PHOTO_OBSTACLES,
     );
     const dir = { x: 0, y: 0, z: -1 };
     const e = camera.getWorldDirection(camera.position.clone());
@@ -179,7 +201,8 @@ function FreeFly(): null {
     if (m.forward === 0 && m.right === 0 && m.up === 0) return;
     // stepFreeCamera kẹp hộp bao, rồi kẹp lại vào hợp các hộp chữ L (không bay ra ngoài vùng khuyết).
     const boxed = stepFreeCamera(freeCam.position, freeCam.yaw, m, BOUNDS);
-    freeCam.position = clampToOfficeBoxes(boxed, OFFICE_L_RECTS, MIN_Y, MAX_Y);
+    // Rồi trượt dọc đồ nội thất và dừng trước băng rôn (không xuyên).
+    freeCam.position = slideCamera(freeCam.position, clampToOfficeBoxes(boxed, OFFICE_L_RECTS, MIN_Y, MAX_Y), PHOTO_OBSTACLES);
   });
   return null;
 }
@@ -264,6 +287,28 @@ export function PhotoPanel(): JSX.Element {
   }, [s.active]);
 
   usePhotoHudHidden(s.active && s.hideHud);
+
+  // Tư thế nhân vật: nhớ emote đang giữ (stance) lúc vào, giữ khung đứng yên khi chọn, thoát thì trả lại.
+  const prevEmote = useRef<ReturnType<typeof getEmoteState> | null>(null);
+  useEffect(() => {
+    if (!s.active) return undefined;
+    prevEmote.current = getEmoteState();
+    return () => {
+      releaseHeldPose();
+      const p = prevEmote.current;
+      if (p && p.phase === 'playing' && p.mode === 'hold' && p.id !== null) {
+        cancelEmote();
+        playEmote(p.id);
+      }
+      prevEmote.current = null;
+      set({ pose: '' });
+    };
+  }, [s.active]);
+  useEffect(() => {
+    if (!s.active) return;
+    if (s.pose) holdEmotePose(s.pose);
+    else releaseHeldPose();
+  }, [s.active, s.pose]);
 
   useEffect(() => {
     if (!s.active) return undefined;
@@ -409,6 +454,24 @@ export function PhotoPanel(): JSX.Element {
             <option value={10}>10 giây</option>
           </select>
         </label>
+        <label>
+          Tư thế nhân vật{' '}
+          <select
+            value={s.pose}
+            aria-describedby="photo-pose-hint"
+            onChange={(e) => {
+              const v = e.target.value;
+              set({ pose: isPhotoPose(v) ? v : '' });
+              announce(v ? 'Đã chọn tư thế nhân vật.' : 'Đã bỏ tư thế nhân vật.');
+            }}
+          >
+            <option value="">Không giữ tư thế</option>
+            {photoPoseOptions().map((o) => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+        </label>
+        <span id="photo-pose-hint" className="ui-sr-only">Nhân vật giữ tư thế đứng yên trong lúc chụp, thoát chế độ chụp sẽ trả lại.</span>
         {!flying && (
           <label>
             <input type="checkbox" checked={s.front} onChange={(e) => set({ front: e.target.checked })} /> Chụp chính diện

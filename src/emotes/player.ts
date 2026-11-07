@@ -18,6 +18,8 @@ const IDLE_STATE: EmoteState = Object.freeze({ phase: 'idle', id: null, mode: nu
 let current: EmoteDef | null = null;
 let state: EmoteState = IDLE_STATE;
 let reduced = false;
+/** true: tư thế đóng băng ở khung đứng yên (chế độ chụp ảnh), không tự hết giờ và không bị notifyMovement hủy. */
+let frozen = false;
 const listeners = new Set<() => void>();
 
 /** Có đang bật giảm chuyển động không. Đọc mỗi lần phát để theo kịp thay đổi của hệ điều hành. */
@@ -70,13 +72,34 @@ export function playInternalEmote(id: EmoteId, nowMs: number = performance.now()
 function start(id: EmoteId, nowMs: number): void {
   current = EMOTES[id];
   reduced = prefersReducedMotion();
+  frozen = false;
   setState({ phase: 'playing', id, mode: current.mode, startedAt: nowMs });
+}
+
+/**
+ * Giữ nhân vật ở khung đứng yên (reducedFrame) của emote người dùng, không chuyển động, tới khi gọi
+ * releaseHeldPose hoặc cancelEmote. Dùng cho chế độ chụp ảnh. Emote nội bộ bị từ chối.
+ */
+export function holdEmotePose(id: EmoteId, nowMs: number = performance.now()): void {
+  if (isInternalEmote(id)) return;
+  current = EMOTES[id];
+  reduced = true;
+  frozen = true;
+  setState({ phase: 'playing', id, mode: current.mode, startedAt: nowMs });
+}
+
+/** Bỏ tư thế đang giữ bởi holdEmotePose. Trả true nếu có bỏ; emote chạy bình thường thì không đụng. */
+export function releaseHeldPose(): boolean {
+  if (!frozen) return false;
+  cancelEmote();
+  return true;
 }
 
 /** Hủy emote đang chạy, kể cả stance. Không làm gì nếu đang rảnh. */
 export function cancelEmote(): void {
   if (current === null) return;
   current = null;
+  frozen = false;
   setState(IDLE_STATE);
 }
 
@@ -85,7 +108,7 @@ export function cancelEmote(): void {
  * Hủy emote đang chạy, trừ stance là emote đứng yên nên được giữ.
  */
 export function notifyMovement(): void {
-  if (current === null || current.mode === 'hold') return;
+  if (current === null || frozen || current.mode === 'hold') return;
   cancelEmote();
 }
 
@@ -138,7 +161,7 @@ export function sampleEmotePose(out: Pose, nowMs: number = performance.now()): b
 
   if (reduced) {
     // Giảm chuyển động: một tư thế tĩnh, đổi tức thì, không nội suy, không lặp.
-    if (def.mode === 'once' && t > REDUCED_HOLD) {
+    if (!frozen && def.mode === 'once' && t > REDUCED_HOLD) {
       cancelEmote();
       return false;
     }
