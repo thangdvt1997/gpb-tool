@@ -38,6 +38,7 @@ import {
 import { playerPose } from '../scene/controls/playerPose';
 import { getHeldItem } from '../scene/interact/objects/smallItem';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
+import { useBakedPlayer } from './useBakedClips';
 import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -466,6 +467,8 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
   const gltf = useLoader(GLTFLoader, url);
   const rig = useMemo(() => buildRig(gltf), [gltf]);
   const work = useMemo(createPoseWork, []);
+  // Clip bake (public/models/anim_*.glb) thay tư thế procedural cho animation cố định khi tải được; lỗi thì rơi về procedural.
+  const baked = useBakedPlayer(rig.root, url, animation);
   const scratch = useMemo(createPoseScratch, []);
   const rootRef = useRef<THREE.Group>(null);
   const face = useRef<FaceTarget>({ ...FACE_REST });
@@ -512,7 +515,11 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     const t = state.clock.elapsedTime;
     const emoting = emote && sampleEmotePose(scratch);
     let pose: AvatarPose;
-    if (emoting) {
+    if (baked && !emoting) {
+      // Clip bake điều khiển xương (kể cả Root: độ cao thân, xoay), nên không áp tư thế procedural và không dịch group.
+      baked.update(dt);
+      pose = scratch;
+    } else if (emoting) {
       // Emote không ghi gối: duỗi thẳng như VrmAvatar.
       scratch.kneeLX = 0;
       scratch.kneeRX = 0;
@@ -520,11 +527,18 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     } else {
       pose = computePose(animation, t);
     }
-    applyMpfbPose(rig, pose, work);
     const g = rootRef.current;
-    if (g) {
-      g.position.y = pose.rootY * rootYScale;
-      g.rotation.y = pose.rootRotY;
+    if (baked && !emoting) {
+      if (g) {
+        g.position.y = 0;
+        g.rotation.y = 0;
+      }
+    } else {
+      applyMpfbPose(rig, pose, work);
+      if (g) {
+        g.position.y = pose.rootY * rootYScale;
+        g.rotation.y = pose.rootRotY;
+      }
     }
 
     // Biểu cảm: emote đang phát (nếu có trong bảng) hoặc biểu cảm nền; trộn mượt.

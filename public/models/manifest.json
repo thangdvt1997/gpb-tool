@@ -3,7 +3,7 @@
   "units": "m",
   "upAxis": "Y",
   "forward": "+Z",
-  "generatedAt": "2026-11-06",
+  "generatedAt": "2026-11-07",
   "rigProfiles": {
     "rig.mpfb_53": {
       "id": "rig.mpfb_53",
@@ -206,6 +206,11 @@
             0.0595,
             -0.0064
           ],
+          "rotationDeg": [
+            -68.78,
+            -27.5,
+            94.37
+          ],
           "calibrated": true
         },
         {
@@ -215,6 +220,11 @@
             -0.0024,
             0.0595,
             -0.0064
+          ],
+          "rotationDeg": [
+            -68.78,
+            27.5,
+            -94.37
           ],
           "calibrated": true
         },
@@ -226,6 +236,11 @@
             0.156,
             0.0041
           ],
+          "rotationDeg": [
+            1.5,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
@@ -233,10 +248,15 @@
           "bone": "neck_01",
           "offset": [
             0,
+            0.0539,
+            0
+          ],
+          "rotationDeg": [
+            -18.51,
             0,
             0
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "back",
@@ -246,27 +266,42 @@
             0.0064,
             -0.04
           ],
+          "rotationDeg": [
+            9.03,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
           "name": "foot_l",
           "bone": "foot_l",
           "offset": [
-            0,
-            0,
-            0
+            -0.001,
+            0.0955,
+            0.0384
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -116.74,
+            -0.86,
+            -1.38
+          ],
+          "calibrated": true
         },
         {
           "name": "foot_r",
           "bone": "foot_r",
           "offset": [
-            0,
-            0,
-            0
+            0.001,
+            0.0955,
+            0.0384
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -116.74,
+            0.86,
+            1.38
+          ],
+          "calibrated": true
         }
       ],
       "rigProfile": "rig.mpfb_53",
@@ -317,9 +352,17 @@
         }
       },
       "expectedClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Idle",
+        "Walk",
+        "Run",
+        "JumpStart",
+        "Airborne",
+        "Land",
+        "SitDown",
+        "SeatedIdle",
+        "StandUp",
+        "Interact",
+        "Stunned"
       ],
       "license": {
         "spdx": "CC0-1.0",
@@ -335,19 +378,17 @@
         "verified": false
       },
       "knownIssues": [
-        "File không có animation clip (animations = 0).",
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
         "Không có normal map, không có LOD 1.",
         "Origin file thấp hơn đáy chân 2.6 cm (Root y = 0.027).",
         "Nguồn gốc 6 shape key thân (bodyBelly, bodyWaistSlim, bodyHipsWide, bodyShouldersV, headFat, chestMuscle) do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
         "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds.",
-        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
+        "Cả 7 socket (hand_l, hand_r, head, neck, back, foot_l, foot_r) đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07), rotationDeg đưa khung socket về trùng trục mô hình ở tư thế nghỉ (+Y lên, +Z phía trước). Chưa kiểm bằng mắt trong scene.",
+        "GLB này không chứa animation; clip thật nằm ở tệp anim_<id>.glb cùng rig (asset anim.*)."
       ],
       "proceduralClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Emote"
       ]
     },
     {
@@ -432,6 +473,11 @@
             0.0444,
             -0.0051
           ],
+          "rotationDeg": [
+            -64.18,
+            -29.41,
+            101.76
+          ],
           "calibrated": true
         },
         {
@@ -441,6 +487,11 @@
             -0.001,
             0.0444,
             -0.0051
+          ],
+          "rotationDeg": [
+            -64.18,
+            29.41,
+            -101.76
           ],
           "calibrated": true
         },
@@ -452,6 +503,11 @@
             0.1368,
             0.0066
           ],
+          "rotationDeg": [
+            2.77,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
@@ -459,10 +515,15 @@
           "bone": "neck_01",
           "offset": [
             0,
+            0.0581,
+            0
+          ],
+          "rotationDeg": [
+            -21.01,
             0,
             0
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "back",
@@ -472,27 +533,42 @@
             -0.0005,
             -0.0352
           ],
+          "rotationDeg": [
+            -0.78,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
           "name": "foot_l",
           "bone": "foot_l",
           "offset": [
-            0,
-            0,
-            0
+            -0.0055,
+            0.0778,
+            0.0335
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -118.04,
+            0.81,
+            -8.22
+          ],
+          "calibrated": true
         },
         {
           "name": "foot_r",
           "bone": "foot_r",
           "offset": [
-            0,
-            0,
-            0
+            0.0055,
+            0.0778,
+            0.0335
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -118.04,
+            -0.81,
+            8.22
+          ],
+          "calibrated": true
         }
       ],
       "rigProfile": "rig.mpfb_53",
@@ -543,9 +619,17 @@
         }
       },
       "expectedClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Idle",
+        "Walk",
+        "Run",
+        "JumpStart",
+        "Airborne",
+        "Land",
+        "SitDown",
+        "SeatedIdle",
+        "StandUp",
+        "Interact",
+        "Stunned"
       ],
       "license": {
         "spdx": "CC0-1.0",
@@ -561,19 +645,17 @@
         "verified": false
       },
       "knownIssues": [
-        "File không có animation clip (animations = 0).",
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
         "Không có normal map, không có LOD 1.",
         "Origin file thấp hơn đáy chân 2.7 cm (Root y = 0.027).",
         "Nguồn gốc 6 shape key thân do pipeline tạo, chưa đối chiếu với target MakeHuman gốc.",
         "License CC0 theo thông tin pipeline; chưa mở lại trang license MakeHuman trong phiên này, chưa lưu bằng chứng. Tên file gốc trên VPS chưa kiểm chứng.",
         "Collider radius 0.35 lấy theo PLAYER_RADIUS trong src/scene/layout.ts, height = chiều cao bounds.",
-        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
+        "Cả 7 socket (hand_l, hand_r, head, neck, back, foot_l, foot_r) đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07), rotationDeg đưa khung socket về trùng trục mô hình ở tư thế nghỉ (+Y lên, +Z phía trước). Chưa kiểm bằng mắt trong scene.",
+        "GLB này không chứa animation; clip thật nằm ở tệp anim_<id>.glb cùng rig (asset anim.*)."
       ],
       "proceduralClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Emote"
       ]
     },
     {
@@ -658,6 +740,11 @@
             0.0288,
             -0.0026
           ],
+          "rotationDeg": [
+            -71.53,
+            -28.49,
+            84.78
+          ],
           "calibrated": true
         },
         {
@@ -667,6 +754,11 @@
             -0.0019,
             0.0288,
             -0.0026
+          ],
+          "rotationDeg": [
+            -71.53,
+            28.49,
+            -84.78
           ],
           "calibrated": true
         },
@@ -678,6 +770,11 @@
             0.1478,
             0.0008
           ],
+          "rotationDeg": [
+            0.3,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
@@ -685,10 +782,15 @@
           "bone": "neck_01",
           "offset": [
             0,
+            0.0171,
+            0
+          ],
+          "rotationDeg": [
+            -19.74,
             0,
             0
           ],
-          "calibrated": false
+          "calibrated": true
         },
         {
           "name": "back",
@@ -698,27 +800,42 @@
             0.0129,
             -0.0415
           ],
+          "rotationDeg": [
+            17.33,
+            0,
+            0
+          ],
           "calibrated": true
         },
         {
           "name": "foot_l",
           "bone": "foot_l",
           "offset": [
-            0,
-            0,
-            0
+            -0.0005,
+            0.0457,
+            0.0183
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -120.37,
+            -1.01,
+            -1.26
+          ],
+          "calibrated": true
         },
         {
           "name": "foot_r",
           "bone": "foot_r",
           "offset": [
-            0,
-            0,
-            0
+            0.0005,
+            0.0457,
+            0.0183
           ],
-          "calibrated": false
+          "rotationDeg": [
+            -120.37,
+            1.01,
+            1.26
+          ],
+          "calibrated": true
         }
       ],
       "rigProfile": "rig.mpfb_53",
@@ -769,9 +886,17 @@
         }
       },
       "expectedClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Idle",
+        "Walk",
+        "Run",
+        "JumpStart",
+        "Airborne",
+        "Land",
+        "SitDown",
+        "SeatedIdle",
+        "StandUp",
+        "Interact",
+        "Stunned"
       ],
       "license": {
         "spdx": "CC0-1.0",
@@ -788,18 +913,766 @@
       },
       "knownIssues": [
         "Tỷ lệ chibi (cao gốc khoảng 0.874 m) là một lựa chọn chính thức cạnh tỷ lệ thật (male_real, female_real); app scale tới 85–130 cm theo BODY_LIMITS_BY_STYLE.chibi.",
-        "File không có animation clip (animations = 0).",
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
         "Cùng bộ xương 53 xương, 18 morph và 27 120 tam giác với female_real; chưa đối chiếu chi tiết mesh.",
         "License CC0 theo thông tin pipeline; chưa lưu bằng chứng.",
-        "Socket hand_l, hand_r, head, back đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07); rotationDeg chưa đo (0). Socket neck, foot_l, foot_r vẫn ở gốc xương, chưa hiệu chỉnh."
+        "Cả 7 socket (hand_l, hand_r, head, neck, back, foot_l, foot_r) đã đo từ xương/đỉnh mesh thật (scripts/assets/measure-sockets.mjs, 2026-11-07), rotationDeg đưa khung socket về trùng trục mô hình ở tư thế nghỉ (+Y lên, +Z phía trước). Chưa kiểm bằng mắt trong scene.",
+        "GLB này không chứa animation; clip thật nằm ở tệp anim_<id>.glb cùng rig (asset anim.*)."
       ],
       "proceduralClips": [
-        "idle",
-        "walk",
-        "sit"
+        "Emote"
       ],
       "style": "chibi"
+    },
+    {
+      "assetId": "furn.desk_bench",
+      "type": "furniture",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "af55ddfd782835a2bded305cb9ece517ca3358a7360f3af7a645eaea036bd00a"
+      },
+      "bytes": 11616,
+      "url": "furn_desk.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.3
+        ],
+        "max": [
+          0.5,
+          1.095,
+          0.3
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "base-center",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Tâm đáy, mặt sàn y = 0. Kích thước khớp DeskField (src/scene/Desks.tsx)."
+      },
+      "colliderProfile": {
+        "shape": "box",
+        "size": [
+          1,
+          0.75,
+          0.6
+        ],
+        "center": [
+          0,
+          0.375,
+          0
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "furn_desk.glb",
+          "triangles": 96
+        }
+      ],
+      "materials": [
+        {
+          "name": "furn.baked",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "sockets": [
+        {
+          "name": "interact.use",
+          "node": "interact.use",
+          "offset": [
+            0,
+            0.75,
+            0.35
+          ],
+          "calibrated": true
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-furniture.mjs",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.",
+        "Chưa nối vào cảnh: DeskField vẫn vẽ bằng InstancedBoxes (2 draw call cho mọi bàn). Thay bằng GLB riêng từng bàn sẽ tăng draw call."
+      ]
+    },
+    {
+      "assetId": "furn.chair_swivel",
+      "type": "chair",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "c4e554dda609c1b5c641f2d10be9773dc0efebf3bcd030779dbe1679c42b8406"
+      },
+      "bytes": 21584,
+      "url": "furn_chair.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.282,
+          0,
+          -0.2464
+        ],
+        "max": [
+          0.282,
+          0.94,
+          0.29
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "seat-center",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Tâm chân sao trên mặt sàn; lưng ghế phía -Z."
+      },
+      "colliderProfile": {
+        "shape": "cylinder",
+        "radius": 0.3,
+        "height": 0.94
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "furn_chair.glb",
+          "triangles": 188
+        }
+      ],
+      "materials": [
+        {
+          "name": "furn.baked",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "sockets": [
+        {
+          "name": "interact.sit",
+          "node": "interact.sit",
+          "offset": [
+            0,
+            0.48,
+            0
+          ],
+          "calibrated": true
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-furniture.mjs",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.",
+        "Chưa nối vào cảnh (chưa có ghế riêng trong it.json để thay)."
+      ]
+    },
+    {
+      "assetId": "acc.headphones",
+      "type": "accessory",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "d26d20316e74438f81be1236821bcc82baa4f3d1b2bda90a001de489226ff40f"
+      },
+      "bytes": 34892,
+      "url": "acc_headphones.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.113,
+          -0.125,
+          -0.035
+        ],
+        "max": [
+          0.113,
+          0.007,
+          0.035
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "attach-point",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Origin ở đỉnh đầu, trùng socket head."
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "acc_headphones.glb",
+          "triangles": 312
+        }
+      ],
+      "materials": [
+        {
+          "name": "acc.baked",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "attachTo": "head",
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-furniture.mjs",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.",
+        "Kích thước theo đầu người thật (rộng 0,23 m); chibi cần scale khi gắn. Chưa nối vào cảnh."
+      ]
+    },
+    {
+      "assetId": "acc.backpack",
+      "type": "accessory",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "77b9d6746871838c00b68a6cfc8de3bc1b5d7228705bfacd229f4ea047658df8"
+      },
+      "bytes": 6368,
+      "url": "acc_backpack.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.14,
+          -0.25,
+          -0.19
+        ],
+        "max": [
+          0.14,
+          0.15,
+          -0.01
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "attach-point",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Origin ở mặt lưng, trùng socket back."
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "acc_backpack.glb",
+          "triangles": 48
+        }
+      ],
+      "materials": [
+        {
+          "name": "acc.baked",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "attachTo": "back",
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-furniture.mjs",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.",
+        "Chưa nối vào cảnh."
+      ]
+    },
+    {
+      "assetId": "acc.mug",
+      "type": "accessory",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "5a0c036196e20271be3da6b8d0e355206a3eeb77fc7ac79ca71b55635071a59e"
+      },
+      "bytes": 26244,
+      "url": "acc_mug.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.039,
+          0,
+          -0.04
+        ],
+        "max": [
+          0.071,
+          0.09,
+          0.04
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "attach-point",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Origin ở đáy cốc, đặt vào socket hand_r."
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "acc_mug.glb",
+          "triangles": 232
+        }
+      ],
+      "materials": [
+        {
+          "name": "acc.baked",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "attachTo": "hand_r",
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-furniture.mjs",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.",
+        "Chưa nối vào cảnh; cốc đang cầm trong cảnh là mã IK riêng (smallItem)."
+      ]
+    },
+    {
+      "assetId": "anim.male_real",
+      "type": "animation",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "d1ccb0958ed8e8de46978cd8a88d7278c475aa5e97dd2a2c167c686cb3a357c2"
+      },
+      "bytes": 132896,
+      "url": "anim_male_real.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.6154,
+          0.0261,
+          -0.1014
+        ],
+        "max": [
+          0.6154,
+          1.8916,
+          0.4037
+        ],
+        "space": "rest",
+        "measuredBy": "bounds nhân vật char.male_real (file animation không có mesh)"
+      },
+      "pivot": {
+        "kind": "custom",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Chỉ chứa cây xương và animation của char.male_real; không có hình học."
+      },
+      "rigProfile": "rig.mpfb_53",
+      "clips": [
+        {
+          "name": "Idle",
+          "durationSec": 6.2832,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Walk",
+          "durationSec": 1.0472,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Run",
+          "durationSec": 0.6283,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "JumpStart",
+          "durationSec": 0.25,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Airborne",
+          "durationSec": 1,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Land",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SitDown",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SeatedIdle",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "StandUp",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Interact",
+          "durationSec": 0.9,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Stunned",
+          "durationSec": 0.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Wave",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Dance",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-clips.ts",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Bake từ tư thế procedural (src/avatar/animation.ts) lên rest pose của char.male_real; quaternion theo xương cục bộ nên chỉ đúng với nhân vật này.",
+        "Track Root.position mang độ cao thân (rootY); xương Root là gốc skin nên mesh đi theo.",
+        "Chưa có clip Emote (hệ emote vẫn procedural)."
+      ]
+    },
+    {
+      "assetId": "anim.female_real",
+      "type": "animation",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "b67b344847dc83fc6758be905653e6b06334bbeaa3c0e9765510629b341e7efb"
+      },
+      "bytes": 132276,
+      "url": "anim_female_real.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.4823,
+          0.0269,
+          -0.0899
+        ],
+        "max": [
+          0.4823,
+          1.6009,
+          0.2871
+        ],
+        "space": "rest",
+        "measuredBy": "bounds nhân vật char.female_real (file animation không có mesh)"
+      },
+      "pivot": {
+        "kind": "custom",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Chỉ chứa cây xương và animation của char.female_real; không có hình học."
+      },
+      "rigProfile": "rig.mpfb_53",
+      "clips": [
+        {
+          "name": "Idle",
+          "durationSec": 6.2832,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Walk",
+          "durationSec": 1.0472,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Run",
+          "durationSec": 0.6283,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "JumpStart",
+          "durationSec": 0.25,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Airborne",
+          "durationSec": 1,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Land",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SitDown",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SeatedIdle",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "StandUp",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Interact",
+          "durationSec": 0.9,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Stunned",
+          "durationSec": 0.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Wave",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Dance",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-clips.ts",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Bake từ tư thế procedural (src/avatar/animation.ts) lên rest pose của char.female_real; quaternion theo xương cục bộ nên chỉ đúng với nhân vật này.",
+        "Track Root.position mang độ cao thân (rootY); xương Root là gốc skin nên mesh đi theo.",
+        "Chưa có clip Emote (hệ emote vẫn procedural)."
+      ]
+    },
+    {
+      "assetId": "anim.chibi",
+      "type": "animation",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "7de038de3ff6cf2d4360ff9018b33bfcf88a1f451665bf9c4197ae3d6ce2ab03"
+      },
+      "bytes": 132380,
+      "url": "anim_chibi.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.2742,
+          0.0244,
+          -0.0584
+        ],
+        "max": [
+          0.2742,
+          0.8984,
+          0.1819
+        ],
+        "space": "rest",
+        "measuredBy": "bounds nhân vật char.chibi (file animation không có mesh)"
+      },
+      "pivot": {
+        "kind": "custom",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Chỉ chứa cây xương và animation của char.chibi; không có hình học."
+      },
+      "rigProfile": "rig.mpfb_53",
+      "clips": [
+        {
+          "name": "Idle",
+          "durationSec": 6.2832,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Walk",
+          "durationSec": 1.0472,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Run",
+          "durationSec": 0.6283,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "JumpStart",
+          "durationSec": 0.25,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Airborne",
+          "durationSec": 1,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Land",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SitDown",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "SeatedIdle",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "StandUp",
+          "durationSec": 0.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Interact",
+          "durationSec": 0.9,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Stunned",
+          "durationSec": 0.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Wave",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Dance",
+          "durationSec": 3.1416,
+          "loop": true,
+          "rootMotion": "in-place"
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-clips.ts",
+        "checkedAt": "2026-11-07",
+        "verified": true
+      },
+      "knownIssues": [
+        "Bake từ tư thế procedural (src/avatar/animation.ts) lên rest pose của char.chibi; quaternion theo xương cục bộ nên chỉ đúng với nhân vật này.",
+        "Track Root.position mang độ cao thân (rootY); xương Root là gốc skin nên mesh đi theo.",
+        "Chưa có clip Emote (hệ emote vẫn procedural)."
+      ]
     }
   ]
 }

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { validateFile, postProcess } from './validate-manifest.mjs';
+import { validateFile, postProcess, readGlbFacts } from './validate-manifest.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { validateManifest } = await import(pathToFileURL(path.join(root, 'src/assets/validate.ts')).href);
@@ -114,8 +114,45 @@ test('validator không sửa dữ liệu đầu vào', () => {
 test('manifest thật public/models/manifest.json: 0 lỗi (đối chiếu hash, bounds, xương, morph với GLB)', async () => {
   const r = await validateFile(path.join(root, 'public/models/manifest.json'));
   assert.deepEqual(r.errors, []);
-  assert.ok(!r.warnings.some((w) => w.code === 'CLIP_MISSING'), 'clip idle/walk/sit đã khai báo procedural');
-  assert.equal(r.info.filter((x) => x.code === 'CLIP_PROCEDURAL').length, 9);
+  assert.ok(!r.warnings.some((w) => w.code === 'CLIP_MISSING'), 'mọi clip mong đợi đã có clip bake thật (anim.*)');
+  assert.equal(r.info.filter((x) => x.code === 'CLIP_PROCEDURAL').length, 0, 'không còn clip procedural được mong đợi');
+  assert.ok(!r.warnings.some((w) => w.code === 'SOCKET_UNCALIBRATED'), '7 socket nhân vật đã đo');
+});
+
+test('manifest thật khai báo bàn, ghế, 3 phụ kiện và 3 asset animation, đều đo từ file', async () => {
+  const m = JSON.parse(fs.readFileSync(path.join(root, 'public/models/manifest.json'), 'utf8'));
+  const by = new Map(m.assets.map((a) => [a.assetId, a]));
+  for (const [id, type] of [['furn.desk_bench', 'furniture'], ['furn.chair_swivel', 'chair'], ['acc.headphones', 'accessory'], ['acc.backpack', 'accessory'], ['acc.mug', 'accessory'], ['anim.male_real', 'animation'], ['anim.female_real', 'animation'], ['anim.chibi', 'animation']]) {
+    assert.equal(by.get(id)?.type, type, id);
+    assert.ok(fs.existsSync(path.join(root, 'public/models', by.get(id).url)), `${id} thiếu file`);
+  }
+  assert.deepEqual(by.get('furn.chair_swivel').sockets.map((s) => s.name), ['interact.sit']);
+  // Mỗi nhân vật có đủ 7 socket với rotationDeg; mọi tên clip mong đợi có trong asset animation cùng rig.
+  const clips = new Set(m.assets.filter((a) => a.type === 'animation').flatMap((a) => a.clips.map((c) => c.name)));
+  for (const c of m.assets.filter((a) => a.type === 'character')) {
+    assert.deepEqual(c.sockets.map((s) => s.name).sort(), ['back', 'foot_l', 'foot_r', 'hand_l', 'hand_r', 'head', 'neck']);
+    assert.ok(c.sockets.every((s) => s.calibrated && s.rotationDeg?.length === 3), c.assetId);
+    for (const e of c.expectedClips) assert.ok(clips.has(e), `${c.assetId} thiếu clip ${e}`);
+  }
+});
+
+test('GLB tự sinh: mỗi asset tĩnh đúng 1 mesh, 1 material (không tăng draw call), hash khớp manifest', () => {
+  const m = JSON.parse(fs.readFileSync(path.join(root, 'public/models/manifest.json'), 'utf8'));
+  for (const a of m.assets.filter((x) => ['furniture', 'chair', 'accessory'].includes(x.type))) {
+    const buf = fs.readFileSync(path.join(root, 'public/models', a.url));
+    const j = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
+    assert.equal(j.meshes.length, 1, a.assetId);
+    assert.equal(j.meshes[0].primitives.length, 1, a.assetId);
+    assert.equal(j.materials.length, 1, a.assetId);
+    assert.ok(buf.length < 40000, `${a.assetId} ${buf.length} byte`);
+  }
+});
+
+test('GLB chỉ có xương + animation: validator không đòi bounds hình học và đọc xương từ node', async () => {
+  const facts = readGlbFacts(path.join(root, 'public/models/anim_chibi.glb'));
+  assert.ok(facts.joints.includes('upperarm_l') && facts.joints.includes('Root'));
+  assert.ok(facts.animations.includes('Walk'));
+  assert.ok(!facts.boundsMin.every(Number.isFinite), 'file không có mesh');
 });
 
 test('manifest thật sửa hash sai thì báo HASH_MISMATCH', async () => {

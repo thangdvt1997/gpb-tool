@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { measureSockets } from './measure-sockets.mjs';
+import * as THREE from 'three';
+import { measureSockets, inverseRotationDeg } from './measure-sockets.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const models = path.join(root, 'public', 'models');
@@ -32,6 +33,30 @@ for (const a of chars) {
   });
 }
 
-test('neck/foot chưa đo thì vẫn calibrated=false (không khai man)', () => {
-  for (const a of chars) for (const n of ['neck', 'foot_l', 'foot_r']) assert.equal(a.sockets.find((s) => s.name === n).calibrated, false);
+test('neck, foot_l, foot_r đã đo và calibrated=true; mọi socket nhân vật có rotationDeg khớp số đo', () => {
+  for (const a of chars) {
+    const m = measureSockets(path.join(models, a.url));
+    for (const n of ['hand_l', 'hand_r', 'head', 'back', 'neck', 'foot_l', 'foot_r']) {
+      const s = a.sockets.find((x) => x.name === n);
+      assert.equal(s.calibrated, true, `${a.assetId} ${n}`);
+      s.offset.forEach((v, i) => assert.ok(Math.abs(v - m[n].offset[i]) < 1e-4, `${a.assetId} ${n} offset[${i}]`));
+      assert.equal(s.rotationDeg.length, 3, `${a.assetId} ${n} rotationDeg`);
+      s.rotationDeg.forEach((v, i) => assert.ok(Math.abs(v - m[n].rotationDeg[i]) < 0.01, `${a.assetId} ${n} rotationDeg[${i}]`));
+    }
+    assert.ok(m.neck.offset[1] > 0.005 && m.neck.offset[1] < 0.1, 'giữa cổ nằm trên xương neck_01');
+    assert.ok(m.foot_l.offset.every(Number.isFinite) && m.foot_r.offset.every(Number.isFinite));
+    assert.ok(Math.abs(m.foot_l.offset[0] + m.foot_r.offset[0]) < 0.01, 'chân trái/phải đối xứng');
+  }
+});
+
+test('inverseRotationDeg: xoay xương rồi áp rotationDeg cho ra xoay đơn vị (đối chiếu three.js)', () => {
+  for (const [ex, ey, ez] of [[0.3, -1.1, 2.0], [-2.5, 0.4, 0.9], [1.2, 0.2, -0.7]]) {
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(ex, ey, ez, 'XYZ'));
+    const m = new THREE.Matrix4().makeRotationFromQuaternion(q);
+    m.setPosition(0.1, 0.2, 0.3);
+    const deg = inverseRotationDeg(m.elements);
+    const local = new THREE.Quaternion().setFromEuler(new THREE.Euler(...deg.map((d) => (d * Math.PI) / 180), 'XYZ'));
+    const id = q.clone().multiply(local);
+    assert.ok(Math.abs(Math.abs(id.w) - 1) < 1e-4, `w=${id.w}`);
+  }
 });
