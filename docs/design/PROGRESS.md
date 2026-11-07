@@ -161,13 +161,12 @@ Vẫn chặn ngoài phạm vi quy trình deploy (chỉ dịch vụ web): deploy 
 |---|---|---|---|---|---|
 | ab407c7 (tuong3) | FAIL ×2 (spec dang dở trong tests/, rồi e2e bị pkill), PASS 18:15 (e2e 47) | có | /home/cc/bundles/gpb-ab407c7.bundle | ~18:35 UTC (watcher root) | 4/4 PASS |
 | 8fb740a (a11y3, multi) | FAIL (e2e bị pkill), PASS 18:53 (59 pass, 5 skip) | có | /home/cc/bundles/gpb-8fb740a.bundle | ~19:15 UTC (watcher root) | 4/4 PASS, asset hash khớp bản build riêng |
+| 1235903 (assets3, tuong4) | PASS 19:22 (59 pass, 5 skip) | có | /home/cc/bundles/gpb-1235903.bundle | ~19:45 UTC (watcher root) | 4/4 PASS, GLB mới phục vụ đúng |
 
 Nhánh đã gộp: tuong3 (xem trước đặt vật, thả rơi, rèm và ánh sáng, Đặt lại vật, bảng audit), a11y3 (useReturnFocus, nhãn nút, e2e 30-a11y-full), multi (GPB_PREVIEW_WORLD_API, WorldDebug, scripts/e2e/world-local.sh, e2e 29-multiplayer), assets3 (GLB và clip tự sinh, socket, manifest), tuong4 (quan sát đồ nhỏ, lease vật cầm, 5 preset camera, lọc và xuất/nhập ở phòng thay đồ).
 
 Hạ tầng: subagent từng chạy `pkill -f playwright`, giết acceptance hai lần; đã cấm, chỉ kill đúng PID. Spec dang dở để ở /home/cc/gpb-e2e/pending/ cho tới khi gộp. axe-core đặt cố định ở /home/cc/gpb-e2e/vendor/axe.min.js. Tài khoản test thứ hai e2e-test2@test.invalid chỉ có trong DB kiểm thử /home/cc/e2e-auth-data (TEST_EMAIL2/TEST_PASSWORD2 trong .env quyền 600).
 
 Chủ dự án cần quyết: (1) có cho deploy services/auth và services/world cùng route gateway `/api/world` không (22–27 chỉ còn thiếu bước này; quy trình deploy hiện chỉ cho web); (2) license chính thức của repo cho asset tự sinh (manifest ghi LicenseRef-GPB-project) và đối chiếu license 3 GLB MPFB; (3) 25b thoại cần TURN/SFU.
-
-| 1235903 (assets3, tuong4) | PASS 19:22 (59 pass, 5 skip) | có | /home/cc/bundles/gpb-1235903.bundle | ~19:45 UTC (watcher root) | 4/4 PASS, GLB mới phục vụ đúng |
 
 Không tạo PROJECT_COMPLETE.txt: 01, 02, 12, 22–27 vẫn MỘT PHẦN vì các lý do trên (asset/license, trình đọc màn hình thật, deploy service).
