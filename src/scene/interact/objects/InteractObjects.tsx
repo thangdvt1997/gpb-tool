@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { deskSurfacesOf, setDeskSurfaces } from '../../../avatar/ik/holdState';
 import { PROP_SPOTS, propSize, faceRotation, TV } from '../../officePropsLayout';
 import { toWorldX, toWorldZ } from '../../layout';
 import { isInsideOffice } from '../../officeBounds';
@@ -222,6 +223,8 @@ function WindowMesh() {
 /** Điều phối viên chèn <InteractObjects objects={...} blocked={...} /> trong ITOffice (trong Canvas). */
 export function InteractObjects(p: { objects: readonly ZoneObject[]; blocked: (x: number, z: number) => boolean }) {
   const built = useMemo(() => buildSampleConfig(p.objects, p.blocked), [p.objects, p.blocked]);
+  // Mặt bàn cho IK tay khi ngồi (avatar/ik/holdState).
+  useEffect(() => setDeskSurfaces(deskSurfacesOf(p.objects)), [p.objects]);
   useEffect(() => registerObjects(built), [built]);
   const g = built.geo;
   const sw = switchPos(g.water);

@@ -3,10 +3,11 @@ import { SHOTS, collectErrors, mockSession, skipTour, waitForRenderedCanvas } fr
 
 // IK mặc định bật (TASK 03): ngồi ghế với IK, không lỗi console, không NaN trong xương, hông khớp mặt ghế.
 // Hook debug: ?debug=ik -> window.__gpbIK. Tắt IK: ?ik=0.
+const CUP = { x: 10.85, z: 13.63, yaw: 0 };
 const CHAIR = { x: -25.9, z: 4.4, yaw: Math.PI };
 
 type Pos = { x: number; z: number; yaw: number };
-interface IkDebug { frames: number; sitFrames: number; nanBones: number; pelvisY: number; floorY: number; footY: [number, number] }
+interface IkDebug { frames: number; sitFrames: number; nanBones: number; pelvisY: number; floorY: number; footY: [number, number]; gripActive: boolean; holdDist: number; deskErr: number }
 const readIk = (page: Page) => page.evaluate(() => (window as unknown as { __gpbIK?: IkDebug }).__gpbIK ?? null);
 
 /** Ghi vị trí nhân vật vào bản lưu IndexedDB (gpb-office/snapshots) rồi lần tải sau đặt nhân vật ở đó (TASK 06). */
@@ -97,6 +98,9 @@ test('IK mặc định: ngồi ghế, chụp ảnh, không lỗi console, không
   // Hông: mặt ghế 0,46 + 0,10 so với sàn (sai số 6 cm); mắt cá không chui xuống sàn.
   expect(Math.abs(d!.pelvisY - d!.floorY - 0.56)).toBeLessThan(0.06);
   for (const y of d!.footY) expect(y - d!.floorY).toBeGreaterThan(-0.02);
+  // Bàn có máy tính trước ghế: hai tay đặt lên mặt bàn (sai số IK nhỏ).
+  expect(d!.deskErr, 'tay trên bàn').toBeGreaterThanOrEqual(0);
+  expect(d!.deskErr).toBeLessThan(0.03);
   await page.keyboard.press('e');
   await expect.poll(() => promptText(page), { timeout: 20_000 }).not.toMatch(/Đứng dậy/);
   await page.waitForTimeout(1000);
@@ -113,5 +117,24 @@ test('?ik=0 tắt IK', async ({ page }) => {
   await page.waitForTimeout(2500);
   const d = await readIk(page);
   expect(d === null || d.frames === 0).toBe(true);
+  expect(errors, errors.join('\n')).toEqual([]);
+});
+
+test('cầm cốc: tay phải với tới cốc, cổ tay gần cốc, không lỗi console', async ({ page }) => {
+  const errors = collectErrors(page);
+  await mockSession(page);
+  await openAt(page, CUP, '?debug=ik');
+  await expect.poll(() => promptText(page), { timeout: 20_000 }).toMatch(/^E\s*[—:]\s*Cầm cốc/);
+  expect((await readIk(page))!.gripActive).toBe(false);
+  await page.keyboard.press('e');
+  await expect.poll(() => promptText(page), { timeout: 20_000 }).not.toMatch(/Cầm cốc/);
+  await expect.poll(async () => (await readIk(page))!.gripActive, { timeout: 15_000, message: 'grip bật' }).toBe(true);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${SHOTS}/23-ik-cup.png` });
+  const d = (await readIk(page))!;
+  console.log('IK cup', JSON.stringify(d));
+  expect(d.holdDist, 'socket bàn tay cách tâm cốc (m)').toBeGreaterThanOrEqual(0);
+  expect(d.holdDist).toBeLessThan(0.08);
+  expect(d.nanBones).toBe(0);
   expect(errors, errors.join('\n')).toEqual([]);
 });
