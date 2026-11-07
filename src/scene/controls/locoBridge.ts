@@ -20,8 +20,10 @@ export interface LocoFrameFacts {
   seated: boolean;
   /** Emote đang phát (phase khác idle): id, hoặc null nếu không. */
   emoteId: string | null;
-  /** Bị khóa/choáng từ ngoài (chưa nối: không có nguồn trong điều khiển). */
+  /** Bị khóa/choáng từ ngoài (isLocked của useGtaPlayer: nằm đỡ trong duel; hoặc locoPulses.requestStun). */
   stunned?: boolean;
+  /** Vừa dùng vật (xung từ bus sự kiện tương tác, xem locoPulses). */
+  interactActive?: boolean;
 }
 
 /** Ghi input FSM từ dữ kiện khung. Không cấp phát. */
@@ -34,8 +36,10 @@ export function fillLocoInput(out: LocoInput, f: LocoFrameFacts, fsmState: LocoS
   out.jumped = f.jumped;
   out.sitRequested = f.seated;
   out.standRequested = !f.seated;
-  out.interactRequested = false;
-  out.interactDone = true;
+  // Dùng vật chỉ tính khi đang chạm đất và không nhảy: nhảy luôn thắng để tư thế trên không không bị trễ.
+  const useNow = f.interactActive === true && f.grounded && !f.jumped;
+  out.interactRequested = useNow;
+  out.interactDone = !useNow;
   out.emoteRequested = f.emoteId;
   // Đang ở trạng thái emote mà emote đã hết thì báo xong.
   out.emoteDone = f.emoteId === null && fsmState === 'emote';
@@ -53,8 +57,9 @@ export interface LocoBlendInputs {
  * Trạng thái FSM -> (chạm đất, ngồi) cho trộn hoạt ảnh.
  * Trên không = jumpStart hoặc airborne; ngồi theo ghế thật (seated) để đứng dậy không bị trễ minTime của FSM.
  */
-export function locoBlendInputs(state: LocoState, seated: boolean, out: LocoBlendInputs): LocoBlendInputs {
-  out.grounded = state !== 'jumpStart' && state !== 'airborne';
+export function locoBlendInputs(state: LocoState, seated: boolean, out: LocoBlendInputs, actuallyGrounded = true): LocoBlendInputs {
+  // actuallyGrounded: dữ kiện thật từ chuyển động, để interact/stunned (không cho chuyển sang nhảy ngay) không che tư thế trên không.
+  out.grounded = state !== 'jumpStart' && state !== 'airborne' && !((state === 'interact' || state === 'stunned') && !actuallyGrounded);
   out.sitting = seated;
   return out;
 }

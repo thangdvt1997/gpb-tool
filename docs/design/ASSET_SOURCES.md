@@ -110,3 +110,21 @@ Phần tóm tắt license là diễn giải của người rà soát, không tr�
 - Mở các trang Quaternius, Mixamo, VRoid Hub và Pixabay bằng trình duyệt của người phụ trách, vì công cụ rà soát bị 403. Ghi kết quả vào mục 2.
 - Chọn pack và mục cụ thể cho từng khu.
 - Pháp chế xác nhận cách ghi công và yêu cầu lưu bằng chứng trước khi phát hành.
+
+## 8. Nguồn từng asset đã có trong repo (cập nhật 2026-11-07)
+
+Mọi file dưới `public/` hiện chỉ gồm 3 GLB và `manifest.json`. Không có font, âm thanh, texture hay HDRI trong repo (font dùng của hệ thống). Đồ nội thất/prop trong cảnh dựng bằng mã (primitive three.js), không có file bên ngoài.
+
+| Asset | File | Nguồn | License ghi nhận | Bằng chứng | Trạng thái |
+|---|---|---|---|---|---|
+| char.male_real | public/models/male_real.glb | Dữ liệu MakeHuman xuất bằng MPFB 2 (Blender 4.2) | CC0-1.0 (theo pipeline) | Chưa có: chưa mở trang license MakeHuman, chưa lưu ảnh chụp, tên file gốc trên VPS `/opt/gpb-mpfb/out/` chưa đối chiếu | THIẾU bằng chứng (`verified = false`) |
+| char.female_real | public/models/female_real.glb | như trên | như trên | như trên | THIẾU bằng chứng |
+| char.chibi | public/models/chibi.glb | như trên (biến thể tỷ lệ chibi) | như trên | như trên | THIẾU bằng chứng |
+| 6 shape key thân (bodyBelly, bodyWaistSlim, bodyHipsWide, bodyShouldersV, headFat, chestMuscle) | trong 3 GLB trên | Do pipeline tạo | Không rõ | Chưa đối chiếu với target MakeHuman gốc | THIẾU bằng chứng |
+
+Việc cần người có quyền truy cập làm: mở trang license MakeHuman/MPFB, lưu bản chụp có ngày, đối chiếu sha256 với file gốc trên VPS, rồi mới đặt `license.verified = true`. Cảnh báo `LICENSE_UNVERIFIED` còn lại là đúng thực tế, không tắt.
+
+### Cảnh báo validator: đã giảm và còn lại
+
+- Giảm 12 cảnh báo `SOCKET_UNCALIBRATED` (hand_l, hand_r, head, back của 3 nhân vật) nhờ đo từ xương/đỉnh mesh thật bằng `scripts/assets/measure-sockets.mjs` (có test `measure-sockets.test.mjs`). "calibrated" ở đây nghĩa là vị trí đã đo, `rotationDeg` chưa đo.
+- Còn lại 24: 9 `SOCKET_UNCALIBRATED` (neck, foot_l, foot_r chưa đo), 9 `BLEND_UNAPPROVED` (3 material mỗi file đang BLEND trong GLB; chỉ sửa được bằng xuất lại GLB, không đổi manifest cho đẹp), 3 `PIVOT_OFFSET_REQUIRED` (đáy cách origin 2,4 đến 2,7 cm, thật), 3 `LICENSE_UNVERIFIED` (xem trên).
