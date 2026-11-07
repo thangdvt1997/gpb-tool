@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { PROP_SPOTS, propSize, faceRotation, TV } from '../../officePropsLayout';
 import { toWorldX, toWorldZ } from '../../layout';
 import { isInsideOffice } from '../../officeBounds';
@@ -10,6 +10,10 @@ import { registerObjects, type ObjectsConfig } from './index';
 import { ObjectsTicker, DoorMesh, DrawerCabinetMesh, GroupLight, SwitchMesh, WaterCoolerMesh, PrinterMesh, ItemMesh, ComputerMesh, CurtainMesh } from './components';
 import { openComputerUi } from './computerUi';
 import type { Footprint } from '../registry';
+import type { Rect } from '../../layout';
+import { getObjectState, subscribeObjectStates } from '../objectStates';
+import { doorOf, DOOR_DEFAULTS } from './door';
+import { doorBlocker, deskBlocker, windowFrameParts, windowPlacement } from './blockers';
 
 /**
  * Khu mẫu dựng từ dữ liệu sẵn có (PROP_SPOTS, ghế của khối bàn). Không đổi dữ liệu nguồn.
@@ -179,6 +183,42 @@ function cupHome(l: SampleLow) {
   return { x: l.x - t.x * 0.25, y: l.top, z: l.z - t.z * 0.25 };
 }
 
+const doorKey = () => {
+  const d = doorOf(getObjectState(SAMPLE_DOOR.id));
+  return d.phase === 'open' ? `open:${d.angle}:${d.dir}` : 'closed';
+};
+
+/** Vật cản động của vật tương tác (cửa theo trạng thái, bàn máy tính). Mảng chỉ đổi khi cửa đổi trạng thái chặn. */
+export function useInteractBlockers(): Rect[] {
+  const key = useSyncExternalStore(subscribeObjectStates, doorKey, doorKey);
+  return useMemo(() => {
+    const d = doorOf(getObjectState(SAMPLE_DOOR.id));
+    return [doorBlocker(SAMPLE_DOOR.hinge, SAMPLE_DOOR.yaw, SAMPLE_DOOR.length, d, DOOR_DEFAULTS.maxAngle), deskBlocker(SAMPLE_DESK.fp)];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+}
+
+/** Cửa sổ đơn giản trên tường phía sau rèm. */
+function WindowMesh() {
+  const c = SAMPLE_CURTAIN;
+  const p = windowPlacement({ x: c.x, z: c.z, yaw: c.yaw });
+  const parts = windowFrameParts(c.width, c.height);
+  return (
+    <group position={[p.x, 0, p.z]} rotation={[0, c.yaw, 0]}>
+      {parts.map((q, i) => (
+        <mesh key={i} position={q.pos}>
+          <boxGeometry args={q.size} />
+          {q.kind === 'glass' ? (
+            <meshStandardMaterial color="#bfe3ff" transparent opacity={0.45} roughness={0.1} />
+          ) : (
+            <meshStandardMaterial color="#e8e8e8" roughness={0.6} />
+          )}
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /** Điều phối viên chèn <InteractObjects objects={...} blocked={...} /> trong ITOffice (trong Canvas). */
 export function InteractObjects(p: { objects: readonly ZoneObject[]; blocked: (x: number, z: number) => boolean }) {
   const built = useMemo(() => buildSampleConfig(p.objects, p.blocked), [p.objects, p.blocked]);
@@ -199,6 +239,7 @@ export function InteractObjects(p: { objects: readonly ZoneObject[]; blocked: (x
         <meshStandardMaterial color="#b8a58a" roughness={0.8} />
       </mesh>
       <ComputerMesh id={SAMPLE_DESK.id} position={[SAMPLE_DESK.x, SAMPLE_DESK.top, SAMPLE_DESK.z]} yaw={SAMPLE_DESK.yaw} />
+      <WindowMesh />
       <CurtainMesh id={SAMPLE_CURTAIN.id} position={[SAMPLE_CURTAIN.x, 0, SAMPLE_CURTAIN.z]} yaw={SAMPLE_CURTAIN.yaw} width={SAMPLE_CURTAIN.width} height={SAMPLE_CURTAIN.height} />
       <ItemMesh id="sample_cup" home={cupHome(g.low)} radius={0.04} height={0.1} />
     </group>
