@@ -170,3 +170,29 @@ Hạ tầng: subagent từng chạy `pkill -f playwright`, giết acceptance hai
 Chủ dự án cần quyết: (1) có cho deploy services/auth và services/world cùng route gateway `/api/world` không (22–27 chỉ còn thiếu bước này; quy trình deploy hiện chỉ cho web); (2) license chính thức của repo cho asset tự sinh (manifest ghi LicenseRef-GPB-project) và đối chiếu license 3 GLB MPFB; (3) 25b thoại cần TURN/SFU.
 
 Không tạo PROJECT_COMPLETE.txt: 01, 02, 12, 22–27 vẫn MỘT PHẦN vì các lý do trên (asset/license, trình đọc màn hình thật, deploy service).
+
+## 2026-11-07 — Lần lặp 4 (giao việc V1–V6 của chủ dự án)
+
+| Việc | Ai / worktree | Kết quả |
+|---|---|---|
+| V1 aria-expanded sau khi đóng hộp thoại modal | điều phối viên, main | 478bdc8 + 1c2b1f9. State đã về false đúng (onCancel/onClose gọi setXOpen(false)); lỗi do trả focus đồng bộ khi tháo hộp thoại aria-modal. `restoreFocusLater` (2 khung hình hoặc 120 ms). Chi tiết: BROWSER_QA.md mục NVDA thật. |
+| V2 Esc đóng Sao lưu | điều phối viên, main | `useEscapeClose`: Esc đóng Sao lưu, Thư viện, Hồ sơ, Vẽ xăm cả khi mở bằng chuột; Sao lưu thành role=dialog aria-modal=false; nút × "Đóng bảng sao lưu". |
+| V3 rà 7 nút HUD | điều phối viên | e2e 31-hud-expanded (7 nút × Esc/nút đóng): 14/14 cục bộ, 14/14 trên production ed28d05. Bảng ở BROWSER_QA.md. |
+| LỖI 2 NVDA đợt 1 (ghi danh đọc hai lần) | điều phối viên | 1c2b1f9: vùng live một chuỗi. Chưa kiểm NVDA thật. |
+| V5 22–27 deploy service | subagent svc4, /home/cc/wt/svc4 (wt4/svc4 ef7dae8, đã gộp) | **Bị chặn: cần root.** cc không có sudo, không ghi /opt/gpb-tool, không đọc .env; không dùng nhóm docker để vượt quyền. Đã chuẩn bị compose service world, route nginx /api/world, scripts/deploy-svc.sh và rollback-svc.sh; thử trên bản sao DB và gateway test: OK. |
+| V5 25b coturn | subagent voice4, /home/cc/wt/voice4 (859f3db) | coturn chạy (/home/cc/gpb-turn, container gpb-turn-coturn, 3478 udp/tcp, relay 49160–49200/udp), relay kiểm udp/tcp trên VPS, IP nội bộ bị chặn 403. Rollback: `cd /home/cc/gpb-turn && docker compose down`. |
+| V5 25b thoại | subagent voice4b (cdb3785) | Tín hiệu qua world WS, mesh ≤ 6 peer, gain theo khoảng cách; e2e 33-voice 4/4 (getStats nhận audio hai phía). |
+| V5 01, 02 | subagent assets4 (8115a7f) | runtimeAlphaMode, validator 15 → 6 cảnh báo. Còn lại cần license hoặc thiết kế (xem TASK_STATUS). |
+| V6 license | — | **Chờ chủ dự án quyết định license** (3 GLB MPFB `verified=false`, asset tự sinh `LicenseRef-GPB-project`). Không chặn việc khác. |
+
+Hạ tầng e2e: preview 4173 mồ côi (chạy 8 giờ, thiếu proxy /api/world) và world 3903 mồ côi từ wt/roles làm 29-multiplayer fail; đã dừng, world 3903 chạy lại từ main bằng scripts/e2e/world-local.sh (nạp TURN từ /home/cc/gpb-turn/.env). playwright.config.ts đặt mặc định GPB_PREVIEW_WORLD_API=127.0.0.1:3903. playwright.prod.config.ts thêm 31-hud-expanded.
+
+| Commit | Acceptance | Push origin/main | Bundle | Deploy production | Test production |
+|---|---|---|---|---|---|
+| 478bdc8 | FAIL (10-panels: Sao lưu đổi role; focus Phòng thay đồ chậm dưới tải; 29-multiplayer do preview mồ côi) | — | — | — | — |
+| ed28d05 | **PASS** 22:00 (e2e 78 + đăng nhập thật) | có | /home/cc/bundles/gpb-ed28d05.bundle | 22:22 UTC (watcher root) | **18/18 PASS** (02-scene-mock, 20-controls, 30-hanging, 31-hud-expanded 14 ca) |
+
+Việc cần root (chủ dự án hoặc root chạy một lần, sau khi commit có scripts/deploy-svc.sh đã PASS):
+`sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (sao lưu /root/backup-gpb-svc-<TS>, tag auth/gateway backup, build và up auth, world, gateway, tự kiểm). Thoại cần thêm TURN_SECRET (từ /home/cc/gpb-turn/.env) và TURN_URLS vào env của service world. Rollback: `sudo bash scripts/rollback-svc.sh <TS>`.
+
+Không tạo PROJECT_COMPLETE.txt: 22–27 chưa có bằng chứng production (cần root), 01/02 chờ license, 12 chờ NVDA thật.

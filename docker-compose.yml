@@ -170,6 +170,9 @@ services:
       AUTH_URL: http://127.0.0.1:3001
       # Vai trò phòng lưu bền ở volume world-data (thư mục thuộc user node, xem services/world/Dockerfile).
       WORLD_DATA_DIR: /data
+      # Thoại (25b): credential TURN ngắn hạn. Đặt TURN_SECRET trong .env (giá trị ở /home/cc/gpb-turn/.env); rỗng thì /api/world/turn trả 503, thoại tắt.
+      TURN_SECRET: ${TURN_SECRET:-}
+      TURN_URLS: ${TURN_URLS:-turn:198.204.229.10:3478?transport=udp,turn:198.204.229.10:3478?transport=tcp}
     volumes:
       - world-data:/data
 

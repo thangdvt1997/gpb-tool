@@ -1,3 +1,5 @@
+// Đăng ký test thoại trong cùng tệp với nhiều người: hai spec dùng chung hai tài khoản test, chạy song song thì world thay phiên (4409).
+import "./voice-suite";
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
