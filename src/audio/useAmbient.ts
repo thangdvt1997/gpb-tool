@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ZoneObject } from '../content/types';
 import { getSpatialAudio } from './spatial/react';
+import type { LayoutPoses } from '../layout/applyPoses';
 import { AmbientScape, resolveAmbientSources, type AmbientZone } from './spatial/ambient';
 
 declare global {
@@ -15,7 +16,7 @@ declare global {
  * - Âm lượng/tắt tiếng theo bus trong Cài đặt, tạm dừng khi tab ẩn do manager xử lý.
  * - Hook e2e window.__gpbAudio chỉ có khi URL có ?debug=audio.
  */
-export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonly ZoneObject[] = []) {
+export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonly ZoneObject[] = [], layoutPoses?: LayoutPoses) {
   const scapeRef = useRef<AmbientScape | null>(null);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonl
     const unlock = () => { void manager.unlock(); };
     window.addEventListener('pointerdown', unlock, { once: true, capture: true });
     window.addEventListener('keydown', unlock, { once: true, capture: true });
-    if (new URLSearchParams(window.location.search).get('debug') === 'audio') {
+    if (new URLSearchParams(window.location.search).getAll('debug').includes('audio')) {
       window.__gpbAudio = () => ({
         status: manager.status, ambient: scape.debugState(), activeVoices: manager.activeVoices,
         master: {
@@ -45,6 +46,6 @@ export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonl
   }, []);
 
   useEffect(() => { scapeRef.current?.setZone(zone); }, [zone]);
-  useEffect(() => { scapeRef.current?.setSources(resolveAmbientSources(objects)); }, [objects]);
+  useEffect(() => { scapeRef.current?.setSources(resolveAmbientSources(objects, undefined, undefined, layoutPoses)); }, [objects, layoutPoses?.saved, layoutPoses?.defaults]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { scapeRef.current?.setEnabled(enabled); }, [enabled]);
 }

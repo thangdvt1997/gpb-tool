@@ -43,7 +43,7 @@ import { isObjectInOffice } from './officeBounds';
 import { BOARD_IDS, TV_IDS, TvScreen, WhiteboardScreen } from '../display';
 import { carePlantAndSync, PlantMesh, TOOL_ACTION, usePlants } from '../plants';
 import type { PlantTool } from '../plants';
-import { fixtureTransform, type LayoutPoses } from '../layout/applyPoses';
+import { fixtureTransform, layoutRotationY, unrotatedOf, type LayoutPoses } from '../layout/applyPoses';
 import { BOARD_FIXTURES, PLANT_SPOTS, TV_FIXTURES } from './itFixtures';
 import { OFFICE_PROP_SHADOWS } from './officePropsLayout';
 import { CityView } from '../window';
@@ -306,7 +306,7 @@ export function ITOffice({
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
   // Hook e2e (?debug=layout): vật cản hiện hành của nhân vật.
   useEffect(() => {
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'layout') {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).getAll('debug').includes('layout')) {
       (window as unknown as { __gpbLayoutObstacles?: readonly Rect[] }).__gpbLayoutObstacles = obstacles;
     }
   }, [obstacles]);
@@ -331,6 +331,7 @@ export function ITOffice({
     () =>
       new Set([
         ...decor.desks.map((d) => d.id),
+        ...decor.rotatedDesks.map((d) => d.spec.id),
         ...decor.items.map((d) => d.id),
         ...zone.objects.filter((o) => ENTRY_FIXTURE_IDS.has(o.id)).map((o) => o.id),
       ]),
@@ -343,25 +344,32 @@ export function ITOffice({
     [zone, decorIds],
   );
 
-  // Gom mảnh hình hộp theo lớp để giảm số lần vẽ (instancing).
+  // Gom mảnh hình hộp theo lớp để giảm số lần vẽ (instancing). Vật đã xoay theo bố cục (layoutRot) dựng mảnh từ
+  // vật chưa xoay và vẽ riêng trong group quay quanh tâm, nên không lẫn vào các lớp chung (không vẽ hai lần).
   const parts = useMemo(() => {
     const solid: Part[] = [];
     const glass: Part[] = [];
     const decorParts: Part[] = [];
-    for (const o of zone.objects) {
-      const covered = decorIds.has(o.id);
+    const rotated: Array<{ id: string; cx: number; cz: number; rotationY: number; solid: Part[]; glass: Part[]; decor: Part[] }> = [];
+    for (const obj of zone.objects) {
+      const covered = decorIds.has(obj.id);
+      const o = unrotatedOf(obj);
+      const r = obj.layoutRot
+        ? { id: obj.id, cx: o.position[0], cz: o.position[2], rotationY: layoutRotationY(obj), solid: [] as Part[], glass: [] as Part[], decor: [] as Part[] }
+        : null;
       for (const p of partsOf(o)) {
         if (p.layer === 'glass') {
-          glass.push(p);
+          (r ? r.glass : glass).push(p);
         } else if (!covered) {
-          if (p.layer === 'decor') decorParts.push(p);
-          else solid.push(p);
+          if (p.layer === 'decor') (r ? r.decor : decorParts).push(p);
+          else (r ? r.solid : solid).push(p);
         } else if (p.layer === 'box' && p.size[1] <= FLAT_MAX_HEIGHT) {
-          solid.push(p);
+          (r ? r.solid : solid).push(p);
         }
       }
+      if (r) rotated.push(r);
     }
-    return { solid, glass, decor: decorParts };
+    return { solid, glass, decor: decorParts, rotated };
   }, [zone, decorIds]);
 
   // Lớp chọn vô hình: một hộp đúng footprint cho mỗi vật thể có decor.
@@ -447,6 +455,22 @@ export function ITOffice({
       <ObjectBoxes parts={parts.glass} glass />
       <DecorBoxes parts={parts.decor} />
       <InstancedBoxes items={hitItems} hitOnly />
+      {parts.rotated.map((r) => (
+        <group key={`rot-parts-${r.id}`} name={`rot-parts-${r.id}`} position={[r.cx, 0, r.cz]} rotation={[0, r.rotationY, 0]}>
+          <group position={[-r.cx, 0, -r.cz]}>
+            <ObjectBoxes parts={r.solid} />
+            <ObjectBoxes parts={r.glass} glass />
+            <DecorBoxes parts={r.decor} />
+          </group>
+        </group>
+      ))}
+      {decor.rotatedDesks.map((d) => (
+        <group key={`rot-desk-${d.spec.id}`} name={`rot-desk-${d.spec.id}`} position={[d.cx, 0, d.cz]} rotation={[0, d.rotationY, 0]}>
+          <group position={[-d.cx, 0, -d.cz]}>
+            <DeskDecorField desks={d.desks} silent />
+          </group>
+        </group>
+      ))}
 
       {decor.items.map(({ id, el }) => (
         <Fragment key={id}>{el}</Fragment>
@@ -547,7 +571,7 @@ export function ITOffice({
       {/* Vật tương tác (tuongtac.txt): ngăn kéo, cây nước, máy in, công tắc, đồ nhỏ, TV, ghế. */}
       <InteractObjects objects={zone.objects} blocked={isBlockedAt} />
       <DuelLayer world={world} myId={selfId} duel={duel} />
-      <AmbientAudio zone={audioZone} enabled={audioEnabled} objects={zone.objects} />
+      <AmbientAudio zone={audioZone} enabled={audioEnabled} objects={zone.objects} layoutPoses={layoutPoses} />
     </SceneContext.Provider>
   );
 }

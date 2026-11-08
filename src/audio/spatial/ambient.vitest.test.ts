@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SpatialAudioManager } from './manager';
+import { applyLayoutPoses, type LayoutPoses } from '../../layout/applyPoses';
 import { AmbientScape, applyCone, resolveAmbientSources, CONE_BY_KIND } from './ambient';
 import { TV_FIXTURES } from '../../scene/itFixtures';
 import type { ZoneObject } from '../../content/types';
@@ -117,6 +118,39 @@ describe('nguồn có hướng (cone)', () => {
     const sp = src[4];
     expect(sp.orientation).toEqual([0, 0, 1]);
     expect(sp.position[2]).toBeCloseTo(-7.7 - (3.2 / 2 - 0.3));
+  });
+
+  it('theo bố cục: tivi dời và xoay, loa karaoke xoay theo phòng; cập nhật tại chỗ không dựng lại nút', async () => {
+    const poses: LayoutPoses = {
+      saved: { tv_lounge: { x: 20, z: 3, rotation: 90 }, karaoke_room: { x: 20, z: -7.7, rotation: 90 } },
+      defaults: { tv_lounge: { x: TV_FIXTURES.tv_lounge.position[0], z: TV_FIXTURES.tv_lounge.position[2], rotation: 0 }, karaoke_room: { x: 20, z: -7.7, rotation: 0 } },
+    };
+    const eff = applyLayoutPoses(objects, poses);
+    const src = resolveAmbientSources(eff, undefined, undefined, poses);
+    const lounge = src.find((s) => s.id === 'tv_lounge')!;
+    expect(lounge.position[0]).toBeCloseTo(20);
+    expect(lounge.position[1]).toBe(TV_FIXTURES.tv_lounge.position[1]);
+    expect(lounge.position[2]).toBeCloseTo(3);
+    // rotationY π + π/2: hướng (sin, cos) = (-1, 0)
+    expect(lounge.orientation[0]).toBeCloseTo(-1);
+    expect(lounge.orientation[2]).toBeCloseTo(0);
+    const sp = src.find((s) => s.id === 'speaker_karaoke')!;
+    expect(sp.orientation[0]).toBeCloseTo(1);
+    expect(sp.orientation[2]).toBeCloseTo(0);
+    // Footprint đã xoay: sâu 3.2 thành rộng theo x 3.2; lùi về phía -x từ tâm.
+    expect(sp.position[0]).toBeCloseTo(20 - (3.2 / 2 - 0.3));
+    expect(src.find((s) => s.id === 'tv_lobby')!.position).toEqual(TV_FIXTURES.tv_lobby.position);
+
+    const { m, all, scape } = await setup();
+    scape.setSources(resolveAmbientSources(objects));
+    await m.unlock();
+    const before = all.length;
+    const ctxBefore = m.getBus('ambient')!.ctx;
+    scape.setSources(src.length === 5 ? src : resolveAmbientSources(objects, undefined, undefined, poses));
+    expect(all.length).toBe(before);
+    expect(m.getBus('ambient')!.ctx).toBe(ctxBefore);
+    const tv = scape.debugState().sources.find((x) => x.id === 'tv_lounge')!;
+    expect(tv.position[2]).toBeCloseTo(3);
   });
 
   it('applyCone gán góc, outerGain và orientation', () => {

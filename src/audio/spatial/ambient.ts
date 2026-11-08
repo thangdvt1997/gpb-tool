@@ -10,6 +10,7 @@ import { occlusionFor, type DistanceModel } from './pure';
 import type { SpatialAudioManager } from './manager';
 import { TV_FIXTURES } from '../../scene/itFixtures';
 import type { TvId } from '../../display/types';
+import { fixtureTransform, layoutRotationY, type LayoutPoses } from '../../layout/applyPoses';
 
 export type AmbientZone = 'office' | 'lounge' | 'game' | 'karaoke' | 'events' | 'meeting' | 'server' | 'soc';
 export type AmbientSourceKind = 'tv' | 'speaker' | 'printer';
@@ -98,22 +99,26 @@ export function resolveAmbientSources(
   objects: readonly ZoneObject[],
   defs: readonly AmbientSourceDef[] = AMBIENT_SOURCE_DEFS,
   tvs: Record<TvId, { position: [number, number, number]; rotationY: number }> = TV_FIXTURES,
+  poses?: LayoutPoses,
 ): ResolvedAmbientSource[] {
   const out: ResolvedAmbientSource[] = [];
   for (const d of defs) {
     if (d.fixture) {
       const f = tvs[d.fixture];
       if (!f) continue;
+      // Theo bố cục đã lưu: cùng fixtureTransform với tivi vẽ trong cảnh.
+      const t = fixtureTransform(d.fixture, f.position, f.rotationY, poses);
       out.push({
         id: d.id, kind: d.kind, zone: d.zone,
-        position: [f.position[0], f.position[1], f.position[2]],
-        orientation: facingOf(f.rotationY), cone: CONE_BY_KIND[d.kind],
+        position: t.position,
+        orientation: facingOf(t.rotationY), cone: CONE_BY_KIND[d.kind],
       });
       continue;
     }
     const o = objects.find((x) => x.id === d.objectId);
     if (!o) continue;
-    const [fx, , fz] = facingOf(d.rotationY ?? 0);
+    // o.size đã là footprint sau khi xoay (effectiveZone); hướng cộng thêm góc xoay của bố cục.
+    const [fx, , fz] = facingOf((d.rotationY ?? 0) + layoutRotationY(o));
     const half = (Math.abs(fx) * o.size[0] + Math.abs(fz) * o.size[2]) / 2;
     const back = Math.max(0, half - INSET);
     out.push({
@@ -191,7 +196,7 @@ export interface AmbientDebugState {
   bus: 'ambient' | null;
   zone: AmbientZone;
   layers: string[];
-  sources: { id: string; kind: AmbientSourceKind; cone: ConeSpec; orientation: [number, number, number] }[];
+  sources: { id: string; kind: AmbientSourceKind; cone: ConeSpec; orientation: [number, number, number]; position: [number, number, number] }[];
 }
 
 export class AmbientScape {
@@ -227,8 +232,24 @@ export class AmbientScape {
     }
   }
 
+  /**
+   * Cập nhật nguồn. Cùng danh sách id (chỉ đổi vị trí/hướng, vd. bố cục đổi) thì chỉnh PannerNode tại chỗ,
+   * không dựng lại nút âm thanh hay AudioContext. Khác danh sách thì dựng lại các nguồn.
+   */
   setSources(sources: ResolvedAmbientSource[]): void {
+    const same = this.live.length === sources.length && this.live.every((l, i) => l.def.id === sources[i].id && l.def.kind === sources[i].kind);
     this.defs = sources;
+    if (this.ctx && same) {
+      this.live.forEach((l, i) => {
+        l.def = sources[i];
+        l.panner.positionX.value = sources[i].position[0];
+        l.panner.positionY.value = sources[i].position[1];
+        l.panner.positionZ.value = sources[i].position[2];
+        applyCone(l.panner, sources[i].cone, sources[i].orientation);
+      });
+      this.updateOcclusion();
+      return;
+    }
     if (this.ctx) {
       this.stopSources();
       this.startSources();
@@ -243,7 +264,7 @@ export class AmbientScape {
       zone: this.zone,
       layers: [this.base ? 'base' : '', this.zoneLayer ? this.zoneLayerName : ''].filter(Boolean),
       sources: this.live.map((s) => ({
-        id: s.def.id, kind: s.def.kind, cone: s.def.cone, orientation: s.def.orientation,
+        id: s.def.id, kind: s.def.kind, cone: s.def.cone, orientation: s.def.orientation, position: s.def.position,
       })),
     };
   }

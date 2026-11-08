@@ -656,14 +656,18 @@ const NO_SHADOWS: readonly ShadowSpot[] = [];
 export function DeskDecorField({
   desks,
   extraShadows = NO_SHADOWS,
+  silent = false,
 }: {
   desks: readonly DeskSpec[];
   extraShadows?: readonly ShadowSpot[];
+  /** Không ghi window.__gpbDeskGlb (trường hợp vẽ thêm vài quầy đã xoay bên cạnh field chính). */
+  silent?: boolean;
 }) {
   const { source, geometries } = useDeskGlb();
   const built = useMemo(() => buildDeskField(desks, extraShadows, geometries), [desks, extraShadows, geometries]);
   useDisposeOnChange(built.owned);
   useEffect(() => {
+    if (silent) return;
     const instancedMeshes = built.meshes.filter((m) => (m as THREE.InstancedMesh).isInstancedMesh && m.name.startsWith('desk-glb-'));
     window.__gpbDeskGlb = {
       source,
@@ -672,7 +676,7 @@ export function DeskDecorField({
       instances: instancedMeshes.reduce((n, m) => n + (m as THREE.InstancedMesh).count, 0),
       signatures: built.sigs,
     };
-  }, [built, source]);
+  }, [built, source, silent]);
   // Env map nướng từ trần đèn panel (dùng chung với sàn): khung thép, trụ ghế, viền màn hình có phản chiếu nhẹ.
   const env = useOfficeEnvMap();
   useEffect(() => {

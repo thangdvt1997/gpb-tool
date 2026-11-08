@@ -4,6 +4,7 @@
 // Dùng floorPropsOf(obj) để đổi ZoneObject sang props. Kích thước mặc định lấy từ it.json.
 
 import { createElement, type ReactElement } from 'react';
+import { layoutRotationY, rotateBoxesAbout, unrotatedOf } from '../layout/applyPoses';
 import type { ZoneObject } from '../content/types';
 import { DeskDetail, NocWallDetail, ServiceDeskDetail, type DeskSpec, type DeskVariant } from './desk';
 import { MeetingRoomDetail } from './meeting';
@@ -233,20 +234,43 @@ export interface ZoneDecor {
   desks: DeskSpec[];
   /** Mỗi vật thể có decor riêng một phần tử. id là id vật thể. */
   items: Array<{ id: string; el: ReactElement }>;
+  /** Quầy/bàn đã xoay theo bố cục: spec dựng từ vật chưa xoay, vẽ trong group quay quanh (cx, cz). Không nằm trong desks. */
+  rotatedDesks: Array<{ spec: DeskSpec; desks: readonly DeskSpec[]; cx: number; cz: number; rotationY: number }>;
+}
+
+/** Bọc phần tử vẽ ở toạ độ thế giới vào group quay quanh (cx, cz) một góc rotationY. */
+function rotatedAbout(el: ReactElement, cx: number, cz: number, rotationY: number, name: string): ReactElement {
+  return createElement(
+    'group',
+    { name, position: [cx, 0, cz], rotation: [0, rotationY, 0] },
+    createElement('group', { position: [-cx, 0, -cz] }, el),
+  );
 }
 
 /** Dựng decor cho cả khu. Kích thước lấy từ it.json. plants false thì bỏ cây cảnh. */
 export function zoneDecorOf(objects: readonly ZoneObject[], plants: boolean): ZoneDecor {
   const desks: DeskSpec[] = [];
+  const rotatedDesks: ZoneDecor['rotatedDesks'] = [];
   const items: ZoneDecor['items'] = [];
-  for (const o of objects) {
+  for (const obj of objects) {
+    // Vật đã xoay theo bố cục: dựng hình từ vật chưa xoay (kích thước gốc) rồi quay cả khối quanh tâm.
+    const o = unrotatedOf(obj);
+    const rotationY = layoutRotationY(obj);
+    const [cx, cz] = [o.position[0], o.position[2]];
     const spec = deskSpecOf(o, plants);
-    if (spec) desks.push(spec);
+    if (spec) {
+      if (obj.layoutRot) rotatedDesks.push({ spec, desks: [spec], cx, cz, rotationY });
+      else desks.push(spec);
+    }
     if (DESK_VARIANT[o.id]) continue; // bàn thường đã nằm trong desks
     const el = renderDetailFor(o.id, { ...floorPropsOf(o), plants });
-    if (el) items.push({ id: o.id, el });
+    if (!el) continue;
+    items.push({
+      id: o.id,
+      el: obj.layoutRot ? rotatedAbout(el, cx, cz, rotationY, `rot-${o.id}`) : el,
+    });
   }
-  return { desks, items };
+  return { desks, items, rotatedDesks };
 }
 
 /**
@@ -256,14 +280,18 @@ export function zoneDecorOf(objects: readonly ZoneObject[], plants: boolean): Zo
  */
 export function decorBlockersOf(objects: readonly ZoneObject[], plants: boolean): FloorRect[] {
   const out: FloorRect[] = [];
-  for (const o of objects) {
+  for (const obj of objects) {
+    // Đã xoay theo bố cục: ô chặn tính trên vật chưa xoay rồi quay quanh tâm.
+    const o = unrotatedOf(obj);
     const center: [number, number] = [o.position[0], o.position[2]];
+    let rects: FloorRect[] = [];
     if (o.id === 'lounge') {
-      out.push(...loungeBlockers(center, plants));
+      rects = loungeBlockers(center, plants);
     } else if (o.id === 'pantry' || o.id === 'util_coffee') {
       // Kích thước khu lấy từ it.json, khớp với mặc định của renderDetailFor.
-      out.push(...pantryBlockers(center, o.size[0], o.size[2], plants));
+      rects = pantryBlockers(center, o.size[0], o.size[2], plants);
     }
+    out.push(...(obj.layoutRot ? rotateBoxesAbout(rects, center[0], center[1], obj.layoutRot) : rects));
   }
   // Đạo cụ văn phòng thật đứng dưới sàn (bình chữa cháy, máy lọc nước, tủ hồ sơ, cây lớn, thùng rác).
   // Chỉ thêm khi khu có sàn chính (có vật thể), footprint không chồng vật thể nào (src/scene/officePropsLayout.ts).

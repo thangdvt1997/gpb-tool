@@ -47,9 +47,48 @@ export function applyLayoutPoses(objects: readonly ZoneObject[], poses: LayoutPo
     changed = true;
     const [w, h, dep] = o.size;
     const swap = d.rot === 90 || d.rot === 270;
-    return { ...o, position: [o.position[0] + d.dx, o.position[1], o.position[2] + d.dz] as ZoneObject['position'], size: (swap ? [dep, h, w] : [w, h, dep]) as ZoneObject['size'] };
+    const next: ZoneObject = { ...o, position: [o.position[0] + d.dx, o.position[1], o.position[2] + d.dz] as ZoneObject['position'], size: (swap ? [dep, h, w] : [w, h, dep]) as ZoneObject['size'] };
+    if (d.rot !== 0) next.layoutRot = d.rot;
+    return next;
   });
   return changed ? out : objects;
+}
+
+/** Vật chưa xoay: size gốc (hoán đổi lại nếu 90/270), bỏ layoutRot. Vị trí tâm giữ nguyên. Hình ghép dựng từ vật này rồi quay. */
+export function unrotatedOf(o: ZoneObject): ZoneObject {
+  if (!o.layoutRot) return o;
+  const { layoutRot, ...rest } = o;
+  const [w, h, d] = o.size;
+  return layoutRot === 180 ? rest : { ...rest, size: [d, h, w] };
+}
+
+/** Góc quay quanh trục y (rad) của hình ghép, cùng chiều với fixtureTransform. */
+export function layoutRotationY(o: { layoutRot?: number }): number {
+  return ((o.layoutRot ?? 0) * Math.PI) / 180;
+}
+
+/** Hộp chữ nhật trên sàn (hệ thế giới). */
+export interface FloorBox { minX: number; maxX: number; minZ: number; maxZ: number }
+
+/**
+ * Quay các hộp quanh tâm (cx, cz) theo rotationY = rot độ (three.js: (dx,dz) -> (dx cos + dz sin, -dx sin + dz cos)).
+ * Bội 90 nên kết quả vẫn là hộp thẳng trục. Giữ nguyên các trường khác của hộp.
+ */
+export function rotateBoxesAbout<T extends FloorBox>(boxes: readonly T[], cx: number, cz: number, rot: number): T[] {
+  const r = ((rot % 360) + 360) % 360;
+  if (r === 0) return boxes.map((b) => ({ ...b }));
+  const map = (x: number, z: number): [number, number] => {
+    const dx = x - cx;
+    const dz = z - cz;
+    if (r === 90) return [cx + dz, cz - dx];
+    if (r === 180) return [cx - dx, cz - dz];
+    return [cx - dz, cz + dx];
+  };
+  return boxes.map((b) => {
+    const [x1, z1] = map(b.minX, b.minZ);
+    const [x2, z2] = map(b.maxX, b.maxZ);
+    return { ...b, minX: Math.min(x1, x2), maxX: Math.max(x1, x2), minZ: Math.min(z1, z2), maxZ: Math.max(z1, z2) };
+  });
 }
 
 let lastZone: ZoneDef | null = null;
