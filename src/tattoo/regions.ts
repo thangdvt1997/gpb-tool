@@ -28,6 +28,12 @@ export interface RegionMask {
   box: UvBox;
   /** Lưới theo hàng (v) rồi cột (u), 1 = cho phép vẽ. Vắng thì dùng cả hộp. */
   grid?: Uint8Array;
+  /** Cạnh lưới (ô). Vắng thì MASK_RES (64). Mask đóng gói sẵn dùng 256. */
+  res?: number;
+}
+
+export function maskRes(m: RegionMask): number {
+  return m.res ?? MASK_RES;
 }
 
 export function regionKey(region: SkinRegion, side: Side | null): string {
@@ -42,9 +48,10 @@ export function boxContains(b: UvBox, u: number, v: number): boolean {
 export function maskContains(m: RegionMask, u: number, v: number): boolean {
   if (!boxContains(m.box, u, v)) return false;
   if (!m.grid) return true;
-  const x = Math.min(MASK_RES - 1, Math.max(0, Math.floor(u * MASK_RES)));
-  const y = Math.min(MASK_RES - 1, Math.max(0, Math.floor(v * MASK_RES)));
-  return m.grid[y * MASK_RES + x] === 1;
+  const r = maskRes(m);
+  const x = Math.min(r - 1, Math.max(0, Math.floor(u * r)));
+  const y = Math.min(r - 1, Math.max(0, Math.floor(v * r)));
+  return m.grid[y * r + x] === 1;
 }
 
 /** Hợp nhiều mask (vùng đặt xăm cho phép). */
