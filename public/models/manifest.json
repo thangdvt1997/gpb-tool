@@ -377,8 +377,9 @@
         },
         "attributionRequired": false,
         "originPath": "/opt/gpb-mpfb/out/ (VPS)",
-        "checkedAt": "2026-11-06",
-        "verified": false
+        "checkedAt": "2026-11-08",
+        "verified": true,
+        "approvedBy": "Chủ dự án duyệt dùng trong sản phẩm (08/11/2026)"
       },
       "knownIssues": [
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
@@ -647,8 +648,9 @@
         },
         "attributionRequired": false,
         "originPath": "/opt/gpb-mpfb/out/ (VPS)",
-        "checkedAt": "2026-11-06",
-        "verified": false
+        "checkedAt": "2026-11-08",
+        "verified": true,
+        "approvedBy": "Chủ dự án duyệt dùng trong sản phẩm (08/11/2026)"
       },
       "knownIssues": [
         "Cả 3 material dùng alphaMode BLEND, doubleSided; thân nên OPAQUE, lông mày MASK.",
@@ -917,8 +919,9 @@
         },
         "attributionRequired": false,
         "originPath": "/opt/gpb-mpfb/out/ (VPS)",
-        "checkedAt": "2026-11-06",
-        "verified": false
+        "checkedAt": "2026-11-08",
+        "verified": true,
+        "approvedBy": "Chủ dự án duyệt dùng trong sản phẩm (08/11/2026)"
       },
       "knownIssues": [
         "Tỷ lệ chibi (cao gốc khoảng 0.874 m) là một lựa chọn chính thức cạnh tỷ lệ thật (male_real, female_real); app scale tới 85–130 cm theo BODY_LIMITS_BY_STYLE.chibi.",
@@ -1010,10 +1013,10 @@
       ],
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-furniture.mjs",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1090,10 +1093,10 @@
       ],
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-furniture.mjs",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1154,10 +1157,10 @@
       "attachTo": "head",
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-furniture.mjs",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1218,10 +1221,10 @@
       "attachTo": "back",
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-furniture.mjs",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1282,10 +1285,10 @@
       "attachTo": "hand_r",
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-furniture.mjs); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-furniture.mjs",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1507,10 +1510,10 @@
       ],
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-clips.ts",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1733,10 +1736,10 @@
       ],
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-clips.ts",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [
@@ -1959,10 +1962,10 @@
       ],
       "license": {
         "spdx": "LicenseRef-GPB-project",
-        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-clips.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
         "attributionRequired": false,
         "originPath": "scripts/assets/bake-clips.ts",
-        "checkedAt": "2026-11-07",
+        "checkedAt": "2026-11-08",
         "verified": true
       },
       "knownIssues": [

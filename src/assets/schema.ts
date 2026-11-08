@@ -142,6 +142,8 @@ export interface LicenseInfo {
   originPath?: string;
   checkedAt: string;
   verified: boolean;
+  /** Ai duyệt dùng license (ví dụ chủ dự án), khi verified dựa trên quyết định thay vì trang license. */
+  approvedBy?: string;
 }
 
 export interface AssetEntry {
