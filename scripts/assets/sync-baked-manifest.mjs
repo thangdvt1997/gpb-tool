@@ -17,11 +17,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const dir = path.join(root, 'public', 'models');
 const manifestPath = path.join(dir, 'manifest.json');
 const check = process.argv.includes('--check');
-const DATE = '2026-11-07';
+const DATE = '2026-11-08';
 
 const SELF_LICENSE = (script) => ({
   spdx: 'LicenseRef-GPB-project',
-  source: `Tự sinh từ mã dự án (${script}); không dùng asset bên ngoài. Theo license của repo (repo chưa có file LICENSE: chủ dự án quyết định).`,
+  source: `Tự sinh từ mã dự án (${script}); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).`,
   attributionRequired: false,
   originPath: script,
   checkedAt: DATE,
@@ -131,6 +131,13 @@ const upsert = (e) => {
 };
 
 for (const c of chars) {
+  // Số đo từ chính GLB (sau rebase-pivot.mjs): hash, bytes, bounds; origin ở mặt sàn nên không có pivot.offset.
+  const cf = readGlbFacts(path.join(dir, c.url));
+  if (!cf) throw new Error(`Không đọc được ${c.url}`);
+  c.hash = { algo: 'sha256', value: cf.sha256 };
+  c.bytes = cf.bytes;
+  c.bounds = { min: cf.boundsMin.map(r4), max: cf.boundsMax.map(r4), space: 'rest', measuredBy: 'accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs) sau rebase-pivot.mjs' };
+  c.pivot = { kind: 'feet-center', offset: [0, 0, 0], note: 'Origin ở mặt sàn, giữa hai bàn chân (trung bình x, z của foot_l, foot_r, ball_l, ball_r); đáy chân y = 0. Xuất bằng scripts/assets/rebase-pivot.mjs.' };
   const m = measureSockets(path.join(dir, c.url));
   const prev = new Map((c.sockets ?? []).map((s) => [s.name, s]));
   c.sockets = ['hand_l', 'hand_r', 'head', 'neck', 'back', 'foot_l', 'foot_r'].map((n) => ({

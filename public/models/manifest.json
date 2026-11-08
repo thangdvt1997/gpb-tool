@@ -3,7 +3,7 @@
   "units": "m",
   "upAxis": "Y",
   "forward": "+Z",
-  "generatedAt": "2026-11-07",
+  "generatedAt": "2026-11-08",
   "rigProfiles": {
     "rig.mpfb_53": {
       "id": "rig.mpfb_53",
@@ -130,34 +130,34 @@
       "version": "0.1.0",
       "hash": {
         "algo": "sha256",
-        "value": "d70d62de0443d472508e4c6b131d6bb71dd552d8708317a34beb66e06aed4637"
+        "value": "a3e4f7ae1f2a70583a47c7d256ebc3d9496bdd2328bc4be1b7b19a201c9a066f"
       },
-      "bytes": 5531416,
+      "bytes": 5531340,
       "url": "male_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.6154,
-          0.0261,
-          -0.1014
+          0,
+          -0.1831
         ],
         "max": [
           0.6154,
-          1.8916,
-          0.4037
+          1.8655,
+          0.322
         ],
         "space": "rest",
-        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs) sau rebase-pivot.mjs"
       },
       "pivot": {
         "kind": "feet-center",
         "offset": [
           0,
-          0.0261,
+          0,
           0
         ],
-        "note": "y = bounds.min.y đã đo (đáy chân cách origin file 2.6 cm). x, z = 0 theo trục đối xứng và vị trí Root; chưa đo tâm lòng bàn chân."
+        "note": "Origin ở mặt sàn, giữa hai bàn chân (trung bình x, z của foot_l, foot_r, ball_l, ball_r); đáy chân y = 0. Xuất bằng scripts/assets/rebase-pivot.mjs."
       },
       "colliderProfile": {
         "shape": "capsule",
@@ -401,34 +401,34 @@
       "version": "0.1.0",
       "hash": {
         "algo": "sha256",
-        "value": "f7e9c5d74476cd46e9132e8e9968a4c16bccb8422c8dc0ccd05bf680e513550d"
+        "value": "7828840b2fa34ce3a3b97f188a0ec5b24e6426c4d39301e698f8511a1c273405"
       },
-      "bytes": 6228128,
+      "bytes": 6228056,
       "url": "female_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.4823,
-          0.0269,
-          -0.0899
+          0,
+          -0.1698
         ],
         "max": [
           0.4823,
-          1.6009,
-          0.2871
+          1.574,
+          0.2073
         ],
         "space": "rest",
-        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs) sau rebase-pivot.mjs"
       },
       "pivot": {
         "kind": "feet-center",
         "offset": [
           0,
-          0.0269,
+          0,
           0
         ],
-        "note": "y = bounds.min.y đã đo (đáy chân cách origin file 2.7 cm). x, z = 0 theo trục đối xứng và vị trí Root; chưa đo tâm lòng bàn chân."
+        "note": "Origin ở mặt sàn, giữa hai bàn chân (trung bình x, z của foot_l, foot_r, ball_l, ball_r); đáy chân y = 0. Xuất bằng scripts/assets/rebase-pivot.mjs."
       },
       "colliderProfile": {
         "shape": "capsule",
@@ -672,34 +672,34 @@
       "version": "0.1.0",
       "hash": {
         "algo": "sha256",
-        "value": "499c80dcd29d407401aca0883a935e96d69fdabd5bb6cde21babd923ae0dfb43"
+        "value": "0bea31fff3cd441afdb4988241d08fb3173cc2de1a9084883c71b9313294e5d2"
       },
-      "bytes": 6228208,
+      "bytes": 6228132,
       "url": "chibi.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.2742,
-          0.0244,
-          -0.0584
+          0,
+          -0.0927
         ],
         "max": [
           0.2742,
-          0.8984,
-          0.1819
+          0.874,
+          0.1476
         ],
         "space": "rest",
-        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs --print-facts ngày 2026-11-06"
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs) sau rebase-pivot.mjs"
       },
       "pivot": {
         "kind": "feet-center",
         "offset": [
           0,
-          0.0244,
+          0,
           0
         ],
-        "note": "y = bounds.min.y đã đo; x, z = 0 theo trục đối xứng, chưa đo tâm lòng bàn chân."
+        "note": "Origin ở mặt sàn, giữa hai bàn chân (trung bình x, z của foot_l, foot_r, ball_l, ball_r); đáy chân y = 0. Xuất bằng scripts/assets/rebase-pivot.mjs."
       },
       "colliderProfile": {
         "shape": "capsule",
@@ -1302,22 +1302,22 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "7e3eee001e5865dc74271c5da2b078136d6e37540f6fbcde8beb2fcb8c5b0ea0"
+        "value": "85640f26a368118e580da0a24d24f3a9051d1c2130eadcba30d7f15c3a500349"
       },
-      "bytes": 308884,
+      "bytes": 308992,
       "url": "anim_male_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.6154,
-          0.0261,
-          -0.1014
+          0,
+          -0.1831
         ],
         "max": [
           0.6154,
-          1.8916,
-          0.4037
+          1.8655,
+          0.322
         ],
         "space": "rest",
         "measuredBy": "bounds nhân vật char.male_real (file animation không có mesh)"
@@ -1528,22 +1528,22 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "c3b17bb843c00b8764cf76c20454d9405006853965007fc38f7fc5f0b867f12b"
+        "value": "3f75a5fa2c1e75c4f4d85b5479fd478ac521f981c5d5c87ee282878e5f872f26"
       },
-      "bytes": 308308,
+      "bytes": 308412,
       "url": "anim_female_real.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.4823,
-          0.0269,
-          -0.0899
+          0,
+          -0.1698
         ],
         "max": [
           0.4823,
-          1.6009,
-          0.2871
+          1.574,
+          0.2073
         ],
         "space": "rest",
         "measuredBy": "bounds nhân vật char.female_real (file animation không có mesh)"
@@ -1754,22 +1754,22 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "827b32a7a406f7c65fcd58bb721d535fc277d44c292dd772a7e7155a493db0fa"
+        "value": "a275403cfcf898552710e267bccf13735e6a6f2056c7d079b9042a9a5d48324d"
       },
-      "bytes": 308284,
+      "bytes": 308296,
       "url": "anim_chibi.glb",
       "format": "glb",
       "scale": 1,
       "bounds": {
         "min": [
           -0.2742,
-          0.0244,
-          -0.0584
+          0,
+          -0.0927
         ],
         "max": [
           0.2742,
-          0.8984,
-          0.1819
+          0.874,
+          0.1476
         ],
         "space": "rest",
         "measuredBy": "bounds nhân vật char.chibi (file animation không có mesh)"
