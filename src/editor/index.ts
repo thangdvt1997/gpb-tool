@@ -7,3 +7,4 @@ export * from './useLayoutEditor';
 export * from './EditorHost';
 export * from './props';
 export * from './PropsLayer';
+export * from './draftStore';

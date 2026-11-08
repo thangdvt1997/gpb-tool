@@ -277,6 +277,8 @@ export type EditorAction =
   | { type: 'enter' }
   /** Đồng bộ dữ liệu máy chủ khi KHÔNG biên tập (SSE, tải lần đầu). Bỏ qua nếu đang biên tập. */
   | { type: 'sync'; server: LayoutState; env?: EditorEnv; role?: Role | null }
+  /** Khôi phục bản nháp cục bộ (đã áp lên máy chủ bằng applyDraft) và vào chế độ biên tập. */
+  | { type: 'restoreDraft'; env: EditorEnv; draft: Poses; message: string }
   | { type: 'exit' } // hủy: bỏ bản nháp, về bản đã lưu
   | { type: 'select'; id: string | null }
   | { type: 'nudge'; dir: Direction; steps?: number }
@@ -372,6 +374,10 @@ export function editorReducer(s: EditorState, a: EditorAction): EditorState {
     if (s.active) return s;
     const base = createEditorState(a.env ?? s.env, a.role === undefined ? (s.canEdit ? 'it' : null) : a.role, a.server);
     return { ...base, gridStep: s.gridStep, snap: s.snap, message: s.message };
+  }
+  if (a.type === 'restoreDraft') {
+    if (!s.canEdit || s.active) return s;
+    return { ...s, env: a.env, draft: a.draft, active: true, past: [], future: [], drag: null, preview: null, selectedId: null, message: a.message };
   }
   if (a.type === 'conflict') return rebase(s, a.server, a.id);
   if (a.type === 'saveDone') {
@@ -574,4 +580,60 @@ export function actionForKey(e: KeyLike): KeyIntent | null {
   const dir = directionFromKey(k);
   if (dir) return { type: 'nudge', dir, steps: e.shiftKey ? 5 : 1 };
   return null;
+}
+
+/** Kết quả áp bản nháp cục bộ lên trạng thái hiện tại. */
+export interface AppliedDraft {
+  env: EditorEnv;
+  draft: Poses;
+  /** Số vật áp được, số vật bỏ vì không còn hợp lệ. */
+  applied: number;
+  skipped: number;
+}
+
+/**
+ * Áp bản nháp lên bản đã lưu hiện tại: vật nào không còn tồn tại hoặc đặt sai (va chạm, ngoài vùng) thì bỏ.
+ * Trả null nếu kết quả không khác bản đã lưu (không còn gì để khôi phục).
+ */
+export function applyDraft(s: Pick<EditorState, 'env' | 'saved'>, d: { items: Record<string, Pose>; props?: Record<string, string>; removed?: string[] }): AppliedDraft | null {
+  let env = s.env;
+  const draft: Poses = { ...s.saved };
+  let applied = 0;
+  let skipped = 0;
+  const cand: string[] = [];
+  for (const id of d.removed ?? []) {
+    if (isPropId(id) && draft[id]) {
+      delete draft[id];
+      applied++;
+    }
+  }
+  for (const id of Object.keys(d.items).sort()) {
+    const pose = d.items[id];
+    const kind = d.props?.[id];
+    if (isPropId(id)) {
+      if (!isPropKind(kind) || (!env.props?.[id] && Object.keys(draft).filter(isPropId).length >= MAX_PROPS)) {
+        skipped++;
+        continue;
+      }
+      if (!env.props?.[id]) env = addPropToEnv(env, id, kind);
+    } else if (!env.sizes[id] || !draft[id]) {
+      skipped++;
+      continue;
+    }
+    if (samePose(draft[id], pose)) continue;
+    cand.push(id);
+    draft[id] = pose;
+  }
+  // Kiểm tra trên bản đã áp đủ (hai vật đổi chỗ nhau không bị coi là chồng giữa chừng); vật sai thì trả về như cũ.
+  for (const id of cand) {
+    if (validatePose(env, draft, id, draft[id]).valid) {
+      applied++;
+    } else {
+      skipped++;
+      if (s.saved[id]) draft[id] = s.saved[id];
+      else delete draft[id];
+    }
+  }
+  if (applied === 0) return null;
+  return { env, draft, applied, skipped };
 }

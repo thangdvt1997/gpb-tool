@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { describeChanges, GRID_STEPS, isDirty, type EditorAction, type EditorState } from './core';
 import { isPropId, newPropId, PROP_CATALOG, PROP_KINDS, type PropKind } from './props';
 
@@ -6,6 +6,10 @@ export interface EditorPanelProps {
   state: EditorState;
   dispatch: (a: EditorAction) => void;
   onSave: () => void;
+  /** Bản nháp cục bộ chờ người dùng quyết định (từ useLayoutEditor). */
+  pendingDraft?: { applied: number; skipped: number; savedAt: number } | null;
+  onResumeDraft?: () => void;
+  onDiscardDraft?: () => void;
 }
 
 /**
@@ -13,11 +17,32 @@ export interface EditorPanelProps {
  * Phím tắt (do useLayoutEditor cài): Ctrl+Z hoàn tác, Ctrl+Y / Ctrl+Shift+Z làm lại, Ctrl+S lưu,
  * R xoay, Delete xóa vật thêm (vật gốc thì đặt lại), Ctrl+D nhân bản, mũi tên di chuyển (Shift = 5 bước), Esc hủy.
  */
-export function EditorPanel({ state, dispatch, onSave }: EditorPanelProps) {
+export function EditorPanel({ state, dispatch, onSave, pendingDraft, onResumeDraft, onDiscardDraft }: EditorPanelProps) {
   const changes = useMemo(() => describeChanges(state), [state.saved, state.draft, state.defaults, state.env]);
   const [kind, setKind] = useState<PropKind>('table');
+  const resumeRef = useRef<HTMLButtonElement>(null);
+  const asking = !state.active && !!pendingDraft && !!onResumeDraft && !!onDiscardDraft;
+  useEffect(() => {
+    if (asking) resumeRef.current?.focus();
+  }, [asking]);
   if (!state.canEdit) {
     return <p role="status">Bạn chỉ có quyền xem bố trí. Chỉ IT hoặc admin được sắp xếp nội thất.</p>;
+  }
+  if (asking && pendingDraft) {
+    const when = pendingDraft.savedAt ? ` (lưu lúc ${new Date(pendingDraft.savedAt).toLocaleString('vi-VN')})` : '';
+    return (
+      <section role="alertdialog" aria-label="Bản nháp bố trí chưa lưu" aria-describedby="layout-draft-desc" className="layout-editor-panel layout-draft-prompt">
+        <p id="layout-draft-desc">
+          Có bản nháp bố trí chưa lưu với {pendingDraft.applied} thay đổi{when}. Bạn muốn làm gì?
+        </p>
+        <button type="button" ref={resumeRef} onClick={onResumeDraft}>
+          Tiếp tục bản nháp
+        </button>
+        <button type="button" onClick={onDiscardDraft}>
+          Bỏ bản nháp
+        </button>
+      </section>
+    );
   }
   if (!state.active) {
     return (

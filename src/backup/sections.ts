@@ -9,6 +9,7 @@ import type { CharacterLook } from '../fashion/types';
 import { LOOK_SCHEMA_VERSION } from '../fashion/types';
 import { EXPORT_FORMAT, SNAPSHOT_FORMAT, SNAPSHOT_SCHEMA_VERSION } from '../persist/core';
 import { SETTINGS_VERSION, importJson, sanitize, type Settings } from '../settings/schema';
+import { isPropId, isPropKind } from '../editor/props';
 import { deepMerge } from './diff';
 import { isPlainObject, utf8Bytes } from './safeJson';
 import type { BackupSection, ValidateResult } from './types';
@@ -124,8 +125,14 @@ export function createPersistSection(a: PersistAdapter): BackupSection {
 
 export interface LayoutDraft {
   /** id vật -> tư thế. */
-  items: Record<string, { x: number; z: number; rotation: 0 | 90 | 180 | 270 }>;
+  items: Record<string, { x: number; z: number; rotation: 0 | 90 | 180 | 270; door?: boolean }>;
+  /** id vật thêm (p_...) -> loại vật. Vắng ở bản nháp cũ. */
+  props?: Record<string, string>;
+  /** id vật thêm đã xóa trong bản nháp (chưa lưu). */
+  removed?: string[];
 }
+
+export const MAX_DRAFT_ITEMS = 400;
 
 export interface LayoutDraftAdapter {
   read(): LayoutDraft | null;
@@ -137,7 +144,9 @@ export function validateLayoutDraft(data: unknown): ValidateResult {
   if (!isPlainObject(data) || !isPlainObject(data.items)) return { ok: false, error: 'layoutDraft cần trường items.' };
   const items: LayoutDraft['items'] = {};
   const warnings: string[] = [];
-  for (const id of Object.keys(data.items)) {
+  const ids = Object.keys(data.items);
+  if (ids.length > MAX_DRAFT_ITEMS) return { ok: false, error: `layoutDraft có quá ${MAX_DRAFT_ITEMS} vật.` };
+  for (const id of ids) {
     const p = data.items[id];
     if (!/^[\w.:-]{1,64}$/.test(id) || !isPlainObject(p)) {
       warnings.push(`Bỏ qua vật "${id}": id hoặc tư thế sai.`);
@@ -152,9 +161,25 @@ export function validateLayoutDraft(data: unknown): ValidateResult {
       warnings.push(`Bỏ qua vật "${id}": góc xoay phải là 0/90/180/270.`);
       continue;
     }
-    items[id] = { x, z, rotation };
+    items[id] = p.door === true ? { x, z, rotation, door: true } : { x, z, rotation };
   }
-  return { ok: true, data: { items }, warnings };
+  const out: LayoutDraft = { items };
+  if (data.props !== undefined) {
+    if (!isPlainObject(data.props)) warnings.push('Bỏ qua props: sai kiểu.');
+    else {
+      const props: Record<string, string> = {};
+      for (const [id, kind] of Object.entries(data.props)) {
+        if (isPropId(id) && isPropKind(kind) && items[id]) props[id] = kind;
+        else warnings.push(`Bỏ qua loại vật của "${id}".`);
+      }
+      out.props = props;
+    }
+  }
+  if (data.removed !== undefined) {
+    if (!Array.isArray(data.removed)) warnings.push('Bỏ qua removed: sai kiểu.');
+    else out.removed = data.removed.filter((id): id is string => typeof id === 'string' && isPropId(id)).slice(0, MAX_DRAFT_ITEMS);
+  }
+  return { ok: true, data: out, warnings };
 }
 
 export function createLayoutDraftSection(a: LayoutDraftAdapter): BackupSection {

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { Role, ZoneObject } from '../content/types';
 import { useLayout } from '../layout/LayoutStore';
-import { actionForKey, buildEditorEnv, createEditorState, editorReducer, type EditorAction } from './core';
+import { actionForKey, applyDraft, buildEditorEnv, createEditorState, editorReducer, isDirty, type AppliedDraft, type EditorAction } from './core';
+import { clearStoredDraft, draftFromState, DRAFT_EVENT, loadStoredDraft, saveStoredDraft } from './draftStore';
 import { newPropId, propRects } from './props';
 import type { Rect } from '../scene/layout';
 import { realApi, saveDraft, type SaveApi } from './save';
@@ -56,6 +57,61 @@ export function useLayoutEditor(objects: readonly ZoneObject[], role: Role | nul
     return () => window.removeEventListener('keydown', onKey);
   }, [state.active, save]);
 
+  // Bản nháp cục bộ (chưa lưu lên máy chủ): hỏi khi mở lại, ghi mỗi khi chỉnh sửa, xóa khi lưu xong/hủy.
+  const [pendingDraft, setPendingDraft] = useState<(AppliedDraft & { savedAt: number }) | null>(null);
+  const pendingRef = useRef(false);
+  const checked = useRef(false);
+  const stateForDraft = useRef(state);
+  stateForDraft.current = state;
+  const checkDraft = useCallback(() => {
+    const cur = stateForDraft.current;
+    if (!cur.canEdit || cur.active) return;
+    const stored = loadStoredDraft();
+    const applied = stored ? applyDraft(cur, stored.draft as Parameters<typeof applyDraft>[1]) : null;
+    if (stored && !applied) clearStoredDraft(); // không còn gì khác bản đã lưu
+    pendingRef.current = !!applied;
+    setPendingDraft(applied && stored ? { ...applied, savedAt: stored.savedAt } : null);
+  }, []);
+
+  useEffect(() => {
+    if (!layout.loaded || checked.current || !state.canEdit) return;
+    checked.current = true;
+    checkDraft();
+  }, [layout.loaded, state.canEdit, checkDraft]);
+
+  useEffect(() => {
+    const on = () => {
+      if (checked.current) checkDraft();
+    };
+    window.addEventListener(DRAFT_EVENT, on);
+    return () => window.removeEventListener(DRAFT_EVENT, on);
+  }, [checkDraft]);
+
+  useEffect(() => {
+    if (!checked.current || pendingRef.current || !state.canEdit) return;
+    if (state.active && isDirty(state)) {
+      const d = draftFromState(state);
+      if (d) saveStoredDraft(d, state.savedVersion);
+    } else if (!state.saving) {
+      clearStoredDraft(); // lưu xong, hủy, hoặc hoàn tác hết
+    }
+  }, [state]);
+
+  const resumeDraft = useCallback(() => {
+    const p = pendingDraft;
+    if (!p) return;
+    pendingRef.current = false;
+    setPendingDraft(null);
+    const note = p.skipped > 0 ? ` ${p.skipped} vật không còn hợp lệ nên bị bỏ.` : '';
+    dispatch({ type: 'restoreDraft', env: p.env, draft: p.draft, message: `Đã khôi phục bản nháp chưa lưu (${p.applied} thay đổi).${note}` });
+  }, [pendingDraft]);
+
+  const discardDraft = useCallback(() => {
+    pendingRef.current = false;
+    setPendingDraft(null);
+    clearStoredDraft();
+  }, []);
+
   // Hộp va chạm của vật thêm ĐÃ LƯU (nháp chưa lưu chưa chặn đường, tránh kẹt nhân vật trong tường nháp).
   const blockers = useMemo<Rect[]>(() => {
     const out: Rect[] = [];
@@ -66,5 +122,5 @@ export function useLayoutEditor(objects: readonly ZoneObject[], role: Role | nul
     return out;
   }, [state.saved, state.env.props]);
 
-  return { state, dispatch, save, blockers };
+  return { state, dispatch, save, blockers, pendingDraft, resumeDraft, discardDraft };
 }

@@ -13,6 +13,7 @@ import { Minimap, NavMarkers } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
+import { createDraftBackupAdapter } from './editor/draftStore';
 import { EditorLayer, EditorPanel, LayoutEditorHost, PropsLayer } from './editor';
 import { SettingsPanel } from './settings';
 import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
@@ -315,15 +316,17 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
     [],
   );
   // Xuất/nhập và sao lưu (TASK 20): look, cài đặt, snapshot persist.
+  const draftAdapter = useMemo(() => createDraftBackupAdapter(), []);
   const backup = useMemo(
     () =>
       createDefaultBackupService({
         getLook: () => lookRef.current,
         applyLook: setLook,
         persist,
+        layoutDraft: draftAdapter,
         extra: [createTattooBackupSection()],
       }),
-    [persist],
+    [persist, draftAdapter],
   );
   const [backupOpen, setBackupOpen] = useState(false);
 
@@ -639,7 +642,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               Sao lưu
             </button>
             {(user.role === 'it' || user.role === 'admin') && (
-              <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} />
+              <EditorPanel state={editor.state} dispatch={editor.dispatch} onSave={() => void editor.save()} pendingDraft={editor.pendingDraft} onResumeDraft={editor.resumeDraft} onDiscardDraft={editor.discardDraft} />
             )}
           </aside>
           {wardrobeOpen && (
