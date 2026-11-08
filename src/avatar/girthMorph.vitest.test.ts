@@ -204,3 +204,44 @@ describe('cỡ bàn tay, bàn chân bằng xương', () => {
     });
   }
 });
+
+describe('mặt sàn: chân chạm sàn với cả 3 GLB và hình thể cực trị', () => {
+  const SHAPES: Record<string, Partial<typeof IDENTITY_BONE_SHAPE>> = {
+    'mặc định': {},
+    'chân dài +15%': { legL: 1.15, legR: 1.15 },
+    'chân ngắn -15%': { legL: 0.85, legR: 0.85 },
+    'bàn chân to': { footL: 1.25, footR: 1.25 },
+    'bàn chân nhỏ': { footL: 0.75, footR: 0.75 },
+    'chân dài và bàn chân to': { legL: 1.15, legR: 1.15, footL: 1.25, footR: 1.25 },
+    'lệch bên': { legL: 1.1, legR: 0.9, footL: 1.2, footR: 0.8 },
+  };
+  for (const f of FILES) {
+    it(`${f}: rig.minY là đáy thật (gần 0, không bị hộp bao morph kéo xuống -0,13)`, async () => {
+      const { buildRig } = await import('./MpfbAvatar');
+      const rig = buildRig({ scene: rigs[f] } as never);
+      expect(Math.abs(rig.minY)).toBeLessThan(0.01);
+    });
+    for (const [name, o] of Object.entries(SHAPES)) {
+      it(`${f}, ${name}: đáy bàn chân khớp mặt sàn tính từ footDrop (sai số < 1,5 cm)`, async () => {
+        const { buildRig } = await import('./MpfbAvatar');
+        const rig = buildRig({ scene: rigs[f] } as never);
+        const s = { ...IDENTITY_BONE_SHAPE, ...o };
+        applyBoneShape(rigs[f], s);
+        rigs[f].updateMatrixWorld(true);
+        const mesh = body(rigs[f]);
+        const v = new THREE.Vector3();
+        let low = Infinity;
+        const n = mesh.geometry.getAttribute('position').count;
+        for (let i = 0; i < n; i++) {
+          mesh.getVertexPosition(i, v);
+          v.applyMatrix4(mesh.matrixWorld);
+          low = Math.min(low, v.y);
+        }
+        const floor = rig.minY - footDrop(REST_SPANS[f], s);
+        // Đơn vị mesh; hiển thị nhân khoảng 0,83 đến 1, nên 0,015 mesh ~ 1,5 cm.
+        expect(Math.abs(low - floor)).toBeLessThan(0.015);
+        applyBoneShape(rigs[f], IDENTITY_BONE_SHAPE);
+      });
+    }
+  }
+});
