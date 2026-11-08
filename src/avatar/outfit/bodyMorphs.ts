@@ -19,7 +19,9 @@ export type BodyMorphName =
   | 'chestMuscle'
   | 'headFat'
   | 'gpb_upperarm_girth'
-  | 'gpb_thigh_girth';
+  | 'gpb_thigh_girth'
+  | 'gpb_forearm_girth'
+  | 'gpb_calf_girth';
 
 export const BODY_MORPH_NAMES: readonly BodyMorphName[] = [
   'bodyShouldersV',
@@ -30,6 +32,8 @@ export const BODY_MORPH_NAMES: readonly BodyMorphName[] = [
   'headFat',
   'gpb_upperarm_girth',
   'gpb_thigh_girth',
+  'gpb_forearm_girth',
+  'gpb_calf_girth',
 ];
 
 function pos(x: number): number {
@@ -68,6 +72,8 @@ export function deriveBodyMorphWeights(look: CharacterLook): Record<BodyMorphNam
     headFat: c01(pos(look.face.structure.headSize)),
     gpb_upperarm_girth: c11((b.arms.left.upperArm + b.arms.right.upperArm) / 2),
     gpb_thigh_girth: c11((b.legs.left.thigh + b.legs.right.thigh) / 2),
+    gpb_forearm_girth: c11((b.arms.left.forearm + b.arms.right.forearm) / 2),
+    gpb_calf_girth: c11((b.legs.left.calf + b.legs.right.calf) / 2),
   };
 }
 

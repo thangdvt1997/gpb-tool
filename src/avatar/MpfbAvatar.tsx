@@ -121,10 +121,10 @@ const IK_ON = typeof window !== 'undefined' && ikEnabledFromUrl(window.location.
 // ---------------------------------------------------------------------------------------------------------------
 // Morph thân. Chỉ nối morph có thật trong GLB; trọng số kẹp [0, 1].
 
-type BodyMorph = 'bodyShouldersV' | 'bodyWaistSlim' | 'bodyHipsWide' | 'bodyBelly' | 'chestMuscle' | 'headFat' | 'gpb_upperarm_girth' | 'gpb_thigh_girth';
+type BodyMorph = 'bodyShouldersV' | 'bodyWaistSlim' | 'bodyHipsWide' | 'bodyBelly' | 'chestMuscle' | 'headFat' | 'gpb_upperarm_girth' | 'gpb_thigh_girth' | 'gpb_forearm_girth' | 'gpb_calf_girth';
 
 const BODY_MORPHS: readonly BodyMorph[] = [
-  'bodyShouldersV', 'bodyWaistSlim', 'bodyHipsWide', 'bodyBelly', 'chestMuscle', 'headFat', 'gpb_upperarm_girth', 'gpb_thigh_girth',
+  'bodyShouldersV', 'bodyWaistSlim', 'bodyHipsWide', 'bodyBelly', 'chestMuscle', 'headFat', 'gpb_upperarm_girth', 'gpb_thigh_girth', 'gpb_forearm_girth', 'gpb_calf_girth',
 ];
 
 function clamp01(v: number): number {
@@ -136,7 +136,7 @@ function clamp11(v: number): number {
 }
 
 /** Morph hai chiều (influence âm làm chi gầy đi). */
-const SIGNED_MORPHS: ReadonlySet<string> = new Set(['gpb_upperarm_girth', 'gpb_thigh_girth']);
+const SIGNED_MORPHS: ReadonlySet<string> = new Set(['gpb_upperarm_girth', 'gpb_thigh_girth', 'gpb_forearm_girth', 'gpb_calf_girth']);
 
 /** Ghi trọng số morph đã kẹp [0, 1]. index < 0 (tệp không có morph) thì bỏ qua. */
 function setMorph(infl: number[], index: number, v: number): void {
@@ -161,6 +161,8 @@ export function bodyMorphWeights(look: CharacterLook): Record<BodyMorph, number>
     headFat: clamp01(look.face.structure.headSize),
     gpb_upperarm_girth: clamp11((look.body.arms.left.upperArm + look.body.arms.right.upperArm) / 2),
     gpb_thigh_girth: clamp11((look.body.legs.left.thigh + look.body.legs.right.thigh) / 2),
+    gpb_forearm_girth: clamp11((look.body.arms.left.forearm + look.body.arms.right.forearm) / 2),
+    gpb_calf_girth: clamp11((look.body.legs.left.calf + look.body.legs.right.calf) / 2),
   };
 }
 

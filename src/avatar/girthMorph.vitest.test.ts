@@ -18,7 +18,7 @@ import {
 } from './boneShape';
 
 const FILES = ['male_real', 'female_real', 'chibi'] as const;
-const NAMES = ['gpb_upperarm_girth', 'gpb_thigh_girth'] as const;
+const NAMES = ['gpb_upperarm_girth', 'gpb_thigh_girth', 'gpb_forearm_girth', 'gpb_calf_girth'] as const;
 const rigs = {} as Record<(typeof FILES)[number], THREE.Object3D>;
 
 function body(root: THREE.Object3D): THREE.SkinnedMesh {
@@ -35,7 +35,7 @@ beforeAll(async () => {
   for (const f of FILES) rigs[f] = await loadRig(f);
 });
 
-describe('morph bắp tay và đùi trên 3 GLB thật', () => {
+describe('morph bắp tay, cẳng tay, đùi, bắp chân trên 3 GLB thật', () => {
   for (const f of FILES) {
     describe(f, () => {
       it('có morph tên đúng, 18 morph cũ giữ nguyên thứ tự', () => {
@@ -43,7 +43,9 @@ describe('morph bắp tay và đùi trên 3 GLB thật', () => {
         for (const n of NAMES) expect(dict[n]).toBeGreaterThanOrEqual(18);
         expect(dict.eyeBlink_L).toBe(0);
         expect(dict.chestMuscle).toBe(17);
-        expect(Object.keys(dict).length).toBe(20);
+        expect(Object.keys(dict).length).toBe(22);
+        // Thứ tự mới nối tiếp thứ tự cũ.
+        NAMES.forEach((n, i) => expect(dict[n]).toBe(18 + i));
       });
 
       it('chỉ dịch đỉnh gần xương tương ứng, đỉnh xa xương không đổi', () => {
@@ -56,6 +58,8 @@ describe('morph bắp tay và đùi trên 3 GLB thật', () => {
         const groups: Record<(typeof NAMES)[number], string[]> = {
           gpb_upperarm_girth: ['upperarm_l', 'upperarm_r'],
           gpb_thigh_girth: ['thigh_l', 'thigh_r'],
+          gpb_forearm_girth: ['lowerarm_l', 'lowerarm_r'],
+          gpb_calf_girth: ['calf_l', 'calf_r'],
         };
         for (const n of NAMES) {
           const attr = geo.morphAttributes.position[dict[n]];
@@ -130,10 +134,29 @@ describe('trọng số morph từ hồ sơ', () => {
     expect(w.gpb_thigh_girth).toBeCloseTo(-0.6);
   });
 
+  it('thanh cẳng tay và bắp chân ghi hai bên, trọng số morph hai chiều, hồ sơ lưu trường forearm, calf', () => {
+    let l = makeDefaultLook();
+    l = setSliderValue(l, 'forearm', 0.7);
+    l = setSliderValue(l, 'calf', -0.5);
+    expect(l.body.arms.left.forearm).toBeCloseTo(0.7);
+    expect(l.body.arms.right.forearm).toBeCloseTo(0.7);
+    expect(l.body.legs.left.calf).toBeCloseTo(-0.5);
+    expect(l.body.legs.right.calf).toBeCloseTo(-0.5);
+    const w = deriveBodyMorphWeights(l);
+    expect(w.gpb_forearm_girth).toBeCloseTo(0.7);
+    expect(w.gpb_calf_girth).toBeCloseTo(-0.5);
+    // Qua vòng lưu: validate giữ nguyên giá trị.
+    const back = validate(JSON.parse(JSON.stringify(l))).look;
+    expect(back.body.arms.right.forearm).toBeCloseTo(0.7);
+    expect(back.body.legs.left.calf).toBeCloseTo(-0.5);
+  });
+
   it('hồ sơ cũ không có bắp tay, đùi, bàn tay, bàn chân: hợp lệ và hình thể bằng xương là đơn vị', () => {
     const old = JSON.parse(JSON.stringify(makeDefaultLook()));
     for (const side of ['left', 'right']) {
       delete old.body.arms[side].upperArm;
+      delete old.body.arms[side].forearm;
+      delete old.body.legs[side].calf;
       delete old.body.arms[side].hand;
       delete old.body.legs[side].thigh;
       delete old.body.legs[side].foot;
@@ -141,6 +164,8 @@ describe('trọng số morph từ hồ sơ', () => {
     const { look } = validate(old);
     expect(look.body.arms.left.upperArm).toBe(0);
     expect(deriveBodyMorphWeights(look).gpb_thigh_girth).toBe(0);
+    expect(deriveBodyMorphWeights(look).gpb_calf_girth).toBe(0);
+    expect(deriveBodyMorphWeights(look).gpb_forearm_girth).toBe(0);
     expect(isIdentityBoneShape(boneShapeOf(look))).toBe(true);
     expect(isIdentityBoneShape(boneShapeOf(null))).toBe(true);
   });

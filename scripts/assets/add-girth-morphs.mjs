@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * Thêm hai morph target đối xứng vào mesh thân của 3 GLB nhân vật MPFB (không thêm phụ thuộc, sửa thẳng nhị phân GLB
+ * Thêm bốn morph target đối xứng vào mesh thân của 3 GLB nhân vật MPFB (không thêm phụ thuộc, sửa thẳng nhị phân GLB
  * như rebase-pivot.mjs):
  *   gpb_upperarm_girth  độ đầy bắp tay (cả hai tay)
  *   gpb_thigh_girth     độ đầy đùi (cả hai chân)
+ *   gpb_forearm_girth   độ đầy cẳng tay (xương lowerarm, từ khuỷu tới cổ tay hand)
+ *   gpb_calf_girth      độ đầy bắp chân (xương calf, từ gối tới cổ chân foot; phần trong giảm 50%)
+ * Thứ tự morph cũ giữ nguyên; morph mới nối vào cuối. Tệp đã có hai morph cũ chỉ được thêm hai morph còn thiếu.
  *
  *   node scripts/assets/add-girth-morphs.mjs [--check] [file.glb ...]   (mặc định: male_real, female_real, chibi)
  *
@@ -24,11 +27,13 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const models = path.join(root, 'public', 'models');
 export const CHAR_FILES = ['male_real.glb', 'female_real.glb', 'chibi.glb'];
-export const GIRTH_MORPHS = ['gpb_upperarm_girth', 'gpb_thigh_girth'];
+export const GIRTH_MORPHS = ['gpb_upperarm_girth', 'gpb_thigh_girth', 'gpb_forearm_girth', 'gpb_calf_girth'];
 
 const GROUPS = [
   { name: 'gpb_upperarm_girth', bones: ['upperarm_l', 'upperarm_r'], next: ['lowerarm_l', 'lowerarm_r'], amp: 0.012, inward: 1 },
   { name: 'gpb_thigh_girth', bones: ['thigh_l', 'thigh_r'], next: ['calf_l', 'calf_r'], amp: 0.02, inward: 0.5 },
+  { name: 'gpb_forearm_girth', bones: ['lowerarm_l', 'lowerarm_r'], next: ['hand_l', 'hand_r'], amp: 0.009, inward: 1 },
+  { name: 'gpb_calf_girth', bones: ['calf_l', 'calf_r'], next: ['foot_l', 'foot_r'], amp: 0.014, inward: 0.5 },
 ];
 
 function parse(buf) {
@@ -109,7 +114,9 @@ export function addGirthMorphs(input) {
   if (!mesh) throw new Error('không thấy mesh thân có morph');
   const names = mesh.extras.targetNames;
   if (GIRTH_MORPHS.every((n) => names.includes(n))) return { buffer: input, added: [] };
-  if (GIRTH_MORPHS.some((n) => names.includes(n))) throw new Error('chỉ có một phần morph gpb_*, không xử lý');
+  const todo = GROUPS.filter((g) => !names.includes(g.name));
+  // Chỉ chấp nhận tiền tố liên tục của danh sách (giữ thứ tự cũ): thiếu giữa chừng thì từ chối.
+  if (todo.some((g, i) => GROUPS.indexOf(g) !== GROUPS.length - todo.length + i)) throw new Error('morph gpb_* hiện có không liên tục, không xử lý');
   const prim = mesh.primitives[0];
   const skin = json.skins[0];
   const jointName = skin.joints.map((j) => json.nodes[j].name);
@@ -134,7 +141,7 @@ export function addGirthMorphs(input) {
     return start;
   };
 
-  for (const g of GROUPS) {
+  for (const g of todo) {
     const sides = g.bones.map((b, k) => {
       const a = pos(b), c = pos(g.next[k]);
       const ax = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
@@ -201,7 +208,7 @@ function main() {
     const rel = path.relative(root, f);
     if (!added.length) console.log(`${rel}: đã có morph ${GIRTH_MORPHS.join(', ')}`);
     else {
-      console.log(`${rel}: +${GIRTH_MORPHS.join(', ')} (đỉnh ${added.join(', ')}); cỡ tệp ${src.length} -> ${buffer.length} byte (+${buffer.length - src.length})`);
+      console.log(`${rel}: +${added.length} morph (đỉnh ${added.join(', ')}); cỡ tệp ${src.length} -> ${buffer.length} byte (+${buffer.length - src.length})`);
       if (check) bad++;
       else fs.writeFileSync(f, buffer);
     }

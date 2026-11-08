@@ -127,12 +127,12 @@
     {
       "assetId": "char.male_real",
       "type": "character",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "hash": {
         "algo": "sha256",
-        "value": "c8645b5e64f3698d729493a9894659704cb88cc4f71d629d95b2bb936b295a30"
+        "value": "de7bd1ba26068610549f5b1505d1364a1a2f75e8474449e8a1feaa2aca171e8f"
       },
-      "bytes": 5553472,
+      "bytes": 5569564,
       "url": "male_real.glb",
       "format": "glb",
       "scale": 1,
@@ -329,7 +329,9 @@
           "headFat",
           "chestMuscle",
           "gpb_upperarm_girth",
-          "gpb_thigh_girth"
+          "gpb_thigh_girth",
+          "gpb_forearm_girth",
+          "gpb_calf_girth"
         ],
         "groups": {
           "face": [
@@ -354,7 +356,9 @@
             "headFat",
             "chestMuscle",
             "gpb_upperarm_girth",
-            "gpb_thigh_girth"
+            "gpb_thigh_girth",
+            "gpb_forearm_girth",
+            "gpb_calf_girth"
           ]
         }
       },
@@ -402,12 +406,12 @@
     {
       "assetId": "char.female_real",
       "type": "character",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "hash": {
         "algo": "sha256",
-        "value": "efae018f85fe15bbc53337c15a659d864ff8e05926cd7166098c5e346cb14c5f"
+        "value": "968bab1587efdfc0e80a775e3bad717ae45f5cff81f63aae6228d562f0e96449"
       },
-      "bytes": 6249316,
+      "bytes": 6265760,
       "url": "female_real.glb",
       "format": "glb",
       "scale": 1,
@@ -604,7 +608,9 @@
           "headFat",
           "chestMuscle",
           "gpb_upperarm_girth",
-          "gpb_thigh_girth"
+          "gpb_thigh_girth",
+          "gpb_forearm_girth",
+          "gpb_calf_girth"
         ],
         "groups": {
           "face": [
@@ -629,7 +635,9 @@
             "headFat",
             "chestMuscle",
             "gpb_upperarm_girth",
-            "gpb_thigh_girth"
+            "gpb_thigh_girth",
+            "gpb_forearm_girth",
+            "gpb_calf_girth"
           ]
         }
       },
@@ -677,12 +685,12 @@
     {
       "assetId": "char.chibi",
       "type": "character",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "hash": {
         "algo": "sha256",
-        "value": "461a0f22eda7e4d6c8408f906da0d628a2121b2a541817382a27f59db0c3bc91"
+        "value": "dfb2e9c92629323c5ced4590ac65288f6639221aa9171f416aff38d88b15e168"
       },
-      "bytes": 6248144,
+      "bytes": 6265580,
       "url": "chibi.glb",
       "format": "glb",
       "scale": 1,
@@ -879,7 +887,9 @@
           "headFat",
           "chestMuscle",
           "gpb_upperarm_girth",
-          "gpb_thigh_girth"
+          "gpb_thigh_girth",
+          "gpb_forearm_girth",
+          "gpb_calf_girth"
         ],
         "groups": {
           "face": [
@@ -904,7 +914,9 @@
             "headFat",
             "chestMuscle",
             "gpb_upperarm_girth",
-            "gpb_thigh_girth"
+            "gpb_thigh_girth",
+            "gpb_forearm_girth",
+            "gpb_calf_girth"
           ]
         }
       },

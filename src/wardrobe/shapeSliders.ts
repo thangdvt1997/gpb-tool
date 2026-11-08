@@ -2,11 +2,11 @@
  * Thanh chỉnh hình thể: ánh xạ slider sang trường CharacterLook.body và morph có thật trên mesh MPFB.
  * Giới hạn lấy từ BODY_LIMITS_BY_STYLE (khác nhau cho realistic và chibi). Chỉ liệt kê thanh có tác dụng thật:
  * - 'scale': đổi chiều cao (scale đồng đều trong MpfbAvatar, chiều cao đích kẹp theo kiểu).
- * - 'morph': ghi thẳng vào một morph thân (một chiều; riêng bắp tay, đùi là morph hai chiều gpb_*_girth).
+ * - 'morph': ghi thẳng vào một morph thân (một chiều; riêng bắp tay, cẳng tay, đùi, bắp chân là morph hai chiều gpb_*_girth).
  * - 'composite': cộng vào các morph thân (cân nặng, lượng mỡ, cơ bắp), xem avatar/outfit/bodyMorphs.ts.
  * - 'bone': đổi tỷ lệ xương trên skeleton MPFB (dài tay, dài chân, dài cổ, cong lưng, cỡ bàn tay, bàn chân), xem avatar/boneShape.ts.
  *   Chỉ hiện khi rig hỗ trợ (modelSupportsBoneShape / rigSupportsBoneShape).
- * Trường chưa có morph hay xương tương ứng (cẳng tay, bắp chân, tỉ lệ đầu thân) nằm trong UNSUPPORTED_SHAPE để
+ * Trường chưa có morph hay xương tương ứng (tỉ lệ đầu thân) nằm trong UNSUPPORTED_SHAPE để
  * UI hiển thị rõ lý do thay vì làm thanh giả.
  */
 import { BODY_LIMITS_BY_STYLE, FACE_STRUCTURE_LIMITS_BY_STYLE, validate, type Range } from '../fashion/rules';
@@ -107,7 +107,7 @@ export const BONE_SLIDERS: readonly SliderDef[] = [
   }),
 ];
 
-/** Thanh bắp tay, đùi: morph hai chiều gpb_upperarm_girth, gpb_thigh_girth (ghi cả hai bên, đối xứng). */
+/** Thanh bắp tay, cẳng tay, đùi, bắp chân: morph hai chiều gpb_*_girth (ghi cả hai bên, đối xứng). */
 function girthSlider(id: string, label: string, range: (s: BodyStyle) => Range, get: SliderDef['get'], write: SliderDef['write']): SliderDef {
   return { id, label, group: 'limbs', support: 'morph', unit: '', step: 0.01, range, effective: range, get, write };
 }
@@ -120,6 +120,14 @@ export const GIRTH_SLIDERS: readonly SliderDef[] = [
   girthSlider('thigh', 'Đùi (to / nhỏ)', (s) => BODY_LIMITS_BY_STYLE[s].leg.thigh, (l) => l.body.legs.left.thigh, (l, v) => {
     l.body.legs.left.thigh = v;
     l.body.legs.right.thigh = v;
+  }),
+  girthSlider('forearm', 'Cẳng tay (to / nhỏ)', (s) => BODY_LIMITS_BY_STYLE[s].arm.forearm, (l) => l.body.arms.left.forearm, (l, v) => {
+    l.body.arms.left.forearm = v;
+    l.body.arms.right.forearm = v;
+  }),
+  girthSlider('calf', 'Bắp chân (to / nhỏ)', (s) => BODY_LIMITS_BY_STYLE[s].leg.calf, (l) => l.body.legs.left.calf, (l, v) => {
+    l.body.legs.left.calf = v;
+    l.body.legs.right.calf = v;
   }),
 ];
 
@@ -180,8 +188,6 @@ export const SHAPE_SLIDERS: readonly SliderDef[] = [
 
 /** Trường hình thể có trong dữ liệu nhưng chưa có morph/xương nối tới mô hình. */
 export const UNSUPPORTED_SHAPE: readonly { id: string; label: string; reason: string }[] = [
-  { id: 'forearm', label: 'Cẳng tay (độ đầy)', reason: 'Chưa có morph cẳng tay; bắp tay, chiều dài tay, cỡ bàn tay đã chỉnh được.' },
-  { id: 'calf', label: 'Bắp chân (độ đầy)', reason: 'Chưa có morph bắp chân; đùi, chiều dài chân, cỡ bàn chân đã chỉnh được.' },
   { id: 'headsTall', label: 'Số đầu trên chiều cao', reason: 'Là số suy ra, mô hình chỉ có hai tỉ lệ cố định (người thật, chibi).' },
 ];
 
