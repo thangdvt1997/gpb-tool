@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ZoneDef, ZoneObject } from '../content/types';
-import { applyLayoutPoses, effectiveZone, fixtureTransform, poseDelta, type LayoutPoses } from './applyPoses';
+import { applyLayoutPoses, effectiveZone, fixtureTransform, poseDelta, rotateBoxesAbout, unrotatedOf, layoutRotationY, type LayoutPoses } from './applyPoses';
 import { collisionRects } from '../scene/layout';
 
 const obj = (id: string, x: number, z: number, w = 4, d = 2): ZoneObject => ({
@@ -40,5 +40,37 @@ describe('applyLayoutPoses', () => {
     expect(t.position).toEqual([2, 1.5, 3.05]);
     expect(t.rotationY).toBeCloseTo(Math.PI);
     expect(poseDelta('tv_lobby', poses({}))).toBeNull();
+  });
+});
+
+describe('khối ghép xoay thật', () => {
+  const objects = [obj('pantry', 10, 5, 6, 2)];
+  it('đặt layoutRot, footprint hoán đổi, unrotatedOf trả size gốc cùng tâm', () => {
+    const out = applyLayoutPoses(objects, poses({ pantry: { x: 12, z: 5, rotation: 90 } }))[0];
+    expect(out.layoutRot).toBe(90);
+    expect(out.size).toEqual([2, 1, 6]);
+    const u = unrotatedOf(out);
+    expect(u.size).toEqual([6, 1, 2]);
+    expect(u.layoutRot).toBeUndefined();
+    expect(u.position).toEqual(out.position);
+    expect(layoutRotationY(out)).toBeCloseTo(Math.PI / 2);
+    const o180 = applyLayoutPoses(objects, poses({ pantry: { x: 10, z: 5, rotation: 180 } }))[0];
+    expect(o180.size).toEqual([6, 1, 2]);
+    expect(unrotatedOf(o180).size).toEqual([6, 1, 2]);
+  });
+  it('không xoay: không có layoutRot', () => {
+    expect(applyLayoutPoses(objects, poses({ pantry: { x: 13, z: 5, rotation: 0 } }))[0].layoutRot).toBeUndefined();
+  });
+  it('rotateBoxesAbout quay hộp quanh tâm khớp footprint xoay', () => {
+    const box = { minX: 7, maxX: 9, minZ: 4, maxZ: 5.5 }; // lệch tâm (10, 5)
+    const r90 = rotateBoxesAbout([box], 10, 5, 90)[0];
+    // (dx,dz) -> (dz,-dx): dx[-3,-1], dz[-1,0.5] -> x[-1,0.5], z[1,3]
+    expect([r90.minX, r90.maxX, r90.minZ, r90.maxZ]).toEqual([9, 10.5, 6, 8]);
+    const r180 = rotateBoxesAbout([box], 10, 5, 180)[0];
+    expect([r180.minX, r180.maxX, r180.minZ, r180.maxZ]).toEqual([11, 13, 4.5, 6]);
+    const r270 = rotateBoxesAbout([box], 10, 5, 270)[0];
+    expect([r270.minX, r270.maxX, r270.minZ, r270.maxZ]).toEqual([9.5, 11, 2, 4]);
+    const back = rotateBoxesAbout(rotateBoxesAbout([box], 10, 5, 90), 10, 5, 270)[0];
+    expect(back).toEqual(box);
   });
 });

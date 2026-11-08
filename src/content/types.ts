@@ -44,6 +44,11 @@ export interface ZoneObject {
   capacity?: number;
   /** Tên squad của khối bàn. */
   squad?: string;
+  /**
+   * Góc xoay thêm (độ) do bố cục đã lưu. Chỉ do applyLayoutPoses đặt (khác 0). size lúc đó là footprint ĐÃ xoay
+   * (rộng/sâu hoán đổi khi 90/270); hình ghép phải dựng từ unrotatedOf(o) rồi quay quanh position.
+   */
+  layoutRot?: 90 | 180 | 270;
 }
 
 export interface ZoneDef {

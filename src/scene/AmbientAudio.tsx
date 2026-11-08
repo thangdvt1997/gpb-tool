@@ -1,5 +1,6 @@
 import { useAmbient } from '../audio/useAmbient';
 import type { AmbientZone } from '../audio/engine';
+import type { LayoutPoses } from '../layout/applyPoses';
 import type { ZoneObject } from '../content/types';
 
 interface AmbientAudioProps {
@@ -9,13 +10,15 @@ interface AmbientAudioProps {
   enabled: boolean;
   /** Vật thể của khu, để đặt nguồn có hướng (TV, loa, máy in). */
   objects: readonly ZoneObject[];
+  /** Bố cục đã lưu: tivi có hướng dời theo. */
+  layoutPoses?: LayoutPoses;
 }
 
 /**
  * Âm nền của khu người chơi đứng, qua bus ambient của bộ trộn không gian. Không có nút UI.
  * Đặt trong Canvas, nhưng không vẽ gì.
  */
-export function AmbientAudio({ zone, enabled, objects }: AmbientAudioProps) {
-  useAmbient(zone, enabled, objects);
+export function AmbientAudio({ zone, enabled, objects, layoutPoses }: AmbientAudioProps) {
+  useAmbient(zone, enabled, objects, layoutPoses);
   return null;
 }
