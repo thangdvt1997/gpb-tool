@@ -224,3 +224,18 @@ describe('lưu nguyên tử', () => {
     expect(buildBatchOps(s)).toMatchObject([{ op: 'put', id: 'p_jjjj01', door: false }]);
   });
 });
+
+describe('môi trường từ it.json', () => {
+  it('vật di chuyển không có trong it.json (tivi, bảng, cây) vẫn là vật cản của vật mới', async () => {
+    const { buildEditorEnv } = await import('./core');
+    const zone = (await import('../content/zones/it.json')).default;
+    const e = buildEditorEnv(zone.objects as never);
+    for (const id of ['tv_lobby', 'plant_north', 'whiteboard_mr1']) expect(e.sizes[id]).toBeDefined();
+    const server2: LayoutState = { items: {}, defaults: { tv_lobby: { x: -1, z: 0.05, rotation: 0 } }, version: 1 };
+    let s = run(createEditorState(e, 'it', server2), { type: 'enter' });
+    s = run(s, { type: 'addProp', kind: 'table', id: 'p_kkkk01', at: { x: -1, z: 0.05 } });
+    const t = s.draft.p_kkkk01;
+    expect(Math.hypot(t.x + 1, t.z - 0.05)).toBeGreaterThan(1);
+    expect(validatePose(s.env, s.draft, 'p_kkkk01', t).valid).toBe(true);
+  });
+});

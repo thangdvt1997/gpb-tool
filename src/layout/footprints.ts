@@ -1,13 +1,16 @@
 import type { ZoneObject } from '../content/types';
-import { collisionRects, footprint, type Rect } from '../scene/layout';
+import { footprint, type Rect } from '../scene/layout';
 import { isMovable } from './movable';
 
 /**
- * Footprint cố định cho useMoveMode: mọi vật thể đặc KHÔNG di chuyển được (bàn, phòng họp, tường...).
+ * Footprint cố định cho useMoveMode: mọi vật thể KHÔNG di chuyển được (bàn, phòng họp, tường, khu dự phòng...).
+ * Giống máy chủ (services/layout/src/movable.js, loadZone): chướng ngại cố định là mọi vật không nằm trong danh sách
+ * di chuyển, kể cả loại không đặc đối với người đi bộ (reserved, lối vào). Lọc theo isSolidObject làm client
+ * chấp nhận vị trí mà máy chủ từ chối 409.
  * Vật di chuyển được bị loại khỏi danh sách để không tự chặn chính nó.
  */
 export function fixedRectsOf(objects: readonly ZoneObject[]): Rect[] {
-  return collisionRects(objects.filter((o) => !isMovable(o.id)));
+  return objects.filter((o) => !isMovable(o.id)).map((o) => footprint(o));
 }
 
 /**
