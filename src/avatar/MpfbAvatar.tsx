@@ -164,30 +164,6 @@ export function bodyMorphWeights(look: CharacterLook): Record<BodyMorph, number>
   };
 }
 
-/**
- * Hộp bao của mesh thân như trước khi thêm morph gpb_* (three cộng dồn biên độ mọi morph vào hộp bao). Giữ nguyên số đo
- * chiều cao và mặt sàn đã hiệu chỉnh; hai morph bắp tay, đùi chỉ nở ngang chi nên không đổi chiều cao.
- */
-function legacyBounds(body: THREE.Mesh): THREE.Box3 | null {
-  const geo = body.geometry;
-  const dict = body.morphTargetDictionary;
-  const all = geo.morphAttributes.position;
-  if (!dict || !all) {
-    if (!geo.boundingBox) geo.computeBoundingBox();
-    return geo.boundingBox;
-  }
-  const keep = Object.entries(dict).filter(([n]) => !n.startsWith('gpb_')).map(([, i]) => all[i]);
-  const saved = geo.morphAttributes.position;
-  geo.morphAttributes.position = keep;
-  geo.boundingBox = null;
-  geo.computeBoundingBox();
-  const box = geo.boundingBox ? (geo.boundingBox as THREE.Box3).clone() : null;
-  geo.morphAttributes.position = saved;
-  geo.boundingBox = null;
-  geo.computeBoundingBox();
-  return box;
-}
-
 export interface ShapeDebug {
   /** Influence của morph thân theo tên. */
   morph: Record<string, number>;
@@ -394,24 +370,20 @@ export function buildRig(gltf: GLTF): MpfbRig {
   const body = findMorphMesh(root);
   fixMaterials(root);
 
-  // Đo chiều cao trên geometry nghỉ của mesh thân (mesh đặt tại gốc, không có transform riêng).
+  // Đo trên đỉnh vị trí nghỉ của mesh thân (không tính morph). Hộp bao geometry của three cộng dồn biên độ mọi morph
+  // (min.y -0,13, max.y +0,06) nên làm chiều cao đo lớn hơn thật khoảng 10% và mặt sàn lơ lửng khoảng 11 cm.
   let minY = 0;
   let maxY = 1;
   if (body) {
-    const box = legacyBounds(body);
-    if (box) {
-      minY = box.min.y;
-      maxY = box.max.y;
-    }
-  }
-  // Đáy chân thật = đỉnh thấp nhất của vị trí nghỉ (không tính morph). Hộp bao của three cộng dồn biên độ mọi morph nên
-  // min.y âm khoảng 0,13 m: dùng nó làm mặt sàn thì nhân vật lơ lửng khoảng 11 cm. Chiều cao (nativeHeight) giữ số đo cũ.
-  let soleY = minY;
-  if (body) {
     const pos = body.geometry.getAttribute('position');
     if (pos && pos.count > 0) {
-      soleY = Infinity;
-      for (let i = 0; i < pos.count; i++) soleY = Math.min(soleY, pos.getY(i));
+      minY = Infinity;
+      maxY = -Infinity;
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
     }
   }
 
@@ -457,7 +429,7 @@ export function buildRig(gltf: GLTF): MpfbRig {
   const thigh = root.getObjectByName('thigh_l');
   const hipY = thigh ? thigh.getWorldPosition(new THREE.Vector3()).y : (maxY - minY) * 0.55;
 
-  return { root, joints, morphMesh: body, nativeHeight: Math.max(0.1, maxY - minY), minY: soleY, hipY, missing };
+  return { root, joints, morphMesh: body, nativeHeight: Math.max(0.1, maxY - minY), minY, hipY, missing };
 }
 
 function disposeRig(rig: MpfbRig): void {

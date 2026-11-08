@@ -36,19 +36,15 @@ function bodyMesh(root: THREE.Object3D): THREE.SkinnedMesh {
   return found;
 }
 function nativeHeight(root: THREE.Object3D): number {
-  // Như buildRig: bỏ morph gpb_* (chúng chỉ nở ngang chi) để số đo nghỉ giữ nguyên.
-  const m = bodyMesh(root);
-  const g = m.geometry;
-  const dict = m.morphTargetDictionary as Record<string, number>;
-  const all = g.morphAttributes.position;
-  g.morphAttributes.position = Object.entries(dict).filter(([n]) => !n.startsWith('gpb_')).map(([, i]) => all[i]);
-  g.boundingBox = null;
-  g.computeBoundingBox();
-  const bb = g.boundingBox as unknown as THREE.Box3;
-  const h = bb.max.y - bb.min.y;
-  g.morphAttributes.position = all;
-  g.boundingBox = null;
-  return h;
+  // Như buildRig: đỉnh vị trí nghỉ, không tính morph (hộp bao three cộng dồn biên độ morph).
+  const p = bodyMesh(root).geometry.getAttribute('position');
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let k = 0; k < p.count; k++) {
+    lo = Math.min(lo, p.getY(k));
+    hi = Math.max(hi, p.getY(k));
+  }
+  return hi - lo;
 }
 const pos = (root: THREE.Object3D, name: string): THREE.Vector3 => {
   root.updateMatrixWorld(true);
