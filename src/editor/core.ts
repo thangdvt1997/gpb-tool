@@ -47,11 +47,32 @@ function addPropToEnv(env: EditorEnv, id: string, kind: PropKind): EditorEnv {
   return { ...env, sizes: { ...env.sizes, [id]: { w, h, d, centerY: h / 2 } }, props: { ...env.props, [id]: kind } };
 }
 
+/**
+ * Vật di chuyển được mà it.json không có (tivi, bảng, cây dựng từ itFixtures.ts). Máy chủ biết kích thước qua zone.json;
+ * thiếu ở đây thì client không thấy chúng là vật cản và đặt vật mới đè lên (máy chủ từ chối 409).
+ * Kích thước khớp services/layout/data/zone.json.
+ */
+export const FIXTURE_SIZES: Readonly<Record<string, { w: number; h: number; d: number; centerY: number }>> = {
+  tv_lobby: { w: 1.2, h: 0.7, d: 0.1, centerY: 1.5 },
+  tv_lounge: { w: 1.45, h: 0.83, d: 0.1, centerY: 1.5 },
+  tv_meeting: { w: 1.2, h: 0.7, d: 0.1, centerY: 1.5 },
+  whiteboard_mr1: { w: 2, h: 1.2, d: 0.1, centerY: 1.4 },
+  design_board: { w: 2, h: 1.2, d: 0.1, centerY: 1.4 },
+  plant_lobby: { w: 0.8, h: 1.2, d: 0.8, centerY: 0.6 },
+  plant_lounge_a: { w: 0.8, h: 1.2, d: 0.8, centerY: 0.6 },
+  plant_lounge_b: { w: 0.8, h: 1.2, d: 0.8, centerY: 0.6 },
+  plant_meeting: { w: 0.8, h: 1.2, d: 0.8, centerY: 0.6 },
+  plant_north: { w: 0.8, h: 1.2, d: 0.8, centerY: 0.6 },
+};
+
 export function buildEditorEnv(objects: readonly ZoneObject[]): EditorEnv {
   const sizes: EditorEnv['sizes'] = {};
   for (const o of objects) {
     if (!isMovable(o.id)) continue;
     sizes[o.id] = { w: o.size[0], h: o.size[1], d: o.size[2], centerY: o.position[1] };
+  }
+  for (const [id, sz] of Object.entries(FIXTURE_SIZES)) {
+    if (!sizes[id] && isMovable(id)) sizes[id] = sz;
   }
   return { sizes, fixed: fixedRectsOf(objects), keepOut: keepOutRectsOf(objects) };
 }
