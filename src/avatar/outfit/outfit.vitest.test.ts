@@ -468,7 +468,7 @@ describe('bodyMorphs: ánh xạ hình thể sang morph', () => {
   });
   it('writeBodyMorphs bỏ qua morph thiếu và mảng thiếu', () => {
     const infl = [0, 0, 0];
-    const n = writeBodyMorphs(infl, { bodyBelly: 1, headFat: 2, khac: 0 }, { bodyShouldersV: 0, bodyWaistSlim: 0, bodyHipsWide: 0, bodyBelly: 0.7, chestMuscle: 0, headFat: 0.2 });
+    const n = writeBodyMorphs(infl, { bodyBelly: 1, headFat: 2, khac: 0 }, { bodyShouldersV: 0, bodyWaistSlim: 0, bodyHipsWide: 0, bodyBelly: 0.7, chestMuscle: 0, headFat: 0.2, gpb_upperarm_girth: 0, gpb_thigh_girth: 0 });
     expect(n).toBe(2);
     expect(infl).toEqual([0, 0.7, 0.2]);
     expect(writeBodyMorphs(undefined, {}, deriveBodyMorphWeights(makeDefaultLook()))).toBe(0);
