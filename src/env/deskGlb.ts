@@ -67,7 +67,7 @@ export function loadDeskGlbs(): Promise<DeskGlbGeometries | null> {
 declare global {
   interface Window {
     /** Cờ debug: nguồn bàn làm việc (glb hay procedural) và số InstancedMesh/bản sao của bàn GLB. */
-    __gpbDeskGlb?: { source: DeskGlbSource; flag: boolean; instancedMeshes: number; instances: number };
+    __gpbDeskGlb?: { source: DeskGlbSource; flag: boolean; instancedMeshes: number; instances: number; signatures?: string[] };
   }
 }
 

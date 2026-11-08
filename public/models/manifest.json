@@ -1980,9 +1980,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "471c10ebd36fe49be27020b2a012733363555dfb063d20fee8a93beb8e296ea0"
+        "value": "9de73270851600e0ed21a6e9cfe89315518437f4375b2251f506d0099d9973d0"
       },
-      "bytes": 120876,
+      "bytes": 104256,
       "url": "furn_desk_dev.glb",
       "format": "glb",
       "scale": 1,
@@ -1994,7 +1994,7 @@
         ],
         "max": [
           0.598,
-          1.2,
+          1.0324,
           0.8562
         ],
         "space": "local",
@@ -2026,7 +2026,7 @@
         {
           "level": 0,
           "url": "furn_desk_dev.glb",
-          "triangles": 1878
+          "triangles": 1616
         }
       ],
       "materials": [
@@ -2068,9 +2068,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "04b3f014cfef42dc822e4ed3e57a00476ee326feba0efa0f2303c2250774e10a"
+        "value": "12fcbdcffb76254d14c97dfb84f6acd97ddcfbddc5aa1221df34331339454770"
       },
-      "bytes": 146804,
+      "bytes": 104264,
       "url": "furn_desk_design.glb",
       "format": "glb",
       "scale": 1,
@@ -2082,7 +2082,7 @@
         ],
         "max": [
           0.598,
-          1.24,
+          1.0324,
           0.8565
         ],
         "space": "local",
@@ -2114,7 +2114,7 @@
         {
           "level": 0,
           "url": "furn_desk_design.glb",
-          "triangles": 2282
+          "triangles": 1616
         }
       ],
       "materials": [
@@ -2156,9 +2156,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "7cd47f594157fac0bd6701f4fe7a11f74a083b1d1b210cb373457fb1925ba945"
+        "value": "d8b9ce51c61147e47dbe9026ce0850922b2bdc47f0502afd9b46b58c08c34d4f"
       },
-      "bytes": 151500,
+      "bytes": 104256,
       "url": "furn_desk_ops.glb",
       "format": "glb",
       "scale": 1,
@@ -2170,7 +2170,7 @@
         ],
         "max": [
           0.598,
-          1.19,
+          1.0324,
           0.8516
         ],
         "space": "local",
@@ -2202,7 +2202,7 @@
         {
           "level": 0,
           "url": "furn_desk_ops.glb",
-          "triangles": 2332
+          "triangles": 1616
         }
       ],
       "materials": [
