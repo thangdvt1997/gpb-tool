@@ -78,3 +78,11 @@ export function slideCamera(from: Vec3, to: Vec3, obstacles: readonly Rect[], ra
   if (to.y !== from.y && ok(from.x, to.y, from.z)) return { x: from.x, y: to.y, z: from.z };
   return from;
 }
+
+/**
+ * Vật cản của camera chụp ảnh = bố trí tĩnh + vật cản động theo bố trí người dùng (cùng nguồn với nhân vật:
+ * editor.blockers). Chưa có bố trí người dùng thì extra rỗng và trả đúng bố trí tĩnh.
+ */
+export function buildPhotoObstacles(staticRects: readonly Rect[], extra: readonly Rect[] = []): readonly Rect[] {
+  return extra.length === 0 ? staticRects : [...staticRects, ...extra];
+}

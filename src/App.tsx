@@ -526,7 +526,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               extraBlockers={editor.blockers}
             />
             <PropsLayer state={editor.state} dispatch={editor.dispatch} />
-            <PhotoScene />
+            <PhotoScene blockers={editor.blockers} />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
             <EditorLayer state={editor.state} dispatch={editor.dispatch} />

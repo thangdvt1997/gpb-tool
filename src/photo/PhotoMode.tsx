@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { announce } from '../a11y';
 import { holdPause } from '../scene/controls';
@@ -31,7 +31,7 @@ import {
   type CaptureScale,
   type PresetId,
 } from './photoLogic';
-import { escapeBlockers, slideCamera } from './photoCollision';
+import { buildPhotoObstacles, escapeBlockers, slideCamera } from './photoCollision';
 import { isPhotoPose, photoPoseOptions } from './photoPose';
 import { usePhotoHudHidden } from './usePhotoHud';
 import type { UserEmoteId } from '../emotes/types';
@@ -67,6 +67,15 @@ const listeners = new Set<() => void>();
 const apiRef: { current: PhotoCaptureApi | null } = { current: null };
 /** Camera tự do dạng đối tượng khả biến: FreeFly ghi mỗi khung, PhotoCapture đọc cùng khung (không qua React). */
 const freeCam: FreeCam = { position: { x: 0, y: 1.6, z: 0 }, yaw: 0, pitch: 0 };
+
+/** Hook e2e: ?debug=photo. window.__gpbPhoto: vị trí camera tự do, số vật cản, đặt camera. */
+if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'photo') {
+  (window as unknown as { __gpbPhoto?: unknown }).__gpbPhoto = {
+    get cam() { return { x: freeCam.position.x, y: freeCam.position.y, z: freeCam.position.z, yaw: freeCam.yaw, pitch: freeCam.pitch }; },
+    get obstacleCount() { return PHOTO_OBSTACLES.length; },
+    place(x: number, y: number, z: number, yaw: number): void { freeCam.position = { x, y, z }; freeCam.yaw = yaw; freeCam.pitch = 0; },
+  };
+}
 
 function set(patch: Partial<PhotoState>): void {
   state = { ...state, ...patch };
@@ -108,12 +117,15 @@ const BOUNDS: Bounds = { minX: OFFICE_BOX.minX, maxX: OFFICE_BOX.maxX, minZ: OFF
 
 /**
  * Vật cản của camera tự do: cùng nguồn với ITOffice (đồ nội thất, vật trang trí không cây, bàn lối vào, đạo cụ).
- * Dựng một lần từ it.json; bố cục tự sắp xếp của người dùng không được phản ánh (camera chụp ảnh chỉ là xấp xỉ).
+ * Phần tĩnh dựng một lần từ it.json; vật người dùng tự sắp (đã lưu) được PhotoScene cộng thêm qua prop blockers.
  */
-const PHOTO_OBSTACLES: readonly Rect[] = (() => {
+const STATIC_OBSTACLES: readonly Rect[] = (() => {
   const objects = (itZone as unknown as ZoneDef).objects;
   return [...collisionRects(objects), ...decorBlockersOf(objects, false), ...entryBlockers(objects), ...OFFICE_PROP_BLOCKERS];
 })();
+
+/** Vật cản hiện hành của camera (tĩnh + bố trí người dùng); PhotoScene cập nhật khi bố trí đổi. */
+let PHOTO_OBSTACLES: readonly Rect[] = STATIC_OBSTACLES;
 
 /** Đặt camera tự do theo preset quanh nhân vật, kẹp vào văn phòng. */
 function applyPreset(id: PresetId): void {
@@ -207,9 +219,13 @@ function FreeFly(): null {
   return null;
 }
 
+const NO_BLOCKERS: readonly Rect[] = [];
+
 /** Đặt BÊN TRONG Canvas, SAU component camera chính. */
-export function PhotoScene(): JSX.Element {
+export function PhotoScene({ blockers = NO_BLOCKERS }: { blockers?: readonly Rect[] } = {}): JSX.Element {
   const s = usePhotoState();
+  const obstacles = useMemo(() => buildPhotoObstacles(STATIC_OBSTACLES, blockers), [blockers]);
+  PHOTO_OBSTACLES = obstacles;
   const follow: FollowParams = { dist: 3, pitch: 0.18, azimuthOffset: s.front ? Math.PI : 0, targetHeight: 1.35 };
   return (
     <>
