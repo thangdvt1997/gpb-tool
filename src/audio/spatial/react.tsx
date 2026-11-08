@@ -1,13 +1,14 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
+import { isReducedMotion } from '../../settings/reducedMotion';
 import { SpatialAudioManager, type AudioStatus } from './manager';
 
 let shared: SpatialAudioManager | null = null;
 /** Bộ quản lý dùng chung toàn app (tạo lười, không tạo AudioContext). */
 export function getSpatialAudio(): SpatialAudioManager {
   return (shared ??= new SpatialAudioManager({
-    reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion: isReducedMotion,
   }));
 }
 

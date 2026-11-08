@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Batch } from '../scene/entry/merge';
+import { useReducedMotion } from '../settings/reducedMotion';
 import { PlantLabel } from './PlantLabel';
 import { PLANT_LIMITS, clamp, safeCount } from './types';
 import type { Plant, PlantStage } from './types';
@@ -149,14 +150,6 @@ function ageScale(ageDays: number): number {
   return 0.6 + 0.5 * t;
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 /**
  * Chỉ có khi cây đang héo: lá xoay nhẹ quanh thân. Không mount khi cây khỏe,
  * nên các cây khác không có vòng lặp khung hình.
@@ -211,7 +204,7 @@ function PlantMeshBase({ plant, position, scale = 1, selected = false, hovered =
     }
   }, [mats, selected, hovered]);
 
-  const reduceMotion = useMemo(prefersReducedMotion, []);
+  const reduceMotion = useReducedMotion();
   const sway = droop && !reduceMotion;
   const groupScale = ageScale(plant.ageDays) * scale;
 

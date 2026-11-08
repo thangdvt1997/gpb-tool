@@ -25,7 +25,8 @@ export interface ManagerOptions {
   rng?: () => number;
   maxVoices?: number;
   panning?: PanningModelType;
-  reducedMotion?: boolean;
+  /** boolean cố định, hoặc hàm đọc mỗi lần phát (theo kịp cài đặt người dùng). */
+  reducedMotion?: boolean | (() => boolean);
 }
 
 interface LiveVoice extends Voice {
@@ -236,7 +237,7 @@ export class SpatialAudioManager {
 
     const gain = ctx.createGain();
     // Giảm chuyển động: hạ nhẹ âm không thiết yếu (bước chân, ghế)
-    gain.gain.value = this.opts.reducedMotion && spec.priority <= 1 ? 0.6 : 1;
+    gain.gain.value = (typeof this.opts.reducedMotion === 'function' ? this.opts.reducedMotion() : this.opts.reducedMotion) && spec.priority <= 1 ? 0.6 : 1;
     let tail: AudioNode = gain;
     if (spec.spatial && o.position) {
       const occ = occlusionFor(o.zone ?? this.listenerZone, this.listenerZone);
