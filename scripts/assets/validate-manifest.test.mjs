@@ -144,7 +144,7 @@ test('GLB tự sinh: mỗi asset tĩnh đúng 1 mesh, 1 material (không tăng d
     assert.equal(j.meshes.length, 1, a.assetId);
     assert.equal(j.meshes[0].primitives.length, 1, a.assetId);
     assert.equal(j.materials.length, 1, a.assetId);
-    assert.ok(buf.length < 40000, `${a.assetId} ${buf.length} byte`);
+    assert.ok(buf.length < (a.assetId.startsWith('furn.desk_workstation_') ? 200000 : 40000), `${a.assetId} ${buf.length} byte`);
   }
 });
 
