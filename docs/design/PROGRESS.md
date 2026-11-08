@@ -227,3 +227,20 @@ V1–V3 đã có từ lần lặp 4 (478bdc8, 1c2b1f9). Ba mục NVDA đợt 3 c
 Acceptance c4688f7 PASS 01:04 (e2e 88), push origin/main, bundle /home/cc/bundles/gpb-c4688f7.bundle, deploy 01:25 UTC (watcher root), production 23/24 rồi spec 34 sửa xong 10/10 (BROWSER_QA.md).
 
 Vẫn bị chặn: 22–27 cần root chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (watcher root chỉ deploy web; cc không có sudo). 01, 02: **chờ chủ dự án quyết định license**. 12: chờ NVDA thật trên bản ≥ ed28d05.
+
+## 2026-11-08 — Lần lặp 8
+
+V1–V3 đã có trên main từ lần lặp 4 (478bdc8, 1c2b1f9), không làm lại. Lần lặp này kiểm bản mới nhất trên production.
+
+| Commit | Acceptance | Push origin/main | Bundle | Deploy production | Test production |
+|---|---|---|---|---|---|
+| f55cddd (gồm 2431d63: emote clip bake) | PASS 03:14 UTC | có (4a03739..f55cddd) | /home/cc/bundles/gpb-f55cddd.bundle | ~03:35 UTC (watcher root) | **24/24 PASS** + 36-player-emote-baked-clip 2/2 |
+
+TASK_STATUS 02: emote và bước khi xoay đã có, còn lại chỉ chờ license.
+
+Vẫn bị chặn, không đổi so với lần lặp 6:
+- 22–27: cần root chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>`. User cc không có sudo (`sudo -n true` đòi mật khẩu), /opt/gpb-tool thuộc root, watcher root chỉ deploy web. Không dùng nhóm docker để vượt quyền.
+- 01, 02: **chờ chủ dự án quyết định license** (3 GLB MPFB, asset và clip tự sinh LicenseRef-GPB-project).
+- 12: chờ chủ dự án chạy NVDA thật trên production hiện tại (f55cddd) cho Phòng thay đồ, Cài đặt, Sao lưu.
+
+Không tạo PROJECT_COMPLETE.txt.

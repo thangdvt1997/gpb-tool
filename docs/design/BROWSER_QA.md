@@ -202,3 +202,12 @@ Kiểm V3 trên production 4a03739. Mỗi nút được mở bằng chuột, r�
 | Trợ giúp | ĐẠT | ĐẠT |
 
 NVDA thật đợt 3 kiểm bản 1235903, là bản trước khi có sửa 478bdc8 và 1c2b1f9. Chủ dự án cần chạy lại NVDA trên production hiện tại cho Phòng thay đồ, Cài đặt, Sao lưu. Trình đọc màn hình thật: chưa kiểm trên bản này.
+
+## Production 2026-11-08 — commit f55cddd (deploy khoảng 03:35 UTC, watcher root)
+
+Gồm 2431d63 (emote phát clip bake, bước tại chỗ khi xoay). Acceptance PASS 03:14 UTC trên f55cddd.
+
+`playwright.prod.config.ts`: **24/24 PASS** (18,0 phút): 30-hanging, 02-scene-mock (2), 20-controls, 31-hud-expanded 14 ca (7 nút × Esc/nút đóng, aria-expanded="false" và focus về nút), 34-player-baked-clip (2), 35-glb-furniture (4).
+Thêm 36-player-emote-baked-clip vào cấu hình production: **2/2 PASS** (tấn hold và nhảy loop phát clip bake rồi về Idle; ?baked=0 dùng procedural).
+
+Trình đọc màn hình thật: chưa kiểm trên bản này. Chủ dự án cần chạy lại NVDA cho Phòng thay đồ, Cài đặt, Sao lưu (đợt 3 kiểm bản 1235903, trước bản sửa 478bdc8 và 1c2b1f9).
