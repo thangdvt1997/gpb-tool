@@ -20,15 +20,23 @@ export interface BoneShape {
   legL: number;
   legR: number;
   neck: number;
+  /** Cỡ bàn tay, bàn chân (scale đều quanh cổ tay, cổ chân; 1 = nguyên bản). */
+  handL: number;
+  handR: number;
+  footL: number;
+  footR: number;
   /** Tổng góc gù (rad) chia đều cho spine_01..03. */
   backRad: number;
 }
 
-export const IDENTITY_BONE_SHAPE: Readonly<BoneShape> = { armL: 1, armR: 1, legL: 1, legR: 1, neck: 1, backRad: 0 };
+export const IDENTITY_BONE_SHAPE: Readonly<BoneShape> = { armL: 1, armR: 1, legL: 1, legR: 1, neck: 1, handL: 1, handR: 1, footL: 1, footR: 1, backRad: 0 };
 
 export const BONE_SHAPE_LIMITS = {
   limb: { min: 0.85, max: 1.15 },
   neck: { min: 0.7, max: 1.25 },
+  /** Bàn tay, bàn chân: scale đều, kẹp -25% đến +25% (slider -0,5..0,5 nhân handGain). Đáy chân tính lại trong footDrop. */
+  extremity: { min: 0.75, max: 1.25 },
+  extremityGain: 0.5,
   backRad: 0.2,
   /** Hệ số từ trọng số slider (-1..1) sang độ lệch scale. */
   limbGain: 0.3,
@@ -45,6 +53,7 @@ export function boneShapeOf(look: CharacterLook | null | undefined): BoneShape {
   const b = look.body;
   const L = BONE_SHAPE_LIMITS;
   const limb = (w: unknown): number => clampTo(1 + L.limbGain * (typeof w === 'number' ? w : 0), L.limb.min, L.limb.max);
+  const ext = (w: unknown): number => clampTo(1 + L.extremityGain * (typeof w === 'number' ? w : 0), L.extremity.min, L.extremity.max);
   const back = typeof b.torso?.back === 'number' && Number.isFinite(b.torso.back) ? b.torso.back : 0;
   const neck = typeof b.torso?.neckLength === 'number' ? b.torso.neckLength : 0;
   return {
@@ -52,13 +61,17 @@ export function boneShapeOf(look: CharacterLook | null | undefined): BoneShape {
     armR: limb(b.arms?.right?.length),
     legL: limb(b.legs?.left?.length),
     legR: limb(b.legs?.right?.length),
+    handL: ext(b.arms?.left?.hand),
+    handR: ext(b.arms?.right?.hand),
+    footL: ext(b.legs?.left?.foot),
+    footR: ext(b.legs?.right?.foot),
     neck: clampTo(1 + L.neckGain * neck, L.neck.min, L.neck.max),
     backRad: Math.min(1, Math.max(-1, back)) * L.backRad,
   };
 }
 
 export function isIdentityBoneShape(s: BoneShape): boolean {
-  return s.armL === 1 && s.armR === 1 && s.legL === 1 && s.legR === 1 && s.neck === 1 && s.backRad === 0;
+  return s.armL === 1 && s.armR === 1 && s.legL === 1 && s.legR === 1 && s.neck === 1 && s.handL === 1 && s.handR === 1 && s.footL === 1 && s.footR === 1 && s.backRad === 0;
 }
 
 /** Xương bắt buộc để hỗ trợ hình thể bằng xương. */
@@ -95,9 +108,9 @@ function scaleY(o: THREE.Object3D | undefined, k: number): void {
  * Bù ngược cho xương con (bàn tay, bàn chân, đầu) khỏi bị kéo giãn theo xương cha. Hướng giãn d (đơn vị) biểu diễn
  * trong khung xương con; bù đường chéo scale_k = L^(-d_k^2) (đúng khi d trùng một trục, gần đúng khi lệch).
  */
-function compensate(o: THREE.Object3D | undefined, k: number, d: readonly [number, number, number]): void {
+function compensate(o: THREE.Object3D | undefined, k: number, d: readonly [number, number, number], u = 1): void {
   if (!o) return;
-  o.scale.set(Math.pow(k, -d[0] * d[0]), Math.pow(k, -d[1] * d[1]), Math.pow(k, -d[2] * d[2]));
+  o.scale.set(u * Math.pow(k, -d[0] * d[0]), u * Math.pow(k, -d[1] * d[1]), u * Math.pow(k, -d[2] * d[2]));
 }
 
 interface Cache {
@@ -138,13 +151,13 @@ export function applyBoneShape(root: THREE.Object3D, s: BoneShape): void {
   }
   const ARM_DIR: [number, number, number] = [0, 1, 0];
   scaleY(get('upperarm_l'), s.armL);
-  compensate(get('hand_l'), s.armL, ARM_DIR);
+  compensate(get('hand_l'), s.armL, ARM_DIR, s.handL);
   scaleY(get('upperarm_r'), s.armR);
-  compensate(get('hand_r'), s.armR, ARM_DIR);
+  compensate(get('hand_r'), s.armR, ARM_DIR, s.handR);
   scaleY(get('thigh_l'), s.legL);
-  compensate(get('foot_l'), s.legL, cache.dir.foot_l);
+  compensate(get('foot_l'), s.legL, cache.dir.foot_l, s.footL);
   scaleY(get('thigh_r'), s.legR);
-  compensate(get('foot_r'), s.legR, cache.dir.foot_r);
+  compensate(get('foot_r'), s.legR, cache.dir.foot_r, s.footR);
   scaleY(get('neck_01'), s.neck);
   compensate(get('head'), s.neck, cache.dir.head);
 
@@ -168,13 +181,15 @@ export interface RestSpans {
   legSpan: number;
   /** Khoảng cao từ neck_01 tới head. */
   neckSpan: number;
+  /** Độ cao cổ chân (foot_l) so với đáy mesh (= 0 khi pivot ở mặt sàn). Bàn chân scale quanh cổ chân nên đáy dời (k-1)*ankle. */
+  ankle: number;
 }
 
 /** Đo từ rig tư thế nghỉ (cần updateMatrixWorld). */
 export function measureRestSpans(root: THREE.Object3D, native: number): RestSpans {
   root.updateMatrixWorld(true);
   const y = (n: string): number => root.getObjectByName(n)?.getWorldPosition(new THREE.Vector3()).y ?? 0;
-  return { native, legSpan: y('thigh_l') - y('foot_l'), neckSpan: y('head') - y('neck_01') };
+  return { native, legSpan: y('thigh_l') - y('foot_l'), neckSpan: y('head') - y('neck_01'), ankle: y('foot_l') };
 }
 
 /**
@@ -182,14 +197,18 @@ export function measureRestSpans(root: THREE.Object3D, native: number): RestSpan
  * âm nếu chân ngắn đi (bàn chân lên). Dùng để đặt lại mặt sàn: đáy chân = minY - footDrop.
  */
 export function footDrop(spans: RestSpans, s: BoneShape): number {
-  return (Math.max(s.legL, s.legR) - 1) * spans.legSpan;
+  return Math.max(legDrop(spans, s.legL) + (s.footL - 1) * spans.ankle, legDrop(spans, s.legR) + (s.footR - 1) * spans.ankle);
+}
+
+function legDrop(spans: RestSpans, leg: number): number {
+  return (leg - 1) * spans.legSpan;
 }
 
 /** Số đo nghỉ của 3 tệp MPFB (đo bằng measureRestSpans, kiểm lại trong test trên GLB thật). */
 export const REST_SPANS: Readonly<Record<'male_real' | 'female_real' | 'chibi', RestSpans>> = {
-  male_real: { native: 2.0455318950116634, legSpan: 0.9324754064586322, neckSpan: 0.10214763747966749 },
-  female_real: { native: 1.754015140235424, legSpan: 0.742468531307611, neckSpan: 0.10856492523403927 },
-  chibi: { native: 1.0539905093610287, legSpan: 0.39288453450116023, neckSpan: 0.03213911022805249 },
+  male_real: { native: 2.0455318950116634, legSpan: 0.9324754064586322, neckSpan: 0.10214763747966749, ankle: 0.07723577410197163 },
+  female_real: { native: 1.754015140235424, legSpan: 0.742468531307611, neckSpan: 0.10856492523403927, ankle: 0.0666339363539622 },
+  chibi: { native: 1.0539905093610287, legSpan: 0.39288453450116023, neckSpan: 0.03213911022805249, ankle: 0.038924127467934166 },
 };
 
 /**
@@ -197,7 +216,7 @@ export const REST_SPANS: Readonly<Record<'male_real' | 'female_real' | 'chibi', 
  * bằng đúng chừng đó. Chân ngắn hơn: bàn chân thấp nhất lên cao, người hạ xuống (theo chân dài nhất, cùng quy ước).
  */
 export function heightDelta(spans: RestSpans, s: BoneShape): number {
-  const leg = footDrop(spans, s);
+  const leg = (Math.max(s.legL, s.legR) - 1) * spans.legSpan;
   const neck = (s.neck - 1) * spans.neckSpan;
   return leg + neck;
 }

@@ -17,7 +17,9 @@ export type BodyMorphName =
   | 'bodyHipsWide'
   | 'bodyBelly'
   | 'chestMuscle'
-  | 'headFat';
+  | 'headFat'
+  | 'gpb_upperarm_girth'
+  | 'gpb_thigh_girth';
 
 export const BODY_MORPH_NAMES: readonly BodyMorphName[] = [
   'bodyShouldersV',
@@ -26,10 +28,16 @@ export const BODY_MORPH_NAMES: readonly BodyMorphName[] = [
   'bodyBelly',
   'chestMuscle',
   'headFat',
+  'gpb_upperarm_girth',
+  'gpb_thigh_girth',
 ];
 
 function pos(x: number): number {
   return x > 0 ? x : 0;
+}
+/** Morph hai chiều: influence âm làm chi gầy đi. */
+function c11(x: number): number {
+  return x < -1 ? -1 : x > 1 ? 1 : x;
 }
 function c01(x: number): number {
   return x < 0 ? 0 : x > 1 ? 1 : x;
@@ -58,6 +66,8 @@ export function deriveBodyMorphWeights(look: CharacterLook): Record<BodyMorphNam
     bodyBelly: c01(pos(t.belly) + k.fatToBelly * pos(b.bodyFat) + k.weightToBelly * pos(b.weight)),
     chestMuscle: c01(pos(t.chest) + k.muscleToChest * pos(b.muscle)),
     headFat: c01(pos(look.face.structure.headSize)),
+    gpb_upperarm_girth: c11((b.arms.left.upperArm + b.arms.right.upperArm) / 2),
+    gpb_thigh_girth: c11((b.legs.left.thigh + b.legs.right.thigh) / 2),
   };
 }
 

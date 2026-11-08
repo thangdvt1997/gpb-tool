@@ -96,10 +96,11 @@ describe('shapeSliders: thanh hình thể', () => {
     expect(setSliderValue(base, 'chest', Number.NaN)).toBe(base);
   });
 
-  it('danh sách chưa hỗ trợ còn bắp tay/đùi/bàn tay; cổ, lưng, dài tay, dài chân đã có thanh xương', () => {
+  it('danh sách chưa hỗ trợ còn cẳng tay/bắp chân; bắp tay, đùi là morph; cổ, lưng, dài tay/chân, bàn tay/chân là xương', () => {
     const ids = UNSUPPORTED_SHAPE.map((u) => u.id);
-    for (const id of ['arms', 'legs']) expect(ids).toContain(id);
-    for (const id of ['neckLength', 'back', 'armLength', 'legLength']) expect(getSlider(id)?.support).toBe('bone');
+    for (const id of ['forearm', 'calf']) expect(ids).toContain(id);
+    for (const id of ['upperArm', 'thigh']) expect(getSlider(id)?.support).toBe('morph');
+    for (const id of ['neckLength', 'back', 'armLength', 'legLength', 'handSize', 'footSize']) expect(getSlider(id)?.support).toBe('bone');
     for (const u of UNSUPPORTED_SHAPE) expect(getSlider(u.id)).toBeUndefined();
   });
 

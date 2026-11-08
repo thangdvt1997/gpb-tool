@@ -121,15 +121,22 @@ const IK_ON = typeof window !== 'undefined' && ikEnabledFromUrl(window.location.
 // ---------------------------------------------------------------------------------------------------------------
 // Morph thân. Chỉ nối morph có thật trong GLB; trọng số kẹp [0, 1].
 
-type BodyMorph = 'bodyShouldersV' | 'bodyWaistSlim' | 'bodyHipsWide' | 'bodyBelly' | 'chestMuscle' | 'headFat';
+type BodyMorph = 'bodyShouldersV' | 'bodyWaistSlim' | 'bodyHipsWide' | 'bodyBelly' | 'chestMuscle' | 'headFat' | 'gpb_upperarm_girth' | 'gpb_thigh_girth';
 
 const BODY_MORPHS: readonly BodyMorph[] = [
-  'bodyShouldersV', 'bodyWaistSlim', 'bodyHipsWide', 'bodyBelly', 'chestMuscle', 'headFat',
+  'bodyShouldersV', 'bodyWaistSlim', 'bodyHipsWide', 'bodyBelly', 'chestMuscle', 'headFat', 'gpb_upperarm_girth', 'gpb_thigh_girth',
 ];
 
 function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
+
+function clamp11(v: number): number {
+  return v < -1 ? -1 : v > 1 ? 1 : v;
+}
+
+/** Morph hai chiều (influence âm làm chi gầy đi). */
+const SIGNED_MORPHS: ReadonlySet<string> = new Set(['gpb_upperarm_girth', 'gpb_thigh_girth']);
 
 /** Ghi trọng số morph đã kẹp [0, 1]. index < 0 (tệp không có morph) thì bỏ qua. */
 function setMorph(infl: number[], index: number, v: number): void {
@@ -152,7 +159,64 @@ export function bodyMorphWeights(look: CharacterLook): Record<BodyMorph, number>
     bodyBelly: clamp01(t.belly),
     chestMuscle: clamp01(t.chest),
     headFat: clamp01(look.face.structure.headSize),
+    gpb_upperarm_girth: clamp11((look.body.arms.left.upperArm + look.body.arms.right.upperArm) / 2),
+    gpb_thigh_girth: clamp11((look.body.legs.left.thigh + look.body.legs.right.thigh) / 2),
   };
+}
+
+/**
+ * Hộp bao của mesh thân như trước khi thêm morph gpb_* (three cộng dồn biên độ mọi morph vào hộp bao). Giữ nguyên số đo
+ * chiều cao và mặt sàn đã hiệu chỉnh; hai morph bắp tay, đùi chỉ nở ngang chi nên không đổi chiều cao.
+ */
+function legacyBounds(body: THREE.Mesh): THREE.Box3 | null {
+  const geo = body.geometry;
+  const dict = body.morphTargetDictionary;
+  const all = geo.morphAttributes.position;
+  if (!dict || !all) {
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    return geo.boundingBox;
+  }
+  const keep = Object.entries(dict).filter(([n]) => !n.startsWith('gpb_')).map(([, i]) => all[i]);
+  const saved = geo.morphAttributes.position;
+  geo.morphAttributes.position = keep;
+  geo.boundingBox = null;
+  geo.computeBoundingBox();
+  const box = geo.boundingBox ? (geo.boundingBox as THREE.Box3).clone() : null;
+  geo.morphAttributes.position = saved;
+  geo.boundingBox = null;
+  geo.computeBoundingBox();
+  return box;
+}
+
+export interface ShapeDebug {
+  /** Influence của morph thân theo tên. */
+  morph: Record<string, number>;
+  /** Scale cục bộ của xương hand/foot. */
+  scale: Record<string, [number, number, number]>;
+  /** Y thế giới thấp nhất của mọi đỉnh thân đã skin và morph (đáy bàn chân khi đứng). */
+  minY: number;
+}
+
+function readShapeDebug(rig: MpfbRig): ShapeDebug | null {
+  const mesh = rig.morphMesh as THREE.SkinnedMesh | null;
+  if (!mesh || !mesh.isSkinnedMesh) return null;
+  rig.root.updateMatrixWorld(true);
+  const morph: Record<string, number> = {};
+  for (const [n, i] of Object.entries(mesh.morphTargetDictionary ?? {})) morph[n] = mesh.morphTargetInfluences?.[i] ?? 0;
+  const scale: Record<string, [number, number, number]> = {};
+  for (const n of ['hand_l', 'hand_r', 'foot_l', 'foot_r']) {
+    const b = rig.root.getObjectByName(n);
+    if (b) scale[n] = [b.scale.x, b.scale.y, b.scale.z];
+  }
+  const v = new THREE.Vector3();
+  let minY = Infinity;
+  const n = mesh.geometry.getAttribute('position').count;
+  for (let i = 0; i < n; i++) {
+    mesh.getVertexPosition(i, v);
+    v.applyMatrix4(mesh.matrixWorld);
+    if (v.y < minY) minY = v.y;
+  }
+  return { morph, scale, minY };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -334,9 +398,7 @@ export function buildRig(gltf: GLTF): MpfbRig {
   let minY = 0;
   let maxY = 1;
   if (body) {
-    const geo = body.geometry;
-    if (!geo.boundingBox) geo.computeBoundingBox();
-    const box = geo.boundingBox;
+    const box = legacyBounds(body);
     if (box) {
       minY = box.min.y;
       maxY = box.max.y;
@@ -500,7 +562,12 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     const infl = rig.morphMesh?.morphTargetInfluences;
     if (!infl) return;
     const weights = look ? bodyMorphWeights(look) : null;
-    for (const name of BODY_MORPHS) setMorph(infl, idx[name], weights ? weights[name] : 0);
+    for (const name of BODY_MORPHS) {
+      const v = weights ? weights[name] : 0;
+      if (SIGNED_MORPHS.has(name)) {
+        if (idx[name] >= 0 && idx[name] < infl.length) infl[idx[name]] = clamp11(v);
+      } else setMorph(infl, idx[name], v);
+    }
   }, [rig, look, idx]);
 
   const heightM = targetHeightM(style, frame, look?.body.heightCm);
@@ -508,6 +575,16 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
   // Hình thể bằng xương (tay, chân, cổ, lưng): áp lên skeleton dùng chung với vỏ trang phục.
   const shape = useMemo(() => boneShapeOf(look), [look]);
   useEffect(() => applyBoneShape(rig.root, shape), [rig, shape]);
+  // Hook e2e (?debug=shape): window.__gpbShape.read() cho avatar mount sau cùng (sân khấu phòng thay đồ).
+  useEffect(() => {
+    if (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('debug') !== 'shape') return;
+    const w = window as unknown as { __gpbShape?: { read: () => ShapeDebug | null } };
+    const reader = { read: (): ShapeDebug | null => readShapeDebug(rig) };
+    w.__gpbShape = reader;
+    return () => {
+      if (w.__gpbShape === reader) delete w.__gpbShape;
+    };
+  }, [rig]);
   // Chân dài/ngắn đổi vị trí bàn chân thấp nhất: tính lại mặt sàn và độ cao hông (IK chân và camera theo đó).
   const drop = footDrop(REST_SPANS[mpfbModelFor(style, frame)], shape);
   // Chân chạm y = 0: dịch lên bù đáy chân của mesh (khoảng 2,4 đến 2,7 cm ở tệp gốc).
