@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getSpatialAudio, masterFromSlider } from '../../audio/spatial';
 import { AmbientEngine } from '../../audio/engine';
 import { getSettings, subscribeSettings, updateSettings as updateCentralSettings, type Settings } from '../../settings';
 
@@ -183,6 +184,10 @@ const engines = new Set<AmbientEngine>();
 function applyVolume(): void {
   const v = snap.settings.volume * ENGINE_VOLUME_AT_MAX;
   engines.forEach((e) => e.setVolume(v));
+  // Thanh chung cũng điều khiển master của bộ trộn không gian (âm nền, bước chân, âm tương tác). 0 là tắt tiếng chung.
+  const spatial = getSpatialAudio();
+  const master = masterFromSlider(snap.settings.volume);
+  if (spatial.getSettings().master.volume !== master) spatial.setVolume('master', master);
 }
 
 /**
@@ -211,3 +216,4 @@ function hookEngines(): void {
 }
 
 hookEngines();
+applyVolume();

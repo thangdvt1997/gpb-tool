@@ -5,7 +5,7 @@ import { AmbientScape, resolveAmbientSources, type AmbientZone } from './spatial
 
 declare global {
   interface Window {
-    __gpbAudio?: () => { status: string; ambient: ReturnType<AmbientScape['debugState']>; activeVoices: number };
+    __gpbAudio?: () => { status: string; ambient: ReturnType<AmbientScape['debugState']>; activeVoices: number; master: { setting: number; muted: boolean; node: number | null } };
   }
 }
 
@@ -28,6 +28,11 @@ export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonl
     if (new URLSearchParams(window.location.search).get('debug') === 'audio') {
       window.__gpbAudio = () => ({
         status: manager.status, ambient: scape.debugState(), activeVoices: manager.activeVoices,
+        master: {
+          setting: manager.getSettings().master.volume,
+          muted: manager.getSettings().master.muted,
+          node: manager.getBus('master')?.node.gain.value ?? null,
+        },
       });
     }
     return () => {

@@ -8,6 +8,8 @@
 import type { ZoneObject } from '../../content/types';
 import { occlusionFor, type DistanceModel } from './pure';
 import type { SpatialAudioManager } from './manager';
+import { TV_FIXTURES } from '../../scene/itFixtures';
+import type { TvId } from '../../display/types';
 
 export type AmbientZone = 'office' | 'lounge' | 'game' | 'karaoke' | 'events' | 'meeting' | 'server' | 'soc';
 export type AmbientSourceKind = 'tv' | 'speaker' | 'printer';
@@ -43,27 +45,33 @@ const VOICE_BY_KIND: Record<AmbientSourceKind, SourceVoice> = {
 export interface AmbientSourceDef {
   id: string;
   kind: AmbientSourceKind;
-  /** Vật thể trong it.json mà nguồn gắn vào. */
-  objectId: string;
-  /** Hướng nguồn quay về trên mặt sàn (x, z), không cần chuẩn hoá. */
-  facing: [number, number];
-  /** Độ cao (m). */
-  y: number;
+  /** Vật thể trong it.json mà nguồn gắn vào (đặt sát mép sau, ngược hướng). Bỏ trống khi dùng `fixture`. */
+  objectId?: string;
+  /** Tivi có sẵn trong TV_FIXTURES: lấy đúng vị trí và rotationY của tivi đó. */
+  fixture?: TvId;
+  /** Quay quanh trục y như decor trong cảnh: 0 là mặt hướng +z, π là hướng -z (sin, cos cho hướng trên sàn). */
+  rotationY?: number;
+  /** Độ cao (m), chỉ dùng với objectId. */
+  y?: number;
   /** Vùng âm thanh chứa nguồn (để lọc qua tường). */
   zone: AmbientZone;
 }
 
 /**
- * Nguồn có hướng. Vật thể chưa có trường xoay trong dữ liệu, nên hướng khai ở đây:
- * TV phòng họp áp tường sau quay vào phòng (theo meeting.tsx), loa karaoke áp tường Đông quay vào phòng.
+ * Nguồn có hướng, đối chiếu với decor thật:
+ * - Tivi: đúng vị trí và rotationY của TV_FIXTURES (src/scene/itFixtures.ts).
+ * - Màn trình chiếu phòng họp mr2, mr3: env/meeting.tsx đặt trên tường sau (z âm), mặt hướng +z, rotationY 0, phòng không bị xoay.
+ * - Loa karaoke cạnh màn LED: env/karaoke.tsx đặt màn ở tường sau (z âm) mặt hướng +z, rotationY 0.
+ * - Máy in: cảnh chưa có model máy in nên chưa có hướng thật; tạm quay về +z (phía lối đi), cần cập nhật khi có decor.
  */
 export const AMBIENT_SOURCE_DEFS: readonly AmbientSourceDef[] = [
-  { id: 'tv_mr1', kind: 'tv', objectId: 'mr1', facing: [0, 1], y: 1.6, zone: 'meeting' },
-  { id: 'tv_mr2', kind: 'tv', objectId: 'mr2', facing: [0, 1], y: 1.6, zone: 'meeting' },
-  { id: 'tv_mr3', kind: 'tv', objectId: 'mr3', facing: [0, 1], y: 1.6, zone: 'meeting' },
-  { id: 'tv_games', kind: 'tv', objectId: 'games_corner', facing: [0, 1], y: 1.4, zone: 'game' },
-  { id: 'speaker_karaoke', kind: 'speaker', objectId: 'karaoke_room', facing: [-1, 0], y: 2, zone: 'karaoke' },
-  { id: 'printer_print', kind: 'printer', objectId: 'util_print', facing: [0, 1], y: 1, zone: 'office' },
+  { id: 'tv_meeting', kind: 'tv', fixture: 'tv_meeting', zone: 'meeting' },
+  { id: 'tv_lounge', kind: 'tv', fixture: 'tv_lounge', zone: 'lounge' },
+  { id: 'tv_lobby', kind: 'tv', fixture: 'tv_lobby', zone: 'office' },
+  { id: 'screen_mr2', kind: 'tv', objectId: 'mr2', rotationY: 0, y: 1.5, zone: 'meeting' },
+  { id: 'screen_mr3', kind: 'tv', objectId: 'mr3', rotationY: 0, y: 1.5, zone: 'meeting' },
+  { id: 'speaker_karaoke', kind: 'speaker', objectId: 'karaoke_room', rotationY: 0, y: 1.6, zone: 'karaoke' },
+  { id: 'printer_print', kind: 'printer', objectId: 'util_print', rotationY: 0, y: 1, zone: 'office' },
 ];
 
 export interface ResolvedAmbientSource {
@@ -78,27 +86,40 @@ export interface ResolvedAmbientSource {
 
 const INSET = 0.3;
 
-/** Đặt nguồn sát mép vật thể phía sau (ngược hướng), quay về `facing`. Vật thể không có trong cảnh thì bỏ qua. */
+/** Hướng trên sàn của vật quay rotationY (0: +z). */
+export function facingOf(rotationY: number): [number, number, number] {
+  const x = Math.sin(rotationY);
+  const z = Math.cos(rotationY);
+  return [Math.abs(x) < 1e-9 ? 0 : x, 0, Math.abs(z) < 1e-9 ? 0 : z];
+}
+
+/** Đặt nguồn theo decor thật. Vật thể không có trong cảnh thì bỏ qua. */
 export function resolveAmbientSources(
   objects: readonly ZoneObject[],
   defs: readonly AmbientSourceDef[] = AMBIENT_SOURCE_DEFS,
+  tvs: Record<TvId, { position: [number, number, number]; rotationY: number }> = TV_FIXTURES,
 ): ResolvedAmbientSource[] {
   const out: ResolvedAmbientSource[] = [];
   for (const d of defs) {
+    if (d.fixture) {
+      const f = tvs[d.fixture];
+      if (!f) continue;
+      out.push({
+        id: d.id, kind: d.kind, zone: d.zone,
+        position: [f.position[0], f.position[1], f.position[2]],
+        orientation: facingOf(f.rotationY), cone: CONE_BY_KIND[d.kind],
+      });
+      continue;
+    }
     const o = objects.find((x) => x.id === d.objectId);
     if (!o) continue;
-    const len = Math.hypot(d.facing[0], d.facing[1]) || 1;
-    const fx = d.facing[0] / len;
-    const fz = d.facing[1] / len;
+    const [fx, , fz] = facingOf(d.rotationY ?? 0);
     const half = (Math.abs(fx) * o.size[0] + Math.abs(fz) * o.size[2]) / 2;
     const back = Math.max(0, half - INSET);
     out.push({
-      id: d.id,
-      kind: d.kind,
-      zone: d.zone,
-      position: [o.position[0] - fx * back, d.y, o.position[2] - fz * back],
-      orientation: [fx, 0, fz],
-      cone: CONE_BY_KIND[d.kind],
+      id: d.id, kind: d.kind, zone: d.zone,
+      position: [o.position[0] - fx * back, d.y ?? 1.5, o.position[2] - fz * back],
+      orientation: [fx, 0, fz], cone: CONE_BY_KIND[d.kind],
     });
   }
   return out;

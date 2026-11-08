@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SpatialAudioManager } from './manager';
 import { AmbientScape, applyCone, resolveAmbientSources, CONE_BY_KIND } from './ambient';
+import { TV_FIXTURES } from '../../scene/itFixtures';
 import type { ZoneObject } from '../../content/types';
 
 function param(v = 0) {
@@ -100,18 +101,22 @@ describe('ambient trên bus ambient', () => {
 });
 
 describe('nguồn có hướng (cone)', () => {
-  const objects = [obj('mr1', [-18, 1.4, -2.15], [5, 2.8, 4.7]), obj('karaoke_room', [20, 1.4, -7.7], [4.4, 2.8, 3.2])];
+  const objects = [obj('mr2', [-21.95, 1.4, 12], [4.3, 2.8, 3]), obj('karaoke_room', [20, 1.4, -7.7], [4.4, 2.8, 3.2])];
 
-  it('resolve: đặt sát mép sau, hướng đơn vị, cone theo loại; vật thiếu thì bỏ qua', () => {
+  it('resolve: tivi lấy đúng fixture, màn phòng họp và loa đặt tường sau hướng +z; vật thiếu thì bỏ qua', () => {
     const src = resolveAmbientSources(objects);
-    expect(src.map((s) => s.id)).toEqual(['tv_mr1', 'speaker_karaoke']);
-    const tv = src[0];
-    expect(tv.orientation).toEqual([0, 0, 1]);
-    expect(tv.position[2]).toBeCloseTo(-2.15 - (4.7 / 2 - 0.3));
-    expect(tv.cone).toEqual(CONE_BY_KIND.tv);
-    const sp = src[1];
-    expect(sp.orientation).toEqual([-1, 0, 0]);
-    expect(sp.position[0]).toBeCloseTo(20 + (4.4 / 2 - 0.3));
+    expect(src.map((s) => s.id)).toEqual(['tv_meeting', 'tv_lounge', 'tv_lobby', 'screen_mr2', 'speaker_karaoke']);
+    const [meeting, lounge] = src;
+    expect(meeting.position).toEqual(TV_FIXTURES.tv_meeting.position);
+    expect(meeting.orientation).toEqual([0, 0, 1]);
+    expect(lounge.orientation).toEqual([0, 0, -1]); // rotationY = π: hướng -z
+    const mr2 = src[3];
+    expect(mr2.orientation).toEqual([0, 0, 1]);
+    expect(mr2.position[2]).toBeCloseTo(12 - (3 / 2 - 0.3));
+    expect(mr2.cone).toEqual(CONE_BY_KIND.tv);
+    const sp = src[4];
+    expect(sp.orientation).toEqual([0, 0, 1]);
+    expect(sp.position[2]).toBeCloseTo(-7.7 - (3.2 / 2 - 0.3));
   });
 
   it('applyCone gán góc, outerGain và orientation', () => {
@@ -126,7 +131,7 @@ describe('nguồn có hướng (cone)', () => {
     scape.setSources(resolveAmbientSources(objects));
     await m.unlock();
     const panners = all.filter((n) => n.kind === 'panner');
-    expect(panners.length).toBe(2);
+    expect(panners.length).toBe(5);
     const tv = panners[0];
     expect(tv.coneInnerAngle).toBe(CONE_BY_KIND.tv.inner);
     expect(tv.coneOuterAngle).toBe(CONE_BY_KIND.tv.outer);
@@ -135,6 +140,29 @@ describe('nguồn có hướng (cone)', () => {
     const bus = m.getBus('ambient')!.node;
     const outGain = all.find((n) => n.kind === 'gain' && tv.targets.includes(n))!;
     expect(outGain.targets).toContain(bus);
-    expect(scape.debugState().sources.map((s) => s.id)).toEqual(['tv_mr1', 'speaker_karaoke']);
+    expect(scape.debugState().sources.map((s) => s.id)).toEqual(['tv_meeting', 'tv_lounge', 'tv_lobby', 'screen_mr2', 'speaker_karaoke']);
+  });
+});
+
+describe('thanh âm lượng chung -> master', () => {
+  it('masterFromSlider: 0 tắt tiếng, 0.5 là mặc định master, 1 là tối đa, đơn điệu', async () => {
+    const { masterFromSlider, defaultBusSettings } = await import('./pure');
+    expect(masterFromSlider(0)).toBe(0);
+    expect(masterFromSlider(0.5)).toBeCloseTo(defaultBusSettings().master.volume);
+    expect(masterFromSlider(1)).toBeCloseTo(1);
+    expect(masterFromSlider(0.25)).toBeLessThan(masterFromSlider(0.75));
+    expect(masterFromSlider(2)).toBe(1);
+  });
+
+  it('đổi thanh chung trong Cài đặt thì master của manager dùng chung đổi theo', async () => {
+    const { updateSettings } = await import('../../scene/controls/session');
+    const { getSpatialAudio } = await import('./react');
+    const m = getSpatialAudio();
+    updateSettings({ volume: 0 });
+    expect(m.getSettings().master.volume).toBe(0);
+    updateSettings({ volume: 1 });
+    expect(m.getSettings().master.volume).toBeCloseTo(1);
+    updateSettings({ volume: 0.5 });
+    expect(m.getSettings().master.volume).toBeCloseTo(0.8);
   });
 });
