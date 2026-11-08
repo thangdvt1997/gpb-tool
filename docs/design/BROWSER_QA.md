@@ -296,3 +296,11 @@ Production: chỉ kiểm smoke theo quyết định. Trang chủ 200, /api/auth/
 Chưa kiểm được trên môi trường test:
 - **Thoại trên production:** container gpb-tool-world-1 có TURN_SECRET rỗng (không khớp coturn), nên /api/world/turn sẽ trả 503 cho người đã đăng nhập. User cc không ghi được /opt/gpb-tool/.env. Chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/enable-turn-prod.sh`.
 - **Layout batch trên production:** endpoint `POST /api/layout/batch` (task 17) mới có ở môi trường test. deploy-svc.sh không phủ layout. Chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh <sha>`. Trước khi deploy layout, client trên production vẫn lưu được vị trí vật gốc theo đường cũ (nhận 404 thì lưu từng vật), còn vật thêm, tường và cửa chưa lưu được.
+
+## Production 2026-11-08 — commit 2d00d8b (deploy 13:37 UTC, watcher root)
+
+Acceptance 2d00d8b **PASS** 13:11–13:35 UTC (e2e 107 + đăng nhập thật 1, chạy một mình; không cần thử lại thoại). Push 622b58f..2d00d8b. Watcher deploy 13:37 UTC; production phục vụ `assets/index-bVAw7j-W.js`, trùng bản build của 2d00d8b. Smoke: trang chủ 200, /api/auth/providers 200, /api/world/health 401.
+
+`playwright.prod.config.ts --workers=4`: **43/43 PASS** (13,6 phút), gồm spec mới 37-editor-add-remove (API layout giả lập), 38-library-backup-zip (thumbnail, tải GLB lên, ZIP), 39-misc12 (GLB nhân vật retry, FallbackAvatar), 41-assets01 (bàn GLB 3 InstancedMesh, origin nhân vật ở sàn). Không spec nào bị bỏ qua.
+
+Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính năng (`buildHas` trong tests/helpers.ts). Lý do: tiến trình root chạy acceptance cho 622b58f bằng cùng thư mục test. 28-overview không còn ghi /tmp/overview-on.png (tệp đó đã thuộc root), mà ghi vào thư mục kết quả của test.

@@ -2,9 +2,9 @@
 
 Bản này nằm trong repo vì /home/cc/handoff-20261107 đã đổi chủ sang root lúc 08:15 UTC nên user cc không ghi gpu_request.md vào đó được. Bản sao: /home/cc/gpu-handoff/gpu_request.md.
 
-- Commit: __SHA__ (main, github.com/thangdvt1997/gpb-tool)
-- Production: https://gp.daisoncoop.com (đang chạy đúng commit trên, deploy __TIME__ UTC)
-- Cách chạy: mở production bằng Chrome trên laptop (GPU thật), đăng nhập bằng phiên của chủ dự án. Nếu chạy bản build local: `git fetch && git checkout __SHA__ && npm ci && npm run build && npx vite preview`.
+- Commit: 2d00d8b (main, github.com/thangdvt1997/gpb-tool)
+- Production: https://gp.daisoncoop.com (đang chạy đúng commit trên, deploy 13:37 UTC)
+- Cách chạy: mở production bằng Chrome trên laptop (GPU thật), đăng nhập bằng phiên của chủ dự án. Nếu chạy bản build local: `git fetch && git checkout 2d00d8b && npm ci && npm run build && npx vite preview`.
 - Ghi kết quả vào /home/cc/handoff-20261107/gpu_result.md (hoặc docs/design/GPU_RESULT.md trong repo): mỗi mục một dòng `<số task>: ĐẠT|LỖI — ghi chú`, kèm ảnh nếu có (đường dẫn hoặc mô tả). Agent đọc ở lần lặp sau.
 
 | Task | Việc cần kiểm | Tiêu chí đạt |

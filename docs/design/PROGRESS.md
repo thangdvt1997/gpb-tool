@@ -313,3 +313,22 @@ Bị chặn, cần root (user cc không có sudo):
 - **17 layout production:** endpoint batch mới chưa deploy. Chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh <sha>` (rollback: scripts/rollback-layout.sh).
 - **/home/cc/handoff-20261107 đổi chủ sang root lúc 08:15 UTC**, cc không ghi được nữa. Không ghi được gpu_request.md, bundle hay log stub vào đó. Có tiến trình root cũng đã build vào /home/cc/gpb-dev/dist (đã đổi tên thành dist.root-owned-20261108T0813, không xóa), tạo test-results thuộc root trong /home/cc/gpb-e2e, và có object git thuộc root.
 - **Acceptance song song:** tiến trình root /home/cc/deploy622/run.sh chạy acceptance cho 622b58f nhiều lần (11:11, 11:41 UTC). Nó ghi cùng /home/cc/gpb-acceptance.txt, dùng chung tài khoản test và world 3903, và chạy bộ test /home/cc/gpb-e2e/tests hiện tại, trong đó có spec cho tính năng chưa có ở 622b58f (37, 38, 39, 41), nên lượt đó luôn FAIL. 622b58f đã nằm trong main. Đã thêm `PW_OUTPUT_DIR` (playwright.config.ts, gpb-acceptance.sh) và khóa /tmp/gpb-mp-e2e.lock cho spec nhiều người để hai lượt không phá nhau.
+
+Kết quả lần lặp 12:
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance 2d00d8b | **PASS** 13:35 UTC (e2e 107 + đăng nhập thật 1). Các lượt FAIL trước đó: lỗi thật ở 30-a11y (sửa ff21ea7), world chạy mã cũ (sửa script), tranh tài nguyên với lượt root, tệp thuộc root (test-results, /tmp/overview-on.png) |
+| Push | origin/main 622b58f..2d00d8b (fast-forward). Không tạo bundle vì /home/cc/handoff-20261107 không ghi được |
+| Deploy | watcher root 13:37 UTC, bundle index-bVAw7j-W.js |
+| Test production | smoke 200/200/401; playwright.prod.config.ts --workers=4 **43/43 PASS** |
+| TASK_STATUS | 01, 22, 23, 24, 26, 27 → ĐÃ LÀM. 25 giữ MỘT PHẦN (chờ bật TURN trên production). 12 giữ MỘT PHẦN (chờ NVDA). 04, 05, 07, 11, 15, 17, 18, 20 cập nhật cột "Còn thiếu" |
+
+Việc còn lại:
+- 25: chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/enable-turn-prod.sh`, sau đó kiểm thoại hai trình duyệt trên production bằng phiên của mình (agent không có phiên production).
+- 17: chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh 2d00d8b` để có POST /api/layout/batch trên production.
+- GPU: chủ dự án chạy theo docs/design/GPU_REQUEST.md (03, 04, 07, 08, 13, 14, 15, 16, 19), ghi kết quả vào gpu_result.md hoặc docs/design/GPU_RESULT.md.
+- 12: chủ dự án chạy NVDA trên 2d00d8b.
+- Đề nghị chủ dự án trả quyền ghi /home/cc/handoff-20261107 cho cc (hoặc chỉ định thư mục khác), và cho tiến trình root dùng thư mục test và tệp kết quả acceptance riêng.
+
+Không tạo PROJECT_COMPLETE.txt (25, 12 và các mục cần GPU chưa xong).
