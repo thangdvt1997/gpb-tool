@@ -93,7 +93,7 @@ export function boneRegion(bone: string, normalZ: number): { region: SkinRegion;
  * Suy ra RegionMask cho từng (vùng, bên) từ mesh `meshName` (mặc định 'base').
  * Pháp tuyến +Z = phía trước (manifest: forward +Z). Ném lỗi nếu thiếu UV/skin.
  */
-export function buildRegionMasks(buf: ArrayBuffer, meshName = 'base'): RegionMask[] {
+export function buildRegionMasks(buf: ArrayBuffer, meshName = 'base', res = MASK_RES): RegionMask[] {
   const p = parseGlb(buf);
   const mesh = p.gltf.meshes.find((m) => m.name === meshName);
   const prim = mesh?.primitives[0];
@@ -131,36 +131,36 @@ export function buildRegionMasks(buf: ArrayBuffer, meshName = 'base'): RegionMas
     const key = label[a];
     if (!key || key !== label[b] || key !== label[c]) continue;
     let g = grids.get(key);
-    if (!g) { g = new Uint8Array(MASK_RES * MASK_RES); grids.set(key, g); }
+    if (!g) { g = new Uint8Array(res * res); grids.set(key, g); }
     const pts = [a, b, c].map((i) => [clamp01(uv[i][0]), clamp01(uv[i][1])]);
     const bx = boxes.get(key) ?? { u0: 1, v0: 1, u1: 0, v1: 0 };
     for (const [u, v] of pts) { bx.u0 = Math.min(bx.u0, u); bx.v0 = Math.min(bx.v0, v); bx.u1 = Math.max(bx.u1, u); bx.v1 = Math.max(bx.v1, v); }
     boxes.set(key, bx);
-    fillTriangle(g, pts);
+    fillTriangle(g, pts, res);
   }
   const out: RegionMask[] = [];
   for (const [key, grid] of grids) {
     const r = info.get(key)!;
-    out.push({ region: r.region, side: r.side, box: boxes.get(key)!, grid });
+    out.push({ region: r.region, side: r.side, box: boxes.get(key)!, grid, ...(res !== MASK_RES ? { res } : {}) });
   }
   return out;
 }
 
 /** Tô các ô lưới mà tam giác chạm (xấp xỉ bảo thủ: lấy mẫu mịn trong tam giác + đỉnh). */
-function fillTriangle(g: Uint8Array, p: number[][]): void {
+function fillTriangle(g: Uint8Array, p: number[][], res: number): void {
   const minX = Math.min(p[0][0], p[1][0], p[2][0]);
   const maxX = Math.max(p[0][0], p[1][0], p[2][0]);
   const minY = Math.min(p[0][1], p[1][1], p[2][1]);
   const maxY = Math.max(p[0][1], p[1][1], p[2][1]);
-  const x0 = Math.floor(minX * MASK_RES), x1 = Math.min(MASK_RES - 1, Math.floor(maxX * MASK_RES));
-  const y0 = Math.floor(minY * MASK_RES), y1 = Math.min(MASK_RES - 1, Math.floor(maxY * MASK_RES));
+  const x0 = Math.floor(minX * res), x1 = Math.min(res - 1, Math.floor(maxX * res));
+  const y0 = Math.floor(minY * res), y1 = Math.min(res - 1, Math.floor(maxY * res));
   const e = (ax: number, ay: number, bx: number, by: number, px: number, py: number) => (bx - ax) * (py - ay) - (by - ay) * (px - ax);
   const area = e(p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1]);
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      if (g[y * MASK_RES + x]) continue;
+      if (g[y * res + x]) continue;
       // Ô được tô nếu tâm ô nằm trong tam giác, hoặc tam giác nhỏ hơn ô (đỉnh nằm trong ô).
-      const cx = (x + 0.5) / MASK_RES, cy = (y + 0.5) / MASK_RES;
+      const cx = (x + 0.5) / res, cy = (y + 0.5) / res;
       let inside = false;
       if (Math.abs(area) > 1e-12) {
         const w0 = e(p[1][0], p[1][1], p[2][0], p[2][1], cx, cy) / area;
@@ -169,9 +169,9 @@ function fillTriangle(g: Uint8Array, p: number[][]): void {
         inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
       }
       if (!inside) {
-        for (const q of p) if (Math.floor(q[0] * MASK_RES) === x && Math.floor(q[1] * MASK_RES) === y) { inside = true; break; }
+        for (const q of p) if (Math.floor(q[0] * res) === x && Math.floor(q[1] * res) === y) { inside = true; break; }
       }
-      if (inside) g[y * MASK_RES + x] = 1;
+      if (inside) g[y * res + x] = 1;
     }
   }
 }

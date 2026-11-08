@@ -7,8 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { INK_PALETTE } from '../fashion/palette';
 import { addItem, clearRegion, commit, newHistory, newId, redo, undo, addLayer, toggleLayer, type History } from './edit';
 import { applyTattooOverlay, type TattooOverlayHandle } from './overlay';
-import { canvasTextRasterizer, clampToIsland, createCanvas, drawDocToCanvas, masksFor, QUALITY_RES, renderDoc, type TattooQuality } from './raster';
-import { MASK_RES, TATTOO_REGIONS, regionKey, type RegionMask, type Side, type SkinRegion } from './regions';
+import { canvasTextRasterizer, clampToIsland, createCanvas, drawDocToCanvas, inkOutsideMasks, masksFor, QUALITY_RES, renderDoc, type TattooQuality } from './raster';
+import { MASK_RES, maskRes, TATTOO_REGIONS, regionKey, type RegionMask, type Side, type SkinRegion } from './regions';
 import { DEFAULT_INK, emptyDoc, PAINT_LIMITS, serializeDoc, type StampItem, type StrokeItem, type TattooDoc } from './schema';
 import { STAMP_TEMPLATES, TEXT_TEMPLATE_ID } from './templates';
 
@@ -76,6 +76,23 @@ export function TattooPainter({ masks, initialDoc, quality = 'medium', onDocChan
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, masks, quality]);
 
+  /** Hook e2e: độ phân giải mask và kiểm mực tràn ra ngoài vùng đang chọn (xem inkOutsideMasks). */
+  function exposeHook(cv: HTMLCanvasElement | OffscreenCanvas) {
+    if (typeof window === 'undefined') return;
+    (window as unknown as { __gpbTattoo?: unknown }).__gpbTattoo = {
+      maskRes: regionMasks.reduce((a, m) => Math.max(a, maskRes(m)), 0),
+      region, side,
+      regionTexels: regionMasks.reduce((a, m) => a + (m.grid ? m.grid.reduce((x, y) => x + y, 0) : 0), 0),
+      check: () => {
+        const ctx = cv.getContext('2d') as CanvasRenderingContext2D | null;
+        if (!ctx) return null;
+        return inkOutsideMasks(ctx.getImageData(0, 0, cv.width, cv.height).data, cv.width, regionMasks);
+      },
+    };
+  }
+
+  useEffect(() => { if (texRef.current) exposeHook(texRef.current); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [doc, masks, quality, regionMasks]);
+
   // Xem trước 2D: nền vùng + xăm (kèm nét đang vẽ) + con trỏ.
   useEffect(() => {
     const cv = previewRef.current;
@@ -85,16 +102,18 @@ export function TattooPainter({ masks, initialDoc, quality = 'medium', onDocChan
     ctx.fillRect(0, 0, PREVIEW, PREVIEW);
     // Mask vẽ ở MASK_RES x MASK_RES rồi phóng to có làm mượt, tránh các ô vuông răng cưa trên bản xem trước.
     const maskCv = document.createElement('canvas');
-    maskCv.width = MASK_RES;
-    maskCv.height = MASK_RES;
+    const pr = masks.reduce((a, m) => Math.max(a, maskRes(m)), MASK_RES);
+    maskCv.width = pr;
+    maskCv.height = pr;
     const mctx = maskCv.getContext('2d');
     if (mctx) {
       for (const m of masks) {
         const sel = m.region === region && (!side || m.side === side);
         mctx.fillStyle = sel ? '#cfe3d3' : m.region && TATTOO_REGIONS.includes(m.region) ? '#d6d2ca' : '#bdb9b2';
         if (m.grid) {
-          for (let y = 0; y < MASK_RES; y++) for (let x = 0; x < MASK_RES; x++) if (m.grid[y * MASK_RES + x]) mctx.fillRect(x, y, 1, 1);
-        } else mctx.fillRect(m.box.u0 * MASK_RES, m.box.v0 * MASK_RES, (m.box.u1 - m.box.u0) * MASK_RES, (m.box.v1 - m.box.v0) * MASK_RES);
+          const r = maskRes(m), k = pr / r;
+          for (let y = 0; y < r; y++) for (let x = 0; x < r; x++) if (m.grid[y * r + x]) mctx.fillRect(x * k, y * k, k, k);
+        } else mctx.fillRect(m.box.u0 * pr, m.box.v0 * pr, (m.box.u1 - m.box.u0) * pr, (m.box.v1 - m.box.v0) * pr);
       }
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';

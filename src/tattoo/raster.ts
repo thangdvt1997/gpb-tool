@@ -1,10 +1,10 @@
 /**
  * Rasterizer thuần: tài liệu xăm -> bộ đệm RGBA (Uint8ClampedArray) theo UV, không phụ thuộc DOM nên test được trong node.
  * Canvas chỉ là lớp mỏng phía trên (drawDocToCanvas). Quy ước UV: gốc trên trái, v hướng xuống (khớp texture.flipY = false).
- * Mọi nét/con dấu bị cắt theo mask vùng da (lưới 64x64 từ glbUv); mép đảo UV được dilate vài pixel để lọc bilinear/mip
+ * Mọi nét/con dấu bị cắt theo mask vùng da (lưới 256x256 đóng gói sẵn, dự phòng 64x64 từ glbUv); mép đảo UV được dilate vài pixel để lọc bilinear/mip
  * không lộ đường nối.
  */
-import { boxContains, maskContains, type RegionMask, type Side, type SkinRegion, type UvBox } from './regions';
+import { boxContains, maskContains, maskRes, type RegionMask, type Side, type SkinRegion, type UvBox } from './regions';
 import type { StampItem, StrokeItem, TattooDoc, TattooItem } from './schema';
 import { getStampTemplate, TEXT_TEMPLATE_ID } from './templates';
 
@@ -42,7 +42,7 @@ export function inRegion(ms: readonly RegionMask[], u: number, v: number): boole
  * Kẹp điểm vào đảo UV hợp lệ: nằm trong thì giữ nguyên, ngoài thì chuyển tới tâm ô lưới thuộc vùng gần nhất.
  * Trả null nếu vùng không có ô nào (chưa có mask).
  */
-export function clampToIsland(ms: readonly RegionMask[], u: number, v: number, res = 64): { u: number; v: number } | null {
+export function clampToIsland(ms: readonly RegionMask[], u: number, v: number): { u: number; v: number } | null {
   u = Math.min(1, Math.max(0, u));
   v = Math.min(1, Math.max(0, v));
   if (inRegion(ms, u, v)) return { u, v };
@@ -55,6 +55,7 @@ export function clampToIsland(ms: readonly RegionMask[], u: number, v: number, r
       if (d < bd) { bd = d; best = { u: cu, v: cv }; }
       continue;
     }
+    const res = maskRes(m);
     const x0 = Math.max(0, Math.floor(m.box.u0 * res)), x1 = Math.min(res - 1, Math.floor(m.box.u1 * res));
     const y0 = Math.max(0, Math.floor(m.box.v0 * res)), y1 = Math.min(res - 1, Math.floor(m.box.v1 * res));
     for (let y = y0; y <= y1; y++) {
@@ -287,6 +288,40 @@ export function hasInk(data: Uint8ClampedArray): boolean {
 export function pointAllowed(masks: readonly RegionMask[], region: SkinRegion, side: Side | null, u: number, v: number): boolean {
   const ms = masksFor(masks, region, side);
   return ms.some((m) => boxContains(m.box, u, v)) && inRegion(ms, u, v);
+}
+
+/**
+ * Đếm pixel có mực (alpha > 0) nằm xa mọi mask `ms` hơn `tol` ô mask (Chebyshev). Dùng để kiểm nét không tràn sang vùng khác
+ * (dilateEdges chỉ nới vài pixel, nhỏ hơn 1 ô mask 256). Trả { ink, outside }.
+ */
+export function inkOutsideMasks(data: Uint8ClampedArray, size: number, ms: readonly RegionMask[], tol = 1): { ink: number; outside: number } {
+  const res = ms.reduce((a, m) => Math.max(a, maskRes(m)), 0) || 64;
+  const ok = new Uint8Array(res * res);
+  for (let y = 0; y < res; y++) {
+    for (let x = 0; x < res; x++) {
+      if (ms.some((m) => (m.grid && maskRes(m) === res ? m.grid[y * res + x] === 1 : maskContains(m, (x + 0.5) / res, (y + 0.5) / res)))) ok[y * res + x] = 1;
+    }
+  }
+  const near = new Uint8Array(res * res);
+  for (let y = 0; y < res; y++) {
+    for (let x = 0; x < res; x++) {
+      if (!ok[y * res + x]) continue;
+      for (let dy = -tol; dy <= tol; dy++) for (let dx = -tol; dx <= tol; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < res && ny < res) near[ny * res + nx] = 1;
+      }
+    }
+  }
+  let ink = 0, outside = 0;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (data[(y * size + x) * 4 + 3] === 0) continue;
+      ink++;
+      const gx = Math.min(res - 1, Math.floor(((x + 0.5) / size) * res)), gy = Math.min(res - 1, Math.floor(((y + 0.5) / size) * res));
+      if (!near[gy * res + gx]) outside++;
+    }
+  }
+  return { ink, outside };
 }
 
 /** Tạo canvas (DOM hoặc OffscreenCanvas); null nếu môi trường không có. */
