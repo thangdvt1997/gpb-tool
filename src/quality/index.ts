@@ -5,3 +5,6 @@ export * from './storage';
 export * from './resolve';
 export { useQuality } from './useQuality';
 export { QualityPicker, type QualityPickerProps } from './QualityPicker';
+export * from './graphics';
+export { GraphicsApplier } from './GraphicsApplier';
+export { GraphicsOptions } from './GraphicsOptions';

@@ -26,6 +26,7 @@ import {
   useDisposeOnChange,
   type Disposable,
 } from '../env/shared';
+import { LOD_BASE } from '../quality/graphics';
 import { OFFICE_DAY_SCENE as R } from '../theme/tokens';
 import { Batch, type V3 } from './entry/merge';
 import { toWorldX, toWorldZ } from './layout';
@@ -414,7 +415,7 @@ export function OfficeProps() {
   return (
     <group name="office-props">
       {res.geo.solid && <mesh geometry={res.geo.solid} material={res.solidMat} receiveShadow />}
-      {res.geo.banner && <mesh geometry={res.geo.banner} material={res.bannerMat} />}
+      {res.geo.banner && <mesh geometry={res.geo.banner} material={res.bannerMat} userData={{ lodDetail: LOD_BASE.banner }} />}
       {res.geo.glass && <mesh geometry={res.geo.glass} material={res.glassMat} renderOrder={1} />}
     </group>
   );

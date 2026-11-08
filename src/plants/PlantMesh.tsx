@@ -8,6 +8,7 @@ import { useReducedMotion } from '../settings/reducedMotion';
 import { PlantLabel } from './PlantLabel';
 import { PLANT_LIMITS, clamp, safeCount } from './types';
 import type { Plant, PlantStage } from './types';
+import { LOD_BASE } from '../quality/graphics';
 
 export interface PlantMeshProps {
   plant: Plant;
@@ -222,7 +223,7 @@ function PlantMeshBase({ plant, position, scale = 1, selected = false, hovered =
     : undefined;
 
   return (
-    <group position={position} scale={groupScale} onClick={handleClick}>
+    <group position={position} scale={groupScale} onClick={handleClick} userData={{ lodDetail: LOD_BASE.plant }}>
       <mesh geometry={GEO.pot} material={mats.pot} position={[0, POT_H / 2, 0]} />
       {rest && <mesh geometry={rest} material={REST_MAT} />}
       {sway ? <LeafSway>{leafMeshes}</LeafSway> : <group>{leafMeshes}</group>}

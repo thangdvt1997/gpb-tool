@@ -11,7 +11,7 @@ import { mpfbModelFor } from './avatar/MpfbAvatar';
 import { SocialBar } from './emotes/social';
 import { Minimap, NavMarkers } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
-import { QualityPicker, clampDpr, useQuality } from './quality';
+import { GraphicsApplier, QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
 import { EditorLayer, EditorPanel, LayoutEditorHost, PropsLayer } from './editor';
 import { SettingsPanel } from './settings';
@@ -528,6 +528,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <PropsLayer state={editor.state} dispatch={editor.dispatch} />
             <PhotoScene />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
+            <GraphicsApplier config={quality.config} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
             <EditorLayer state={editor.state} dispatch={editor.dispatch} />
             <NavMarkers />
@@ -659,7 +660,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
           {profileOpen && <ProfilePanel currentLook={look} onUseCloudLook={setLook} onClose={() => setProfileOpen(false)} />}
           {/* Đang sắp xếp nội thất: panel trình biên tập chiếm góc phải dưới, ẩn thanh hành động xã hội để không chồng. */}
           <SocialBar selfId={String(user.id)} transport={socialTransport} getPeers={getPeers} nameOf={(id) => remote.nameOf(id)} editorOpen={editor.state.active} onRemotePlay={(id, emoteId, self) => remote.actions.play(id, emoteId, Date.now(), self)} />
-          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} graphics={{ settings: quality.settings, config: quality.config, onChange: quality.setSettings }} />
           {backupOpen && <BackupPanel service={backup} onClose={() => setBackupOpen(false)} />}
           {libraryOpen && (
             <Suspense fallback={null}>

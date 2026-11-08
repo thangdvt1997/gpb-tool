@@ -40,5 +40,6 @@ export function resolveQuality(s: QualitySettings, hints: DeviceHints): { level:
 
 /** Cấu hình áp dụng cho renderer ở mức hiện tại (custom thì gộp ghi đè). */
 export function effectiveConfig(s: QualitySettings, level: QualityLevel): QualityConfig {
-  return configFor(level, s.mode === 'custom' ? s.custom : undefined);
+  // Ghim riêng (options) thắng cả mức lẫn custom; không ghim thì theo mức hiện tại.
+  return configFor(level, { ...(s.mode === 'custom' ? s.custom : undefined), ...(s.options ?? {}) });
 }

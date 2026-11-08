@@ -5,6 +5,7 @@ import { ACTION_IDS, RANGES, type ActionId, type Bindings } from './schema';
 import { useSettings } from './useSettings';
 import { confirmSwap, keyLabel, resetAll, resetOne, resolveCapture } from './rebindFlow';
 import { pickPad } from './useGamepadInput';
+import { GraphicsOptions, type GraphicsOptionsProps } from '../quality/GraphicsOptions';
 
 /** Nhãn tiếng Việt và trạng thái nối của từng action. wired=false: đã lưu nhưng chưa có mã nào đọc. */
 const ACTION_INFO: Record<ActionId, { label: string; wired: boolean }> = {
@@ -38,10 +39,12 @@ const FOCUSABLE = 'button, input, select, [href], [tabindex]:not([tabindex="-1"]
 export interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
+  /** Tùy chọn đồ họa nâng cao (texture, LOD, AO); không truyền thì ẩn mục này. */
+  graphics?: GraphicsOptionsProps;
 }
 
 /** Hộp thoại cài đặt: focus trap, Esc đóng (Esc khi đang chờ phím chỉ hủy việc đổi phím). */
-export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Element | null {
+export function SettingsPanel({ open, onClose, graphics }: SettingsPanelProps): JSX.Element | null {
   const { settings, update } = useSettings();
   const [tab, setTab] = useState<Tab>('controls');
   const [capturing, setCapturing] = useState<ActionId | null>(null);
@@ -207,6 +210,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps): JSX.Elemen
               {check('Viền sáng vật tương tác', settings.highlightEnabled, (v) => update({ highlightEnabled: v }))}
               {slider('Âm lượng', settings.volume, RANGES.volume.min, RANGES.volume.max, 0.05, (v) => update({ volume: v }))}
               {check('Giảm chuyển động', settings.display.reducedMotion, (v) => update({ display: { reducedMotion: v } }), 'tắt rung và nhún camera; cũng theo prefers-reduced-motion của hệ thống')}
+              {graphics && <GraphicsOptions {...graphics} />}
               <p className="sp-note">Cỡ chữ: chưa có trong schema nên chưa hiển thị.</p>
             </div>
           )}
