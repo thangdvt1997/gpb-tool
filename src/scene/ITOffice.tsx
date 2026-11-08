@@ -43,6 +43,7 @@ import { isObjectInOffice } from './officeBounds';
 import { BOARD_IDS, TV_IDS, TvScreen, WhiteboardScreen } from '../display';
 import { carePlantAndSync, PlantMesh, TOOL_ACTION, usePlants } from '../plants';
 import type { PlantTool } from '../plants';
+import { fixtureTransform, type LayoutPoses } from '../layout/applyPoses';
 import { BOARD_FIXTURES, PLANT_SPOTS, TV_FIXTURES } from './itFixtures';
 import { OFFICE_PROP_SHADOWS } from './officePropsLayout';
 import { CityView } from '../window';
@@ -92,6 +93,8 @@ interface Props {
   restoreSpawn?: { x: number; z: number; rotY?: number; seq: number } | null;
   /** Hộp va chạm của vật thêm bằng trình biên tập (tường ngăn, bàn ghế...); chặn đi lại và camera như vật cố định. */
   extraBlockers?: readonly Rect[];
+  /** Bố cục đã lưu: tivi, bảng, cây vẽ tại vị trí này. zone phải là effectiveZone() của cùng bố cục. */
+  layoutPoses?: LayoutPoses;
 }
 
 /**
@@ -160,7 +163,9 @@ function PlantFixtures({
   selected,
   tool,
   onSelect,
+  layoutPoses,
 }: {
+  layoutPoses?: LayoutPoses;
   selected: string | null;
   tool: PlantTool | null;
   onSelect: (id: string) => void;
@@ -172,10 +177,10 @@ function PlantFixtures({
         const spot = PLANT_SPOTS[plant.id];
         if (!spot) return null;
         return (
+          <group key={plant.id} name={`fx-${plant.id}`}>
           <PlantMesh
-            key={plant.id}
             plant={plant}
-            position={spot}
+            position={fixtureTransform(plant.id, spot, 0, layoutPoses).position}
             selected={selected === plant.id}
             onClick={(id) => {
               // Đang cầm dụng cụ thì bấm cây là chăm cây. Không thì mở panel của cây.
@@ -183,6 +188,7 @@ function PlantFixtures({
               else onSelect(id);
             }}
           />
+          </group>
         );
       })}
     </>
@@ -218,6 +224,7 @@ export function ITOffice({
   interactions = true,
   restoreSpawn = null,
   extraBlockers = NO_RECTS,
+  layoutPoses,
 }: Props) {
   // Ẩn vật thể chỉ dành cho vai trò khác (bàn kiểm duyệt chỉ moderator và admin thấy).
   // Chỉ dựng vật thể có footprint nằm trọn trong chữ L (officeBounds.ts, isObjectInOffice); vật khác không dựng,
@@ -297,6 +304,12 @@ export function ITOffice({
     [zone, showPlants, interactBlockers, extraBlockers],
   );
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
+  // Hook e2e (?debug=layout): vật cản hiện hành của nhân vật.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'layout') {
+      (window as unknown as { __gpbLayoutObstacles?: readonly Rect[] }).__gpbLayoutObstacles = obstacles;
+    }
+  }, [obstacles]);
   // Âm thanh khi dùng vật (TASK 14): bus tương tác -> âm tổng hợp có vị trí.
   useEffect(
     () => bridgeInteractAudio(onInteractEvent, getSpatialAudio(), (x, z) => audioZoneAt(audioRects, x, z)),
@@ -445,31 +458,35 @@ export function ITOffice({
       {/* Tivi, bảng vẽ và cây không có trong it.json. Vị trí lấy từ itFixtures.ts, khớp services/layout/data/zone.json. */}
       {TV_IDS.map((id) => {
         const f = TV_FIXTURES[id];
+        const t = fixtureTransform(id, f.position, f.rotationY, layoutPoses);
         return (
+          <group key={id} name={`fx-${id}`}>
           <TvScreen
-            key={id}
             tvId={id}
-            position={f.position}
-            rotation={[0, f.rotationY, 0]}
+            position={t.position}
+            rotation={[0, t.rotationY, 0]}
             size={f.size}
             onClick={onSelect}
           />
+          </group>
         );
       })}
       {BOARD_IDS.map((id) => {
         const f = BOARD_FIXTURES[id];
+        const t = fixtureTransform(id, f.position, f.rotationY, layoutPoses);
         return (
+          <group key={id} name={`fx-${id}`}>
           <WhiteboardScreen
-            key={id}
             boardId={id}
-            position={f.position}
-            rotation={[0, f.rotationY, 0]}
+            position={t.position}
+            rotation={[0, t.rotationY, 0]}
             size={f.size}
             onClick={onSelect}
           />
+          </group>
         );
       })}
-      <PlantFixtures selected={selected} tool={plantTool} onSelect={onSelect} />
+      <PlantFixtures layoutPoses={layoutPoses} selected={selected} tool={plantTool} onSelect={onSelect} />
 
       {festival && (
         <PartyDecor

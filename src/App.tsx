@@ -14,6 +14,7 @@ import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
 import { createDraftBackupAdapter } from './editor/draftStore';
+import { LayoutDebug } from './editor/LayoutDebug';
 import { EditorLayer, EditorPanel, LayoutEditorHost, PropsLayer } from './editor';
 import { SettingsPanel } from './settings';
 import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
@@ -41,7 +42,7 @@ import { OnboardingWizard } from './onboarding/OnboardingWizard';
 import type { WizardStart } from './onboarding/OnboardingWizard';
 import type { Appearance } from './avatar/appearance';
 import { DisplayProvider, isBoardId, isTvId } from './display';
-import { LayoutProvider } from './layout';
+import { LayoutProvider, effectiveZone, type LayoutPoses } from './layout';
 import { collisionRects } from './scene/layout';
 import { CARE_ROLES, PlantToolbar } from './plants';
 import type { PlantTool } from './plants';
@@ -61,6 +62,14 @@ const zone = itZone as unknown as ZoneDef;
 // Thư viện asset (TASK 18) nạp lười: AssetViewer kéo theo GLTFLoader.
 const LibraryPanel = lazy(() => import('./library').then((m) => ({ default: m.LibraryPanel })));
 const audioRects = audioZoneRects(zone.objects);
+const audioRectsCache = new WeakMap<ZoneDef, ReturnType<typeof audioZoneRects>>();
+/** Vùng âm thanh của khu hiệu lực (sau khi áp bố cục đã lưu), nhớ theo tham chiếu zone. */
+function audioRectsOf(z: ZoneDef): ReturnType<typeof audioZoneRects> {
+  if (z === zone) return audioRects;
+  let r = audioRectsCache.get(z);
+  if (!r) audioRectsCache.set(z, (r = audioZoneRects(z.objects)));
+  return r;
+}
 const WORLD_ON = typeof window !== 'undefined' && worldEnabled(import.meta.env.VITE_WORLD_ENABLED, window.location.search);
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -303,10 +312,11 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   // Lưu và khôi phục trạng thái (TASK 06). Bố cục vật do máy chủ giữ (LayoutProvider) nên không lưu cục bộ.
   // Vị trí nhân vật: placeCharacter đổi restoreSpawn, ITOffice mount lại Player tại điểm đó (chuỗi ghi danh vẫn ưu tiên).
   const [restoreSpawn, setRestoreSpawn] = useState<{ x: number; z: number; rotY: number; seq: number } | null>(null);
+  const layoutPosesRef = useRef<LayoutPoses | undefined>(undefined);
   const persist = useMemo(
     () =>
       createPersistManager(
-        { getLook: () => lookRef.current, getLayoutOverrides: () => ({}), getColliders: () => collisionRects(zone.objects) },
+        { getLook: () => lookRef.current, getLayoutOverrides: () => ({}), getColliders: () => collisionRects(effectiveZone(zone, layoutPosesRef.current).objects) },
         {
           applyLook: setLook,
           applyLayoutOverrides: () => undefined,
@@ -459,7 +469,13 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
     <DisplayProvider>
       <LayoutProvider>
         <LayoutEditorHost objects={zone.objects} role={user.role}>
-        {(editor) => (
+        {(editor) => {
+        // Bố cục đã lưu (state.saved) áp lên it.json: cảnh, va chạm, minimap, camera ảnh, âm thanh dùng cùng vị trí.
+        // Bản nháp trong chế độ sắp xếp vẫn do EditorLayer vẽ (bóng), chưa đổi cảnh cho tới khi Lưu.
+        const layoutPoses = { saved: editor.state.saved, defaults: editor.state.defaults };
+        const liveZone = effectiveZone(zone, layoutPoses);
+        layoutPosesRef.current = layoutPoses;
+        return (
         <div className="app">
           <header className="topbar">
             <div className="topbar-title">
@@ -498,7 +514,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             onPointerMissed={() => setSelected(null)}
           >
             <ITOffice
-              zone={zone}
+              zone={liveZone}
+              layoutPoses={layoutPoses}
               selected={editor.state.active ? editor.state.selectedId : selected}
               onSelect={(id) => {
                 // Chế độ sắp xếp (TASK 17): bấm vào vật để nhấc lên, vật theo con trỏ tới lần thả.
@@ -529,8 +546,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               extraBlockers={editor.blockers}
             />
             <PropsLayer state={editor.state} dispatch={editor.dispatch} />
-            <PhotoScene blockers={editor.blockers} />
-            <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
+            <LayoutDebug dispatch={editor.dispatch} />
+            <PhotoScene blockers={editor.blockers} objects={liveZone.objects} />
+            <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRectsOf(liveZone), x, z)} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />
             <EditorLayer state={editor.state} dispatch={editor.dispatch} />
             <NavMarkers />
@@ -545,7 +563,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               {gpuPhase === 'failed' ? 'Đang lưu và tải lại trang…' : 'Đang khôi phục đồ họa…'}
             </div>
           )}
-          <Minimap zone={zone} role={user.role} plants={partyOf(theme) !== 'none'} />
+          <Minimap zone={liveZone} role={user.role} plants={partyOf(theme) !== 'none'} />
 
           {/* Hướng dẫn phím nằm ở InteractionHelp (tắt được); chân trang chỉ giữ ghi chú dữ liệu mẫu. */}
           <footer className="hint hint-end">Dữ liệu là mẫu (mock)</footer>
@@ -670,7 +688,8 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             </Suspense>
           )}
         </div>
-        )}
+        );
+        }}
         </LayoutEditorHost>
       </LayoutProvider>
     </DisplayProvider>

@@ -119,10 +119,10 @@ const BOUNDS: Bounds = { minX: OFFICE_BOX.minX, maxX: OFFICE_BOX.maxX, minZ: OFF
  * Vật cản của camera tự do: cùng nguồn với ITOffice (đồ nội thất, vật trang trí không cây, bàn lối vào, đạo cụ).
  * Phần tĩnh dựng một lần từ it.json; vật người dùng tự sắp (đã lưu) được PhotoScene cộng thêm qua prop blockers.
  */
-const STATIC_OBSTACLES: readonly Rect[] = (() => {
-  const objects = (itZone as unknown as ZoneDef).objects;
+function staticObstaclesOf(objects: ZoneDef['objects']): readonly Rect[] {
   return [...collisionRects(objects), ...decorBlockersOf(objects, false), ...entryBlockers(objects), ...OFFICE_PROP_BLOCKERS];
-})();
+}
+const STATIC_OBSTACLES: readonly Rect[] = staticObstaclesOf((itZone as unknown as ZoneDef).objects);
 
 /** Vật cản hiện hành của camera (tĩnh + bố trí người dùng); PhotoScene cập nhật khi bố trí đổi. */
 let PHOTO_OBSTACLES: readonly Rect[] = STATIC_OBSTACLES;
@@ -222,9 +222,11 @@ function FreeFly(): null {
 const NO_BLOCKERS: readonly Rect[] = [];
 
 /** Đặt BÊN TRONG Canvas, SAU component camera chính. */
-export function PhotoScene({ blockers = NO_BLOCKERS }: { blockers?: readonly Rect[] } = {}): JSX.Element {
+export function PhotoScene({ blockers = NO_BLOCKERS, objects }: { blockers?: readonly Rect[]; objects?: ZoneDef['objects'] } = {}): JSX.Element {
   const s = usePhotoState();
-  const obstacles = useMemo(() => buildPhotoObstacles(STATIC_OBSTACLES, blockers), [blockers]);
+  // objects: vật thể của khu sau khi áp bố cục đã lưu (effectiveZone); không truyền thì dùng it.json gốc.
+  const base = useMemo(() => (objects ? staticObstaclesOf(objects) : STATIC_OBSTACLES), [objects]);
+  const obstacles = useMemo(() => buildPhotoObstacles(base, blockers), [base, blockers]);
   PHOTO_OBSTACLES = obstacles;
   const follow: FollowParams = { dist: 3, pitch: 0.18, azimuthOffset: s.front ? Math.PI : 0, targetHeight: 1.35 };
   return (

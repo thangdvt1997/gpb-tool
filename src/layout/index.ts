@@ -5,5 +5,6 @@ export * from './LayoutStore';
 export * from './floorPointer';
 export * from './placement';
 export * from './footprints';
+export * from './applyPoses';
 export * from './useMoveMode';
 export * from './GhostMesh';
