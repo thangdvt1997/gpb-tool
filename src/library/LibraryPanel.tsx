@@ -2,7 +2,7 @@
  * Panel thư viện asset: ô tìm không dấu, lọc loại/tag/giấy phép, sắp xếp, phân trang, lưới thẻ,
  * chi tiết, yêu thích và gần đây. Điều hướng bàn phím: mũi tên di chuyển giữa thẻ, Enter mở chi tiết,
  * F bật yêu thích, Esc đóng chi tiết/panel.
- * Chưa có backend: không có nút upload/publish.
+ * Chưa có backend: tải lên chỉ lưu IndexedDB trong trình duyệt (mục "Của tôi"), không gửi lên máy chủ.
  */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { KIND_LABELS, LIBRARY_KINDS, type LibraryItem, type LibraryKind } from './types';
@@ -10,6 +10,8 @@ import { collectFacets, runQuery, type SortKey } from './query';
 import { formatBytes } from './text';
 import { loadFavorites, loadRecent, pruneIds, pushRecent, toggleFavorite } from './storage';
 import { buildDefaultLibrary } from './sources';
+import { thumbnailFor } from './thumbnail';
+import { addUpload, createIdbAssetStore, createMemoryAssetStore, userItemFromRecord, type UserAssetStore } from './upload';
 
 // Viewer nạp lười để không kéo three/drei vào bundle khi chưa mở chi tiết có GLB.
 const AssetViewer = lazy(() => import('./AssetViewer').then((m) => ({ default: m.AssetViewer })));
@@ -20,14 +22,67 @@ export interface LibraryPanelProps {
   onClose?: () => void;
   /** Cho phép test/nơi khác truyền danh sách riêng; mặc định dùng catalog trong repo. */
   items?: readonly LibraryItem[];
+  /** Kho asset tự tải lên (mặc định IndexedDB, hoặc bộ nhớ nếu trình duyệt không có). */
+  userStore?: UserAssetStore;
 }
 
 import { useReturnFocus } from '../a11y/useReturnFocus';
 import { useEscapeClose } from '../a11y/useEscapeClose';
-export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
+export function LibraryPanel({ onClose, items: given, userStore }: LibraryPanelProps) {
   useReturnFocus();
+  const store = useMemo(() => userStore ?? createIdbAssetStore() ?? createMemoryAssetStore(), [userStore]);
+  const [mine, setMine] = useState<LibraryItem[]>([]);
+  const [upMsg, setUpMsg] = useState('');
+  const [upErr, setUpErr] = useState('');
+  const urls = useRef(new Map<string, string>());
+  const fileRef = useRef<HTMLInputElement>(null);
+  const refreshMine = useCallback(async () => {
+    try {
+      const recs = await store.list();
+      const next = recs.map((r) => {
+        let u = urls.current.get(r.id);
+        if (!u) {
+          u = URL.createObjectURL(r.data);
+          urls.current.set(r.id, u);
+        }
+        return userItemFromRecord(r, u);
+      });
+      for (const [id, u] of urls.current) if (!recs.some((r) => r.id === id)) {
+        URL.revokeObjectURL(u);
+        urls.current.delete(id);
+      }
+      setMine(next);
+    } catch {
+      setUpErr('Không đọc được kho tệp tự tải lên của trình duyệt.');
+    }
+  }, [store]);
+  useEffect(() => {
+    void refreshMine();
+    const m = urls.current;
+    return () => {
+      m.forEach((u) => URL.revokeObjectURL(u));
+      m.clear();
+    };
+  }, [refreshMine]);
+  async function onUpload(file: File | undefined) {
+    if (!file) return;
+    setUpMsg('');
+    setUpErr('');
+    const r = await addUpload(file, store);
+    if (fileRef.current) fileRef.current.value = '';
+    if (!r.ok) return setUpErr(`Từ chối "${file.name}": ${r.error}`);
+    setUpMsg(`Đã thêm "${r.record.name}" vào mục Của tôi.`);
+    await refreshMine();
+  }
+  async function onDelete(it: LibraryItem) {
+    await store.remove(it.id);
+    if (selected === it.id) setSelected(null);
+    setUpErr('');
+    setUpMsg(`Đã xóa "${it.name}".`);
+    await refreshMine();
+  }
   const lib = useMemo(() => (given ? { items: [...given], duplicates: [] as string[] } : buildDefaultLibrary()), [given]);
-  const byId = useMemo(() => new Map(lib.items.map((i) => [i.id, i])), [lib]);
+  const byId = useMemo(() => new Map([...lib.items, ...mine].map((i) => [i.id, i])), [lib, mine]);
   const facets = useMemo(() => collectFacets(lib.items), [lib]);
 
   const [text, setText] = useState('');
@@ -150,7 +205,8 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
             onClick={() => open(it.id)}
             style={{ ...cardStyle, opacity: it.usable ? 1 : 0.6, outline: selected === it.id ? '2px solid #4f8cff' : undefined }}
           >
-            <div>
+            <Thumb item={it} />
+            <div style={{ minWidth: 0 }}>
               <strong style={{ fontSize: 13 }}>{favs.includes(it.id) ? '★ ' : ''}{it.name}</strong>
               <div style={{ fontSize: 11, color: '#9aa8c7' }}>{KIND_LABELS[it.kind]}{it.bytes !== null ? ` · ${formatBytes(it.bytes)}` : ''}</div>
               {!it.usable && <div style={{ fontSize: 11, color: '#f2b632' }}>Không dùng được</div>}
@@ -159,6 +215,35 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
         ))}
       </ul>
       {result.items.length === 0 && <p>Không có asset khớp bộ lọc.</p>}
+      <section aria-label="Của tôi" style={{ borderTop: '1px solid #2a3555', marginTop: 8, paddingTop: 6 }}>
+        <h3 style={{ margin: '0 0 4px', fontSize: 14 }}>Của tôi ({mine.length})</h3>
+        <p style={{ margin: '2px 0', fontSize: 12, color: '#9aa8c7' }}>
+          Tải tệp .glb/.gltf (tối đa 10 MB). Tệp chỉ lưu trong trình duyệt này, không gửi lên máy chủ.
+        </p>
+        <label style={{ fontSize: 12 }}>
+          Tải lên GLB/glTF{' '}
+          <input ref={fileRef} type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" aria-label="Tải lên tệp GLB hoặc glTF" onChange={(e) => void onUpload(e.target.files?.[0])} />
+        </label>
+        <div role="status" style={{ fontSize: 12, minHeight: 16 }}>{upMsg}</div>
+        <div role="alert" style={{ fontSize: 12, color: '#ff7b7b' }}>{upErr}</div>
+        {mine.length === 0 ? (
+          <p style={{ fontSize: 12, margin: '2px 0' }}>Chưa có tệp tự tải lên.</p>
+        ) : (
+          <ul aria-label="Asset của tôi" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+            {mine.map((it) => (
+              <li key={it.id} data-mine style={{ ...cardStyle, cursor: 'default', display: 'flex', gap: 8, alignItems: 'center', outline: selected === it.id ? '2px solid #4f8cff' : undefined }}>
+                <Thumb item={it} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong style={{ fontSize: 13 }}>{it.name}</strong>
+                  <div style={{ fontSize: 11, color: '#f2b632' }}>Chưa có giấy phép / tự tải lên · {formatBytes(it.bytes)}</div>
+                </div>
+                <button onClick={() => open(it.id)} aria-label={`Xem ${it.name}`}>Xem</button>
+                <button onClick={() => void onDelete(it)} aria-label={`Xóa ${it.name}`}>Xóa</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <nav aria-label="Phân trang" style={{ display: 'flex', gap: 8, margin: '6px 0' }}>
         <button disabled={result.page <= 1} onClick={() => setPage(result.page - 1)}>Trước</button>
         <button disabled={result.page >= result.pageCount} onClick={() => setPage(result.page + 1)}>Sau</button>
@@ -190,4 +275,10 @@ export function LibraryPanel({ onClose, items: given }: LibraryPanelProps) {
 
 const rootStyle: CSSProperties = { background: '#171e33', color: '#e8edf7', padding: 12, borderRadius: 10, maxWidth: 560, maxHeight: '90vh', overflow: 'auto' };
 const gridStyle: CSSProperties = { listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: `repeat(${COLUMNS}, 1fr)`, gap: 6 };
-const cardStyle: CSSProperties = { border: '1px solid #2a3555', borderRadius: 8, padding: 8, cursor: 'pointer', minHeight: 56 };
+const cardStyle: CSSProperties = { border: '1px solid #2a3555', borderRadius: 8, padding: 8, cursor: 'pointer', minHeight: 72 };
+
+/** Ảnh thu nhỏ cỡ cố định (không nhảy layout), nạp lười. */
+function Thumb({ item }: { item: LibraryItem }) {
+  const t = thumbnailFor(item);
+  return <img src={t.src} alt={t.alt} width={t.width} height={t.height} loading="lazy" decoding="async" data-thumb style={{ display: 'block', width: t.width, height: t.height, borderRadius: 8, flex: 'none', marginBottom: 4 }} />;
+}

@@ -72,7 +72,7 @@ export function AssetViewer({ item }: { item: LibraryItem }) {
   const [stats, setStats] = useState<ObjectStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const url = item.file;
-  const safe = !!url && url.startsWith('/models/') && !url.includes('..');
+  const safe = !!url && ((url.startsWith('/models/') && !url.includes('..')) || (item.source === 'user-upload' && url.startsWith('blob:')));
 
   useEffect(() => {
     setStats(null);

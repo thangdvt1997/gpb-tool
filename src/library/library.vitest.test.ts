@@ -169,3 +169,89 @@ it('LibraryItem tối thiểu cho sortItems ổn định theo id', () => {
   const mk = (id: string): LibraryItem => ({ id, kind: 'prop', name: 'Same', description: '', tags: [], license: null, file: null, bytes: null, triangles: null, version: null, source: 'office-props', usable: false, reasons: [], warnings: [] });
   expect(sortItems([mk('b'), mk('a')]).map((i) => i.id)).toEqual(['a', 'b']);
 });
+
+import { colorForId, svgDataUrl, thumbFileName, thumbnailFor, thumbnailSvg } from './thumbnail';
+import { addUpload, createMemoryAssetStore, MAX_UPLOAD_BYTES, userItemFromRecord, validateUpload } from './upload';
+
+describe('thumbnail', () => {
+  const lib = buildDefaultLibrary().items;
+  it('mọi mục có thumbnail kích thước cố định và alt tiếng Việt', () => {
+    for (const it of lib) {
+      const t = thumbnailFor(it);
+      expect(t.width).toBe(56);
+      expect(t.height).toBe(56);
+      expect(t.alt.startsWith('Ảnh minh họa')).toBe(true);
+      expect(t.src.length).toBeGreaterThan(10);
+    }
+  });
+  it('mục manifest dùng SVG tĩnh /thumbs/, mục procedural dùng data URL', () => {
+    const m = lib.find((i) => i.source === 'manifest')!;
+    expect(thumbnailFor(m).src).toBe(`/thumbs/${thumbFileName(m.id)}`);
+    const g = lib.find((i) => i.source === 'fashion-catalog')!;
+    expect(thumbnailFor(g).src.startsWith('data:image/svg+xml')).toBe(true);
+  });
+  it('mỗi mục manifest có tệp SVG sinh sẵn trong public/thumbs', () => {
+    for (const it of lib.filter((i) => i.source === 'manifest')) {
+      const svg = readFileSync(`public/thumbs/${thumbFileName(it.id)}`, 'utf8').trimEnd();
+      expect(svg).toBe(thumbnailSvg(it.kind, colorForId(it.id), it.name));
+    }
+  });
+  it('SVG xác định, thoát ký tự, màu theo id', () => {
+    expect(colorForId('a')).toBe(colorForId('a'));
+    expect(colorForId('a')).not.toBe(colorForId('b'));
+    expect(thumbnailSvg('outfit', 'red', '<x>')).toContain('&lt;x&gt;');
+    expect(svgDataUrl('<svg/>')).toContain('%3Csvg');
+  });
+});
+
+describe('upload', () => {
+  function glb(len = 20, magic = 'glTF', ver = 2, declared = len): Uint8Array {
+    const b = new Uint8Array(len);
+    for (let i = 0; i < 4; i++) b[i] = magic.charCodeAt(i);
+    const dv = new DataView(b.buffer);
+    dv.setUint32(4, ver, true);
+    dv.setUint32(8, declared, true);
+    return b;
+  }
+  it('nhận GLB hợp lệ', () => {
+    expect(validateUpload('a.glb', 20, glb())).toEqual({ ok: true, ext: 'glb' });
+  });
+  it('từ chối sai đuôi, sai magic, sai phiên bản, sai độ dài, rỗng', () => {
+    expect(validateUpload('a.png', 20, glb()).ok).toBe(false);
+    expect(validateUpload('a.glb', 20, glb(20, 'RIFF')).ok).toBe(false);
+    expect(validateUpload('a.glb', 20, glb(20, 'glTF', 1)).ok).toBe(false);
+    expect(validateUpload('a.glb', 20, glb(20, 'glTF', 2, 99)).ok).toBe(false);
+    expect(validateUpload('a.glb', 0, new Uint8Array()).ok).toBe(false);
+  });
+  it('từ chối quá 10 MB', () => {
+    const r = validateUpload('a.glb', MAX_UPLOAD_BYTES + 1, glb());
+    expect(!r.ok && r.error).toMatch(/quá lớn/);
+    expect(validateUpload('a.glb', MAX_UPLOAD_BYTES, glb(MAX_UPLOAD_BYTES)).ok).toBe(true);
+  });
+  it('gltf: cần asset.version, không tham chiếu tệp ngoài', () => {
+    const j = (o: unknown) => { const b = new TextEncoder().encode(JSON.stringify(o)); return validateUpload('a.gltf', b.length, b); };
+    expect(j({ asset: { version: '2.0' } }).ok).toBe(true);
+    expect(j({ asset: { version: '2.0' }, buffers: [{ uri: 'data:application/octet-stream;base64,AA==' }] }).ok).toBe(true);
+    expect(j({ asset: { version: '2.0' }, buffers: [{ uri: 'http://x/y.bin' }] }).ok).toBe(false);
+    expect(j({ foo: 1 }).ok).toBe(false);
+    const bad = new TextEncoder().encode('{nope');
+    expect(validateUpload('a.gltf', bad.length, bad).ok).toBe(false);
+  });
+  it('addUpload lưu vào kho, từ chối tệp xấu, xóa được', async () => {
+    const store = createMemoryAssetStore();
+    const ok = await addUpload(new File([glb() as BlobPart], 'ghe_go.glb'), store);
+    expect(ok.ok).toBe(true);
+    const bad = await addUpload(new File(['hello'], 'x.glb'), store);
+    expect(bad.ok).toBe(false);
+    expect(await addUpload(new File(['hello'], 'x.txt'), store)).toMatchObject({ ok: false });
+    const recs = await store.list();
+    expect(recs).toHaveLength(1);
+    const it = userItemFromRecord(recs[0]!, 'blob:x');
+    expect(it.name).toBe('ghe go');
+    expect(it.license).toBeNull();
+    expect(it.usable).toBe(true);
+    expect(it.warnings.join(' ')).toMatch(/chưa có giấy phép/);
+    await store.remove(recs[0]!.id);
+    expect(await store.list()).toHaveLength(0);
+  });
+});

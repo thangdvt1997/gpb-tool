@@ -1,4 +1,5 @@
 /** Dịch vụ sao lưu: gom registry + vòng sao lưu cục bộ thành các thao tác mà UI gọi. */
+import { buildBundleZip, parseBundleZip, zipFileName, type BuildZipResult } from './bundleZip';
 import { backupFileName, buildBundle, type BuildResult } from './bundle';
 import { applyImport, parseBundleText, previewImport, type ApplyResult, type ParsedBundle, type ParseBundleResult, type PreviewItem } from './importer';
 import type { BackupRegistry } from './registry';
@@ -9,6 +10,8 @@ export interface BackupService {
   readonly registry: BackupRegistry;
   readonly ring: BackupRing;
   exportBundle(ids?: readonly string[]): Promise<BuildResult & { fileName?: string }>;
+  exportZip(ids?: readonly string[]): Promise<BuildZipResult & { fileName?: string }>;
+  parseZip(bytes: Uint8Array): Promise<ParseBundleResult>;
   parse(text: string): Promise<ParseBundleResult>;
   preview(parsed: ParsedBundle, mode: ImportMode): Promise<PreviewItem[]>;
   apply(parsed: ParsedBundle, opts: { mode: ImportMode; selected?: readonly string[] }): Promise<ApplyResult>;
@@ -29,6 +32,12 @@ export function createBackupService(deps: { registry: BackupRegistry; ring: Back
       const r = await buildBundle(registry, { ids, now: d });
       return r.ok ? { ...r, fileName: backupFileName(d) } : r;
     },
+    async exportZip(ids) {
+      const d = now();
+      const r = await buildBundleZip(registry, { ids, now: d });
+      return r.ok ? { ...r, fileName: zipFileName(backupFileName(d)) } : r;
+    },
+    parseZip: (bytes) => parseBundleZip(bytes, registry),
     parse: (text) => parseBundleText(text, registry),
     preview: (parsed, mode) => previewImport(parsed, registry, mode),
     apply: (parsed, o) => applyImport(parsed, registry, { ...o, ring, now: now() }),
