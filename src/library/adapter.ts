@@ -186,6 +186,7 @@ const PROP_INFO: Record<string, { name: string; kind: LibraryKind; tags: string[
   fire: { name: 'Bình chữa cháy', kind: 'prop', tags: ['an toàn', 'tường'] },
   water: { name: 'Máy nước uống', kind: 'furniture', tags: ['pantry', 'tiện ích'] },
   cabinet: { name: 'Tủ hồ sơ', kind: 'furniture', tags: ['lưu trữ', 'tủ'] },
+  printer: { name: 'Máy in', kind: 'furniture', tags: ['in ấn', 'tiện ích'] },
   plant: { name: 'Chậu cây', kind: 'prop', tags: ['cây', 'trang trí'] },
   bin: { name: 'Thùng rác', kind: 'prop', tags: ['vệ sinh'] },
   tv: { name: 'TV treo tường', kind: 'prop', tags: ['màn hình', 'trình chiếu'] },
