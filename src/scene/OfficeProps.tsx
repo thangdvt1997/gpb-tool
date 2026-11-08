@@ -1,5 +1,5 @@
 // Đạo cụ văn phòng thật (docs/design/REAL_OFFICE_STYLE.md mục 5, room.txt mục 4): bình chữa cháy đôi trên giá đỏ,
-// máy lọc nước kèm bình 19 L xanh, tủ hồ sơ cao gỗ sáng (trên cửa kính, dưới cánh kín), tủ thấp hai cánh, TV đen treo
+// máy lọc nước kèm bình 19 L xanh, tủ hồ sơ cao gỗ sáng (trên cửa kính, dưới cánh kín), tủ thấp hai cánh, máy in phòng In ấn, TV đen treo
 // tường, cây lá lớn chậu trắng, thùng rác túi đỏ, băng rôn khẩu hiệu và bảng tên bộ phận treo trần.
 // Vị trí, footprint, nội dung bảng tên trong officePropsLayout.ts. Ô chặn đi lại gộp vào decorBlockersOf (src/env/index.ts).
 //
@@ -39,6 +39,7 @@ import {
   faceRotation,
   PROP_SPOTS,
   propSize,
+  PRINTER_SIZE,
   TV,
   ZONE_SIGN,
   ZONE_SIGNS,
@@ -54,6 +55,9 @@ const TAP_COLD = '#2a6fdb';
 const SOIL = '#3a2c22';
 const STEM = '#4a5a32';
 const TV_BODY = '#1e2126';
+const PRINTER_BODY = '#d8dbdf';
+const PRINTER_UPPER = '#c4c8cd';
+const PRINTER_LID = '#2d3036';
 const BINDERS = ['#2b5797', '#1f2937', '#c0392b', '#e6b422', '#f4f4f2', '#2d9c6e', '#7a8796'];
 
 /** Ma trận khung của đạo cụ: tâm footprint trên sàn, mặt trước local +z quay theo face. */
@@ -179,6 +183,20 @@ function addLowCab(solid: Batch, f: THREE.Matrix4): void {
     solid.add(UNIT_BOX, f, [side * 0.035, H - 0.2, D / 2 + 0.025], [0.012, 0.12, 0.014], STEEL);
   }
   solid.add(UNIT_BOX, f, [0.09, H - 0.08, D / 2 + 0.019], [0.02, 0.02, 0.004], BLACK);
+}
+
+/** Máy in đa năng 0,7 x 0,55 x 0,83 m: thân tủ, khối quét có nắp, khay giấy và màn hình nhỏ ở mặt trước (+z). */
+function addPrinter(solid: Batch, glass: Batch, f: THREE.Matrix4): void {
+  const { d } = PRINTER_SIZE;
+  const front = d / 2 - 0.1; // mặt trước của thân, chừa chỗ khay ló ra
+  solid.add(UNIT_BOX, f, [0, 0.29, -0.05], [0.64, 0.58, d - 0.1], PRINTER_BODY); // thân tủ
+  solid.add(UNIT_BOX, f, [0, 0.68, -0.05], [0.7, 0.2, d - 0.1], PRINTER_UPPER); // khối quét và in
+  solid.add(UNIT_BOX, f, [0, 0.805, -0.05], [0.7, 0.03, d - 0.1], PRINTER_LID); // nắp
+  solid.add(UNIT_BOX, f, [0, 0.45, front + 0.002], [0.5, 0.02, 0.004], BLACK); // khe ra giấy
+  solid.add(UNIT_BOX, f, [0, 0.36, front + 0.075], [0.5, 0.03, 0.15], PRINTER_LID); // khay giấy
+  solid.add(UNIT_BOX, f, [0, 0.385, front + 0.075], [0.4, 0.02, 0.11], LABEL); // xấp giấy
+  solid.add(UNIT_BOX, f, [0.18, 0.7, front + 0.035], [0.2, 0.09, 0.07], PRINTER_LID); // bảng điều khiển
+  glass.add(UNIT_BOX, f, [0.18, 0.705, front + 0.072], [0.13, 0.06, 0.004], '#16324a'); // màn hình
 }
 
 /** Một dòng của atlas chữ: băng rôn (640 x 128, tỉ lệ 5:1 như băng 3 x 0,6 m) hoặc bảng tên (640 x 240, 1,2 x 0,45 m). */
@@ -380,6 +398,9 @@ function build() {
         break;
       case 'lowcab':
         addLowCab(solid, f);
+        break;
+      case 'printer':
+        addPrinter(solid, glass, f);
         break;
     }
   }
