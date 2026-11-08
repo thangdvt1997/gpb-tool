@@ -14,7 +14,7 @@ export const KIND_LABELS: Readonly<Record<LibraryKind, string>> = {
 };
 
 /** Nguồn dữ liệu của mục. */
-export type LibrarySource = 'manifest' | 'fashion-catalog' | 'accessory-catalog' | 'office-props';
+export type LibrarySource = 'manifest' | 'fashion-catalog' | 'accessory-catalog' | 'office-props' | 'user-upload';
 
 export interface LibraryLicense {
   /** SPDX hoặc "LicenseRef-internal" cho đồ sinh bằng mã trong repo. Rỗng = thiếu giấy phép. */

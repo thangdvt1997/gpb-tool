@@ -22,8 +22,8 @@ const REASON_TEXT: Record<MetaBackup['reason'], string> = {
 
 const STATUS_TEXT: Record<PreviewItem['status'], string> = { new: 'Mới', identical: 'Giống hệt', changed: 'Có thay đổi' };
 
-function download(name: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+function download(name: string, text: string | Uint8Array, type = 'application/json'): void {
+  const url = URL.createObjectURL(new Blob([text as BlobPart], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = name;
@@ -86,15 +86,29 @@ export function BackupPanel({ service, onClose }: Props) {
     }
   }
 
+  async function doExportZip() {
+    setBusy(true);
+    try {
+      const r = await service.exportZip();
+      if (!r.ok) return fail(r.error);
+      download(r.fileName ?? 'gpb-backup.zip', r.bytes, 'application/zip');
+      const extra = r.removed.length ? ` Đã loại ${r.removed.length} trường nhạy cảm.` : '';
+      ok(`Đã xuất ZIP: ${r.sections} phần, ${r.images} ảnh xăm (${Math.round(r.bytes.length / 1024)} KB).${extra}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onFile(file: File | undefined) {
     setParsed(null);
     setPreview([]);
     if (!file) return;
-    if (!/\.json$/i.test(file.name)) return fail('Chỉ nhận tệp .json.');
+    const isZip = /\.zip$/i.test(file.name);
+    if (!isZip && !/\.json$/i.test(file.name)) return fail('Chỉ nhận tệp .json hoặc .zip.');
     if (file.size > MAX_IMPORT_BYTES) return fail(`Tệp quá lớn (tối đa ${Math.round(MAX_IMPORT_BYTES / 1024 / 1024)} MB).`);
     setBusy(true);
     try {
-      const r = await service.parse(await file.text());
+      const r = isZip ? await service.parseZip(new Uint8Array(await file.arrayBuffer())) : await service.parse(await file.text());
       if (!r.ok) return fail(r.error);
       setParsed(r.parsed);
       setPicked(new Set(r.parsed.sections.map((s) => s.id)));
@@ -173,13 +187,16 @@ export function BackupPanel({ service, onClose }: Props) {
         <p className="muted">Gói JSON gồm nhân vật, cài đặt, văn phòng. Token và email được loại trước khi xuất.</p>
         <button type="button" onClick={doExport} aria-label="Xuất toàn bộ dữ liệu ra tệp JSON">
           Xuất toàn bộ dữ liệu
+        </button>{' '}
+        <button type="button" onClick={doExportZip} aria-label="Xuất toàn bộ dữ liệu ra tệp ZIP">
+          Xuất ZIP
         </button>
       </fieldset>
 
       <fieldset disabled={busy}>
         <legend>Nhập</legend>
-        <label htmlFor="backup-file">Chọn tệp .json</label>
-        <input id="backup-file" ref={fileRef} type="file" accept=".json,application/json" onChange={(e) => void onFile(e.target.files?.[0])} />
+        <label htmlFor="backup-file">Chọn tệp .json hoặc .zip</label>
+        <input id="backup-file" ref={fileRef} type="file" accept=".json,.zip,application/json,application/zip" onChange={(e) => void onFile(e.target.files?.[0])} />
 
         {parsed && (
           <div aria-label="Xem trước nhập">

@@ -132,7 +132,11 @@ export function sha256Pure(bytes: Uint8Array): string {
 
 /** SHA-256 hex của chuỗi UTF-8: ưu tiên crypto.subtle, dự phòng thuật toán thuần. */
 export async function sha256Hex(text: string): Promise<string> {
-  const bytes = new TextEncoder().encode(text);
+  return sha256Bytes(new TextEncoder().encode(text));
+}
+
+/** SHA-256 hex của dãy byte. */
+export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
   try {
     const subtle = typeof crypto !== 'undefined' ? crypto.subtle : undefined;
     if (subtle) {
