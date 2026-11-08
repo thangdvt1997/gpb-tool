@@ -25,7 +25,8 @@ import { OptionalBloom } from '../lighting/postfx';
 import { ZoneLights, type LightZone } from '../lighting/rigs';
 import { AmbientAudio } from './AmbientAudio';
 import { Corridors } from './Corridors';
-import { LoungeLink, NorthCorridor } from './corridors';
+// Dẫn thẳng tới index.ts: trên Windows (FS không phân biệt hoa/thường) './corridors' bị resolve nhầm thành Corridors.tsx.
+import { LoungeLink, NorthCorridor } from './corridors/index';
 import { audioZoneAt, audioZoneRects } from './audioZones';
 import { DeskField } from './Desks';
 import { NocTiles } from './NocWall';
