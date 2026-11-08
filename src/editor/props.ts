@@ -67,3 +67,17 @@ export function propRects(kind: PropKind, pose: Pose & { door?: boolean }): Rect
       : { minX: pose.x + lo, maxX: pose.x + hi, minZ: whole.minZ, maxZ: whole.maxZ };
   return [along(-w / 2, -DOOR_WIDTH / 2), along(DOOR_WIDTH / 2, w / 2)].filter((r) => half > 0 && r.maxX > r.minX && r.maxZ > r.minZ);
 }
+
+/**
+ * Hộp va chạm của mọi vật thêm trong một bộ vị trí (thường là bản ĐÃ LƯU). Nguồn chung cho nhân vật
+ * (ITOffice.extraBlockers) và camera chụp ảnh: vật mới thêm chặn, vật đã xóa không còn trong poses nên không chặn,
+ * vật đã di chuyển chặn ở vị trí mới.
+ */
+export function propBlockers(poses: Readonly<Record<string, Pose & { door?: boolean }>>, kinds: Readonly<Record<string, PropKind>> | undefined): Rect[] {
+  const out: Rect[] = [];
+  for (const [id, pose] of Object.entries(poses)) {
+    const kind = kinds?.[id];
+    if (kind) out.push(...propRects(kind, pose));
+  }
+  return out;
+}

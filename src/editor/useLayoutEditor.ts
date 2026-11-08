@@ -3,7 +3,7 @@ import type { Role, ZoneObject } from '../content/types';
 import { useLayout } from '../layout/LayoutStore';
 import { actionForKey, applyDraft, buildEditorEnv, createEditorState, editorReducer, isDirty, type AppliedDraft, type EditorAction } from './core';
 import { clearStoredDraft, draftFromState, DRAFT_EVENT, loadStoredDraft, saveStoredDraft } from './draftStore';
-import { newPropId, propRects } from './props';
+import { newPropId, propBlockers } from './props';
 import type { Rect } from '../scene/layout';
 import { realApi, saveDraft, type SaveApi } from './save';
 
@@ -113,14 +113,7 @@ export function useLayoutEditor(objects: readonly ZoneObject[], role: Role | nul
   }, []);
 
   // Hộp va chạm của vật thêm ĐÃ LƯU (nháp chưa lưu chưa chặn đường, tránh kẹt nhân vật trong tường nháp).
-  const blockers = useMemo<Rect[]>(() => {
-    const out: Rect[] = [];
-    for (const [id, pose] of Object.entries(state.saved)) {
-      const kind = state.env.props?.[id];
-      if (kind) out.push(...propRects(kind, pose));
-    }
-    return out;
-  }, [state.saved, state.env.props]);
+  const blockers = useMemo<Rect[]>(() => propBlockers(state.saved, state.env.props), [state.saved, state.env.props]);
 
   return { state, dispatch, save, blockers, pendingDraft, resumeDraft, discardDraft };
 }
