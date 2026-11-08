@@ -245,3 +245,38 @@ describe('mặt sàn: chân chạm sàn với cả 3 GLB và hình thể cực t
     }
   }
 });
+
+describe('chiều cao hiển thị khớp heightCm (tư thế nghỉ, hình thể mặc định)', () => {
+  const CASES: [(typeof FILES)[number], 'realistic' | 'chibi', 'male' | 'female', number][] = [
+    ['male_real', 'realistic', 'male', 170],
+    ['male_real', 'realistic', 'male', 190],
+    ['female_real', 'realistic', 'female', 160],
+    ['female_real', 'realistic', 'female', 175],
+    ['chibi', 'chibi', 'male', 110],
+    ['chibi', 'chibi', 'male', 85],
+    ['chibi', 'chibi', 'male', 130],
+  ];
+  for (const [f, style, frame, cm] of CASES) {
+    it(`${f} ${cm} cm: đỉnh cao nhất - đáy thấp nhất trên màn hình = ${cm} cm +-1`, async () => {
+      const { buildRig, targetHeightM } = await import('./MpfbAvatar');
+      const rig = buildRig({ scene: rigs[f] } as never);
+      applyBoneShape(rigs[f], IDENTITY_BONE_SHAPE);
+      rigs[f].updateMatrixWorld(true);
+      const heightM = targetHeightM(style, frame, cm);
+      const scale = heightM / rig.nativeHeight;
+      const groundY = -rig.minY * scale;
+      const mesh = body(rigs[f]);
+      const v = new THREE.Vector3();
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let i = 0; i < mesh.geometry.getAttribute('position').count; i++) {
+        mesh.getVertexPosition(i, v);
+        v.applyMatrix4(mesh.matrixWorld);
+        lo = Math.min(lo, v.y);
+        hi = Math.max(hi, v.y);
+      }
+      expect(Math.abs(lo * scale + groundY)).toBeLessThan(0.01);
+      expect(Math.abs((hi - lo) * scale - heightM)).toBeLessThan(0.01);
+    });
+  }
+});

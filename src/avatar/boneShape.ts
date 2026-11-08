@@ -206,9 +206,9 @@ function legDrop(spans: RestSpans, leg: number): number {
 
 /** Số đo nghỉ của 3 tệp MPFB (đo bằng measureRestSpans, kiểm lại trong test trên GLB thật). */
 export const REST_SPANS: Readonly<Record<'male_real' | 'female_real' | 'chibi', RestSpans>> = {
-  male_real: { native: 2.0455318950116634, legSpan: 0.9324754064586322, neckSpan: 0.10214763747966749, ankle: 0.07723577410197163 },
-  female_real: { native: 1.754015140235424, legSpan: 0.742468531307611, neckSpan: 0.10856492523403927, ankle: 0.0666339363539622 },
-  chibi: { native: 1.0539905093610287, legSpan: 0.39288453450116023, neckSpan: 0.03213911022805249, ankle: 0.038924127467934166 },
+  male_real: { native: 1.86553156375885, legSpan: 0.9324754064586322, neckSpan: 0.10214763747966749, ankle: 0.07723577410197163 },
+  female_real: { native: 1.5740147829055786, legSpan: 0.742468531307611, neckSpan: 0.10856492523403927, ankle: 0.0666339363539622 },
+  chibi: { native: 0.873990535736084, legSpan: 0.39288453450116023, neckSpan: 0.03213911022805249, ankle: 0.038924127467934166 },
 };
 
 /**
