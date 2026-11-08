@@ -1,60 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AmbientEngine, type AmbientZone } from './engine';
+import { useEffect, useRef } from 'react';
+import type { ZoneObject } from '../content/types';
+import { getSpatialAudio } from './spatial/react';
+import { AmbientScape, resolveAmbientSources, type AmbientZone } from './spatial/ambient';
+
+declare global {
+  interface Window {
+    __gpbAudio?: () => { status: string; ambient: ReturnType<AmbientScape['debugState']>; activeVoices: number; master: { setting: number; muted: boolean; node: number | null } };
+  }
+}
 
 /**
- * Hook âm thanh nền của khu.
- * - Không phát âm khi chưa có thao tác người dùng: khi enabled là true, lần nhấn chuột hoặc phím đầu tiên mới gọi resume().
- * - Engine được tạo một lần (useRef). Khi unmount, AudioContext được đóng bằng dispose().
- * - Trạng thái mute nằm trong state, không lưu localStorage.
+ * Hook âm nền của khu, chạy trên bus 'ambient' của SpatialAudioManager.
+ * - Chưa phát khi chưa có thao tác người dùng: pointerdown/keydown đầu tiên gọi manager.unlock().
+ * - Âm lượng/tắt tiếng theo bus trong Cài đặt, tạm dừng khi tab ẩn do manager xử lý.
+ * - Hook e2e window.__gpbAudio chỉ có khi URL có ?debug=audio.
  */
-export function useAmbient(zone: AmbientZone, enabled: boolean) {
-  const engineRef = useRef<AmbientEngine | null>(null);
-  if (engineRef.current === null) engineRef.current = new AmbientEngine();
-  const engine = engineRef.current;
-
-  const [muted, setMuted] = useState(false);
+export function useAmbient(zone: AmbientZone, enabled: boolean, objects: readonly ZoneObject[] = []) {
+  const scapeRef = useRef<AmbientScape | null>(null);
 
   useEffect(() => {
-    engine.setZone(zone);
-  }, [engine, zone]);
-
-  useEffect(() => {
-    if (!enabled) {
-      void engine.suspend();
-      return undefined;
+    const manager = getSpatialAudio();
+    const scape = new AmbientScape(manager);
+    scapeRef.current = scape;
+    const unlock = () => { void manager.unlock(); };
+    window.addEventListener('pointerdown', unlock, { once: true, capture: true });
+    window.addEventListener('keydown', unlock, { once: true, capture: true });
+    if (new URLSearchParams(window.location.search).get('debug') === 'audio') {
+      window.__gpbAudio = () => ({
+        status: manager.status, ambient: scape.debugState(), activeVoices: manager.activeVoices,
+        master: {
+          setting: manager.getSettings().master.volume,
+          muted: manager.getSettings().master.muted,
+          node: manager.getBus('master')?.node.gain.value ?? null,
+        },
+      });
     }
-    if (engine.isStarted()) {
-      void engine.resume();
-      return undefined;
-    }
-
-    // Chưa có AudioContext: đợi thao tác người dùng đầu tiên rồi mới mở.
-    const cleanup = () => {
+    return () => {
       window.removeEventListener('pointerdown', unlock, true);
       window.removeEventListener('keydown', unlock, true);
+      delete window.__gpbAudio;
+      scape.dispose();
+      scapeRef.current = null;
     };
-    const unlock = () => {
-      cleanup();
-      void engine.resume();
-    };
-    window.addEventListener('pointerdown', unlock, true);
-    window.addEventListener('keydown', unlock, true);
-    return cleanup;
-  }, [engine, enabled]);
+  }, []);
 
-  useEffect(() => () => engine.dispose(), [engine]);
-
-  /** Gọi từ trình xử lý click. Nếu đang tắt tiếng thì mở lại và bật tiếng. */
-  const toggleMute = useCallback(() => {
-    if (engine.isMuted()) {
-      void engine.resume();
-      engine.unmute();
-      setMuted(false);
-    } else {
-      engine.mute();
-      setMuted(true);
-    }
-  }, [engine]);
-
-  return { engine, muted, toggleMute };
+  useEffect(() => { scapeRef.current?.setZone(zone); }, [zone]);
+  useEffect(() => { scapeRef.current?.setSources(resolveAmbientSources(objects)); }, [objects]);
+  useEffect(() => { scapeRef.current?.setEnabled(enabled); }, [enabled]);
 }

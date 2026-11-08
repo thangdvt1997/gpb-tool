@@ -282,3 +282,12 @@ export function surfaceParams(surface: Surface): { cutoffHz: number; thump: numb
     default: return { cutoffHz: 4200, thump: 0.5, click: 1 };
   }
 }
+
+/**
+ * Thanh âm lượng chung trong Cài đặt (0..1, mặc định 0.5) thành gain master của bus mới.
+ * 0.5 ứng với mặc định của master (0.8); 0 là tắt tiếng; 1 là 1.
+ */
+export function masterFromSlider(slider: number): number {
+  const v = clamp01(slider);
+  return v <= 0.5 ? v * 1.6 : 0.8 + (v - 0.5) * 0.4;
+}

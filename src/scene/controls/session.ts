@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getSpatialAudio, masterFromSlider } from '../../audio/spatial';
 import { AmbientEngine } from '../../audio/engine';
 import { getSettings, subscribeSettings, updateSettings as updateCentralSettings, type Settings } from '../../settings';
 
@@ -183,27 +184,26 @@ const engines = new Set<AmbientEngine>();
 function applyVolume(): void {
   const v = snap.settings.volume * ENGINE_VOLUME_AT_MAX;
   engines.forEach((e) => e.setVolume(v));
+  // Thanh chung cũng điều khiển master của bộ trộn không gian (âm nền, bước chân, âm tương tác). 0 là tắt tiếng chung.
+  const spatial = getSpatialAudio();
+  const master = masterFromSlider(snap.settings.volume);
+  if (spatial.getSettings().master.volume !== master) spatial.setVolume('master', master);
 }
 
 /**
- * Không sửa src/audio: bọc setZone/resume/dispose của AmbientEngine để biết engine nào đang sống
+ * Không sửa src/audio: bọc resume/dispose của AmbientEngine để biết engine nào đang sống
  * và đặt âm lượng theo cài đặt ngay khi engine được dùng. Chỉ bọc một lần.
  */
 function hookEngines(): void {
   const proto = AmbientEngine.prototype as AmbientEngine & { __gpbVolumeHook?: boolean };
   if (proto.__gpbVolumeHook) return;
   proto.__gpbVolumeHook = true;
-  const origSetZone = proto.setZone;
   const origResume = proto.resume;
   const origDispose = proto.dispose;
   const track = (e: AmbientEngine): void => {
     if (engines.has(e)) return;
     engines.add(e);
     e.setVolume(snap.settings.volume * ENGINE_VOLUME_AT_MAX);
-  };
-  proto.setZone = function (this: AmbientEngine, ...args: Parameters<AmbientEngine['setZone']>) {
-    track(this);
-    return origSetZone.apply(this, args);
   };
   proto.resume = function (this: AmbientEngine, ...args: Parameters<AmbientEngine['resume']>) {
     track(this);
@@ -216,3 +216,4 @@ function hookEngines(): void {
 }
 
 hookEngines();
+applyVolume();
