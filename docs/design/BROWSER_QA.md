@@ -176,3 +176,7 @@ playwright.prod.config.ts (02-scene-mock, 20-controls, prod/30-hanging, 31-hud-e
 ## Production 2026-11-08 — commit 409d1d5 (deploy 00:00 UTC, watcher root)
 
 Trang phục vụ `assets/index-BeJKSoJM.js`, trùng log deploy. playwright.prod.config.ts `--workers=1`: **18/18 PASS** (14,4 phút): 02-scene-mock, 20-controls, prod/30-hanging, 31-hud-expanded (Thư viện, Hồ sơ, Sao lưu, Phòng thay đồ, Vẽ xăm, Cài đặt, Trợ giúp × Esc và nút đóng: aria-expanded="false", focus về nút). Phiên giả lập phía trình duyệt, không đăng nhập production. NVDA thật trên bản này: chưa kiểm, chờ chủ dự án (Phòng thay đồ, Cài đặt, Sao lưu là ba mục còn FAIL ở đợt 3 trên 1235903, bản trước khi sửa).
+
+## Production 2026-11-08 — commit 5dbc123 (deploy 00:35 UTC, watcher root)
+
+Trang phục vụ `assets/index-BeJKSoJM.js` (mã giống 409d1d5, 5dbc123 chỉ đổi tài liệu). playwright.prod.config.ts `--workers=1`, chạy 00:40 UTC: **18/18 PASS** (16,0 phút). 31-hud-expanded 14 ca: Thư viện, Hồ sơ, Sao lưu, Phòng thay đồ, Vẽ xăm, Cài đặt, Trợ giúp, mỗi nút đóng bằng Esc và bằng nút đóng: aria-expanded="false", focus về nút, Sao lưu ẩn sau Esc. Ba mục NVDA đợt 3 còn FAIL (Phòng thay đồ, Cài đặt, Sao lưu) kiểm trên 1235903, bản trước bản sửa 478bdc8. NVDA thật trên 5dbc123: chưa kiểm, chờ chủ dự án.

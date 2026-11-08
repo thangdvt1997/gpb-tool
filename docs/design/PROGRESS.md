@@ -214,3 +214,14 @@ Rà lại giao việc V1–V6: V1, V2, V3 đã có trên main từ lần lặp 4
 | 01, 02 | Chờ chủ dự án quyết định license (3 GLB MPFB, asset và clip tự sinh). |
 
 Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-08 — Lần lặp 6
+
+V1–V3 đã có từ lần lặp 4 (478bdc8, 1c2b1f9). Ba mục NVDA đợt 3 còn FAIL (Phòng thay đồ, Cài đặt, Sao lưu) được kiểm trên 1235903, bản trước bản sửa. Production 5dbc123: playwright.prod.config.ts **18/18 PASS** lúc 00:40 UTC (31-hud-expanded 14 ca).
+
+| Subagent | Worktree / nhánh | Task | Kết quả |
+|---|---|---|---|
+| anim02 | /home/cc/wt/anim02, wt6/anim02 | 02: FSM người chơi lái clip bake | c85d7c3, vitest 1010, e2e 34-player-baked-clip 2/2 |
+| glb01 | /home/cc/wt/glb01, wt6/glb01 | 01: bàn/ghế GLB bằng InstancedMesh | ede2e14, draw call 66 = 66, e2e 35-glb-furniture 4/4. Bàn hiển thị vẫn là DeskDecorField (chi tiết hơn GLB tự sinh) |
+
+Vẫn bị chặn: 22–27 cần root chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (watcher root chỉ deploy web; cc không có sudo). 01, 02: **chờ chủ dự án quyết định license**. 12: chờ NVDA thật trên bản ≥ ed28d05.
