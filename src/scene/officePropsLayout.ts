@@ -12,7 +12,7 @@ import { toWorldX, toWorldZ, type Rect } from './layout';
 
 export type Face = 'N' | 'S' | 'E' | 'W';
 /** tv: TV đen treo tường (không chiếm sàn). lowcab: tủ thấp hai cánh gỗ sáng. */
-export type PropKind = 'fire' | 'water' | 'cabinet' | 'plant' | 'bin' | 'tv' | 'lowcab';
+export type PropKind = 'fire' | 'water' | 'cabinet' | 'plant' | 'bin' | 'tv' | 'lowcab' | 'printer';
 
 export interface PropSpot {
   kind: PropKind;
@@ -26,6 +26,28 @@ export interface PropSpot {
 
 /** TV treo tường: rộng 1,68 m (75 inch), cao 0,97 m, dày 0,06 m, tâm cao 1,55 m. */
 export const TV = { width: 1.68, height: 0.97, depth: 0.06, centerY: 1.55 } as const;
+
+/** Máy in đa năng đứng sàn: rộng 0,7 m (dọc mặt khối), sâu 0,55 m (vuông góc), cao 0,83 m. */
+export const PRINTER_SIZE = { w: 0.7, d: 0.55, h: 0.83 } as const;
+
+/**
+ * Máy in phòng In ấn (util_print). Khối util_print là khối đặc 3 x 2,4 x 2,8 m (tâm -12, -2,6 theo it.json, không
+ * di chuyển được) nên máy đặt áp mặt Đông của khối, đầu Nam (ngoài hành lang west_link2 z -4,1..-2,1), mặt trước
+ * (khay giấy) hướng Đông ra phía điểm thả ENTRY_DROP đang nhìn về Tây. Một nguồn chân lý: decor (OfficeProps),
+ * ô chặn, bóng và nguồn âm 'printer_print' (src/audio/spatial/ambient.ts) đều lấy từ đây.
+ */
+export const PRINTER_SPOT: PropSpot = { kind: 'printer', x: 18.775, y: 13.3, face: 'E' };
+
+/** Tâm khối util_print theo it.json lúc chưa bố trí lại (toạ độ thế giới). Test đối chiếu với it.json. */
+export const PRINT_ROOM_HOME = { x: -12, z: -2.6 } as const;
+
+/** Vị trí thế giới, hướng (rotationY, 0 là +z) và độ cao nguồn âm của máy in. */
+export const PRINTER_POSE = {
+  x: toWorldX(PRINTER_SPOT.x),
+  z: toWorldZ(PRINTER_SPOT.y),
+  rotationY: faceRotation(PRINTER_SPOT.face),
+  soundY: 0.7,
+} as const;
 
 /** Bề ngang (dọc tường) và chiều sâu (vuông góc tường) của footprint, mét. */
 export function propSize(s: PropSpot): { w: number; d: number } {
@@ -44,6 +66,8 @@ export function propSize(s: PropSpot): { w: number; d: number } {
       return { w: TV.width, d: TV.depth };
     case 'lowcab':
       return { w: 0.8, d: 0.45 };
+    case 'printer':
+      return { w: PRINTER_SIZE.w, d: PRINTER_SIZE.d };
   }
 }
 
@@ -104,6 +128,9 @@ export const PROP_SPOTS: readonly PropSpot[] = [
   // tủ cao x 38,25; đầu Đông desk_B7, cách mép bàn 0,075 m, cạnh cây x 44,85.
   { kind: 'lowcab', x: 47.85, y: 29.455, face: 'N' },
   { kind: 'lowcab', x: 44.8, y: 24.35, face: 'E' },
+
+  // Máy in phòng In ấn, áp mặt Đông khối util_print (xem PRINTER_SPOT).
+  PRINTER_SPOT,
 ];
 
 /** Footprint của đạo cụ, toạ độ three.js. */
@@ -124,6 +151,7 @@ export const OFFICE_PROP_BLOCKERS: readonly Rect[] = PROP_SPOTS.filter((s) => s.
 const SHADOW_ALPHA: Partial<Record<PropKind, number>> = {
   cabinet: 0.55,
   lowcab: 0.5,
+  printer: 0.45,
   plant: 0.45,
   water: 0.4,
   fire: 0.35,

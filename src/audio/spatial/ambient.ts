@@ -10,6 +10,7 @@ import { occlusionFor, type DistanceModel } from './pure';
 import type { SpatialAudioManager } from './manager';
 import { TV_FIXTURES } from '../../scene/itFixtures';
 import type { TvId } from '../../display/types';
+import { PRINTER_POSE, PRINT_ROOM_HOME } from '../../scene/officePropsLayout';
 import { fixtureTransform, layoutRotationY, type LayoutPoses } from '../../layout/applyPoses';
 
 export type AmbientZone = 'office' | 'lounge' | 'game' | 'karaoke' | 'events' | 'meeting' | 'server' | 'soc';
@@ -52,6 +53,8 @@ export interface AmbientSourceDef {
   fixture?: TvId;
   /** Quay quanh trục y như decor trong cảnh: 0 là mặt hướng +z, π là hướng -z (sin, cos cho hướng trên sàn). */
   rotationY?: number;
+  /** Máy in có decor thật: lấy PRINTER_POSE (vị trí và hướng của decor), bỏ qua rotationY, y. Cần objectId là khối util_print. */
+  decor?: 'printer';
   /** Độ cao (m), chỉ dùng với objectId. */
   y?: number;
   /** Vùng âm thanh chứa nguồn (để lọc qua tường). */
@@ -63,7 +66,8 @@ export interface AmbientSourceDef {
  * - Tivi: đúng vị trí và rotationY của TV_FIXTURES (src/scene/itFixtures.ts).
  * - Màn trình chiếu phòng họp mr2, mr3: env/meeting.tsx đặt trên tường sau (z âm), mặt hướng +z, rotationY 0, phòng không bị xoay.
  * - Loa karaoke cạnh màn LED: env/karaoke.tsx đặt màn ở tường sau (z âm) mặt hướng +z, rotationY 0.
- * - Máy in: cảnh chưa có model máy in nên chưa có hướng thật; tạm quay về +z (phía lối đi), cần cập nhật khi có decor.
+ * - Máy in: decor máy in (OfficeProps, officePropsLayout PRINTER_SPOT) áp mặt Đông khối util_print, mặt trước (khay giấy)
+ *   hướng Đông. Nguồn dùng đúng PRINTER_POSE (vị trí, rotationY); theo bố cục thì tịnh tiến và xoay quanh tâm util_print.
  */
 export const AMBIENT_SOURCE_DEFS: readonly AmbientSourceDef[] = [
   { id: 'tv_meeting', kind: 'tv', fixture: 'tv_meeting', zone: 'meeting' },
@@ -72,7 +76,7 @@ export const AMBIENT_SOURCE_DEFS: readonly AmbientSourceDef[] = [
   { id: 'screen_mr2', kind: 'tv', objectId: 'mr2', rotationY: 0, y: 1.5, zone: 'meeting' },
   { id: 'screen_mr3', kind: 'tv', objectId: 'mr3', rotationY: 0, y: 1.5, zone: 'meeting' },
   { id: 'speaker_karaoke', kind: 'speaker', objectId: 'karaoke_room', rotationY: 0, y: 1.6, zone: 'karaoke' },
-  { id: 'printer_print', kind: 'printer', objectId: 'util_print', rotationY: 0, y: 1, zone: 'office' },
+  { id: 'printer_print', kind: 'printer', objectId: 'util_print', decor: 'printer', zone: 'office' },
 ];
 
 export interface ResolvedAmbientSource {
@@ -117,6 +121,21 @@ export function resolveAmbientSources(
     }
     const o = objects.find((x) => x.id === d.objectId);
     if (!o) continue;
+    if (d.decor === 'printer') {
+      // Độ lệch của máy so với tâm util_print gốc, quay theo layoutRot (cùng công thức rotateBoxesAbout) rồi cộng tâm hiện tại.
+      const rot = layoutRotationY(o);
+      const dx = PRINTER_POSE.x - PRINT_ROOM_HOME.x;
+      const dz = PRINTER_POSE.z - PRINT_ROOM_HOME.z;
+      const c = Math.cos(rot);
+      const s = Math.sin(rot);
+      const [fx, , fz] = facingOf(PRINTER_POSE.rotationY + rot);
+      out.push({
+        id: d.id, kind: d.kind, zone: d.zone,
+        position: [o.position[0] + dx * c + dz * s, PRINTER_POSE.soundY, o.position[2] - dx * s + dz * c],
+        orientation: [fx, 0, fz], cone: CONE_BY_KIND[d.kind],
+      });
+      continue;
+    }
     // o.size đã là footprint sau khi xoay (effectiveZone); hướng cộng thêm góc xoay của bố cục.
     const [fx, , fz] = facingOf((d.rotationY ?? 0) + layoutRotationY(o));
     const half = (Math.abs(fx) * o.size[0] + Math.abs(fz) * o.size[2]) / 2;
