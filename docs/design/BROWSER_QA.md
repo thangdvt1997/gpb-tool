@@ -313,3 +313,9 @@ Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính 
 - 41-assets01 "mắt cá cách sàn": kỳ vọng cũ 0,10 m đo khi nhân vật còn lơ lửng; nay kiểm cổ chân 0,064–0,083 m (tỉ lệ xương foot nghỉ 4,1–4,5 % chiều cao, đo từ GLB), hai chân lệch < 5 mm.
 - Chưa kiểm: nghe âm thanh thật, xem bằng mắt trên GPU (bàn, xăm, hình thể, AO). Xem docs/design/GPU_REQUEST.md.
 - Production d237702 (cẳng tay, bắp chân; khối ghép xoay; nguồn âm theo bố trí): `--workers=4` **57/57 PASS** (thêm 51-editor-rotate-composite).
+
+## Production a07a857 (08/11/2026, 23:05 UTC)
+
+- Acceptance a07a857 PASS (e2e 121 + đăng nhập thật 1 trên auth test 127.0.0.1:3902).
+- Production sau deploy: smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401; playwright.prod.config.ts --workers=4: 57/57 PASS (16,3 phút).
+- Thay đổi: model máy in phòng In ấn (nguồn âm máy in có hướng thật), FPS thấp nhất/1 s trong bench. Chưa xem máy in bằng mắt và chưa nghe hướng âm trên GPU thật (GPU_REQUEST.md mục 14).

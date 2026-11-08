@@ -380,3 +380,26 @@ Việc còn lại: 25 và layout batch production cần root (như trên); GPU_R
 | Acceptance d237702 lần 2 | **PASS** 19:35 UTC (e2e 121 + đăng nhập thật 1) |
 | Push, deploy | origin/main 0992c40..d237702; watcher deploy d237702; smoke 200/200/401 |
 | Test production | --workers=4 **57/57 PASS** (thêm 51) |
+
+## 2026-11-08 — Lần lặp 14
+
+Đầu lần lặp (22:26 UTC): gpu_result.md không đổi từ 08:15 UTC; world production vẫn TURN_SECRET rỗng; layout production vẫn image 06/11. Các mục cần root (25 thoại production, 17 POST /api/layout/batch) và GPU/NVDA giữ nguyên như lần lặp 13.
+
+Việc tự làm được trên VPS:
+
+| Subagent / nơi làm | Nhánh | Việc | Kết quả |
+|---|---|---|---|
+| điều phối viên | main | 08: bench và overlay có FPS thấp nhất theo cửa sổ 1 s (`frame.minFps1s`); cửa sổ trượt tổng hợp theo thứ tự khung | 760df9a; vitest src/perf 24/24 |
+| printer14 (/home/cc/wt/printer14) | wt14/printer14 | 14: model máy in thủ tục ở mặt Đông khối In ấn (util_print là khối đặc), 0 draw call thêm (gộp vào mesh có sẵn); nguồn âm `printer_print` dùng chung vị trí và hướng với model (một nguồn chân lý `officePropsLayout.ts`), xoay theo layoutRot; có ô chặn; BFS kiểm lối từ điểm vào tới west_link2 | dfbf726; tên thư viện "Máy in" a07a857 |
+
+| Bước | Kết quả |
+|---|---|
+| tsc, vitest sau gộp | sạch; 1218/1218 |
+| Acceptance a07a857 | **PASS** 22:32–22:59 UTC (e2e 121 + đăng nhập thật 1) |
+| Push | origin/main 203cdc0..a07a857 (fast-forward) |
+| Deploy | watcher root 23:02 UTC, deployed.sha a07a857, bundle index-0WiiMNte.js; smoke 200/200/401 |
+| Test production | playwright.prod.config.ts --workers=4 **57/57 PASS** |
+
+GPU_REQUEST.md (và /home/cc/gpu-handoff/gpu_request.md) trỏ a07a857; mục 08 ghi thêm minFps1s, mục 14 ghi vị trí máy in.
+
+Việc còn lại (không đổi): 25 và 17 production cần root (`sudo bash scripts/enable-turn-prod.sh`, `sudo bash scripts/deploy-layout.sh a07a857`); GPU cho 03, 04, 07 (bản build), 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
