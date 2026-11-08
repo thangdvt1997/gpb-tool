@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  percentile, summarize, createRollingWindow, checkBudget, DEFAULT_BUDGET, createWarnThrottle, estimateTextureBytes,
+  percentile, summarize, minWindowFps, createRollingWindow, checkBudget, DEFAULT_BUDGET, createWarnThrottle, estimateTextureBytes,
   analyzeLeak, createLeakCounter, slope, sampleBenchPath, createBenchRecorder, parsePerfParams, createPerfStore,
   DEFAULT_BENCH_PATH,
 } from './index';
@@ -23,7 +23,13 @@ describe('stats', () => {
     expect(s.maxMs).toBe(100);
     expect(s.fps).toBeCloseTo(1000 / 41.6, 3);
   });
-  it('summarize rỗng', () => { expect(summarize([]).frames).toBe(0); });
+  it('summarize rỗng', () => { expect(summarize([]).frames).toBe(0); expect(summarize([]).minFps1s).toBeNaN(); });
+  it('minFps1s: FPS thấp nhất theo cửa sổ 1 giây, theo thứ tự khung', () => {
+    // 1 giây 50 khung (20 ms) rồi 1 giây 20 khung (50 ms), rồi phần dư chưa đủ 1 giây bị bỏ.
+    const ms = [...Array(50).fill(20), ...Array(20).fill(50), 10, 10];
+    expect(summarize(ms).minFps1s).toBeCloseTo(20, 5);
+    expect(minWindowFps(Array(30).fill(10))).toBeNaN();
+  });
   it('cửa sổ trượt giữ N mẫu mới nhất theo thứ tự', () => {
     const w = createRollingWindow(3);
     [1, 2, 3, 4, 5].forEach((x) => w.push(x));

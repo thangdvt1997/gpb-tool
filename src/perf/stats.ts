@@ -21,19 +21,31 @@ export interface FrameSummary {
   maxMs: number;
   /** Số khung giật (> hitchMs). */
   hitches: number;
+  /** FPS thấp nhất trong các cửa sổ 1 giây liên tiếp (theo thứ tự khung). NaN nếu chưa đủ 1 giây. */
+  minFps1s: number;
+}
+
+/** Chia dãy thời gian khung (theo thứ tự) thành các cửa sổ liên tiếp ~windowMs, trả FPS thấp nhất của các cửa sổ đủ dài. */
+export function minWindowFps(ms: readonly number[], windowMs = 1000): number {
+  let min = Infinity, acc = 0, n = 0;
+  for (const x of ms) {
+    acc += x; n++;
+    if (acc >= windowMs) { min = Math.min(min, (n * 1000) / acc); acc = 0; n = 0; }
+  }
+  return min === Infinity ? NaN : min;
 }
 
 export const HITCH_MS = 50;
 
 export function summarize(ms: readonly number[], hitchMs = HITCH_MS): FrameSummary {
   const n = ms.length;
-  if (n === 0) return { frames: 0, avgMs: NaN, fps: NaN, p50Ms: NaN, p95Ms: NaN, p99Ms: NaN, maxMs: NaN, hitches: 0 };
+  if (n === 0) return { frames: 0, avgMs: NaN, fps: NaN, p50Ms: NaN, p95Ms: NaN, p99Ms: NaN, maxMs: NaN, hitches: 0, minFps1s: NaN };
   const s = [...ms].sort((a, b) => a - b);
   const avg = s.reduce((a, b) => a + b, 0) / n;
   return {
     frames: n, avgMs: avg, fps: avg > 0 ? 1000 / avg : NaN,
     p50Ms: percentileSorted(s, 0.5), p95Ms: percentileSorted(s, 0.95), p99Ms: percentileSorted(s, 0.99),
-    maxMs: s[n - 1], hitches: s.filter((x) => x > hitchMs).length,
+    maxMs: s[n - 1], hitches: s.filter((x) => x > hitchMs).length, minFps1s: minWindowFps(ms),
   };
 }
 
@@ -46,7 +58,7 @@ export function createRollingWindow(size: number) {
     push(v: number) { if (buf.length < size) buf.push(v); else { buf[head] = v; head = (head + 1) % size; } },
     get length() { return buf.length; },
     values(): number[] { return buf.length < size ? [...buf] : [...buf.slice(head), ...buf.slice(0, head)]; },
-    summary(hitchMs = HITCH_MS): FrameSummary { return summarize(buf, hitchMs); },
+    summary(hitchMs = HITCH_MS): FrameSummary { return summarize(this.values(), hitchMs); },
     clear() { buf.length = 0; head = 0; },
   };
 }
