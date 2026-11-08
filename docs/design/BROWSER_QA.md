@@ -172,3 +172,7 @@ Trước khi sửa, cùng spec trên bản chưa có `useEscapeClose`: Thư vi�
 ## Production 2026-11-07 — commit ed28d05 (deploy 22:22 UTC) và 70715a8 (deploy 23:31 UTC), watcher root
 
 playwright.prod.config.ts (02-scene-mock, 20-controls, prod/30-hanging, 31-hud-expanded): **18/18 PASS** trên cả hai bản. 31-hud-expanded trên production: 7 nút HUD × (Esc, nút đóng), aria-expanded="false" và focus về nút sau khi đóng. Phiên giả lập phía trình duyệt (mockSession), không đăng nhập production. Kiểm lại bằng NVDA thật: chờ chủ dự án.
+
+## Production 2026-11-08 — commit 409d1d5 (deploy 00:00 UTC, watcher root)
+
+Trang phục vụ `assets/index-BeJKSoJM.js`, trùng log deploy. playwright.prod.config.ts `--workers=1`: **18/18 PASS** (14,4 phút): 02-scene-mock, 20-controls, prod/30-hanging, 31-hud-expanded (Thư viện, Hồ sơ, Sao lưu, Phòng thay đồ, Vẽ xăm, Cài đặt, Trợ giúp × Esc và nút đóng: aria-expanded="false", focus về nút). Phiên giả lập phía trình duyệt, không đăng nhập production. NVDA thật trên bản này: chưa kiểm, chờ chủ dự án (Phòng thay đồ, Cài đặt, Sao lưu là ba mục còn FAIL ở đợt 3 trên 1235903, bản trước khi sửa).

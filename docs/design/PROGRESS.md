@@ -200,3 +200,17 @@ Việc cần root (chủ dự án hoặc root chạy một lần, sau khi commit
 `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (sao lưu /root/backup-gpb-svc-<TS>, tag auth/gateway backup, build và up auth, world, gateway, tự kiểm). Thoại cần thêm TURN_SECRET (từ /home/cc/gpb-turn/.env) và TURN_URLS vào env của service world. Rollback: `sudo bash scripts/rollback-svc.sh <TS>`.
 
 Không tạo PROJECT_COMPLETE.txt: 22–27 chưa có bằng chứng production (cần root), 01/02 chờ license, 12 chờ NVDA thật.
+
+## 2026-11-08 — Lần lặp 5
+
+Rà lại giao việc V1–V6: V1, V2, V3 đã có trên main từ lần lặp 4 (478bdc8, 1c2b1f9, ed28d05), không làm lại. Production đang chạy 409d1d5 (acceptance PASS 23:40 UTC, deploy 00:00 UTC bởi watcher root, smoke 200).
+
+| Việc | Kết quả |
+|---|---|
+| V1–V3 trên production 409d1d5 | playwright.prod.config.ts **18/18 PASS** (31-hud-expanded 14 ca). Ghi ở BROWSER_QA.md. |
+| V4 | Đã xong từ lần lặp 4 (push origin/main, deploy). Lần lặp này chỉ đổi tài liệu, không chạy lại acceptance. |
+| 12 | Chờ chủ dự án chạy lại NVDA trên 409d1d5 cho Phòng thay đồ, Cài đặt, Sao lưu. Chưa đánh dấu xong. |
+| 22–27 | Vẫn cần root: `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` (user cc không có sudo, không ghi /opt/gpb-tool, không đọc .env). Không dùng nhóm docker để vượt quyền hệ thống tệp. |
+| 01, 02 | Chờ chủ dự án quyết định license (3 GLB MPFB, asset và clip tự sinh). |
+
+Không tạo PROJECT_COMPLETE.txt.
