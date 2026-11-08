@@ -41,6 +41,11 @@ export function subscribeEmote(listener: () => void): () => void {
   };
 }
 
+/** Emote hiện tại đang ở tư thế tĩnh (giảm chuyển động hoặc chụp ảnh): avatar không dùng clip. */
+export function isEmoteReduced(): boolean {
+  return reduced || frozen;
+}
+
 /** Ảnh chụp trạng thái. Cùng một đối tượng cho tới khi trạng thái đổi. */
 export function getEmoteState(): EmoteState {
   return state;

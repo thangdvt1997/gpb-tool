@@ -1299,9 +1299,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "d1ccb0958ed8e8de46978cd8a88d7278c475aa5e97dd2a2c167c686cb3a357c2"
+        "value": "7e3eee001e5865dc74271c5da2b078136d6e37540f6fbcde8beb2fcb8c5b0ea0"
       },
-      "bytes": 132896,
+      "bytes": 308884,
       "url": "anim_male_real.glb",
       "format": "glb",
       "scale": 1,
@@ -1407,6 +1407,102 @@
           "durationSec": 3.1416,
           "loop": true,
           "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_1",
+          "durationSec": 1.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_2",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_kata",
+          "durationSec": 3.7,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_punch_combo",
+          "durationSec": 2.01,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave",
+          "durationSec": 1.95,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_apologize",
+          "durationSec": 1.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_startle",
+          "durationSec": 1.55,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_hit",
+          "durationSec": 1.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_down",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_angry_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave_at",
+          "durationSec": 1.66,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_handshake",
+          "durationSec": 1.72,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_high_five",
+          "durationSec": 1.12,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_bow",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_point_at",
+          "durationSec": 1.6,
+          "loop": false,
+          "rootMotion": "in-place"
         }
       ],
       "license": {
@@ -1429,9 +1525,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "b67b344847dc83fc6758be905653e6b06334bbeaa3c0e9765510629b341e7efb"
+        "value": "c3b17bb843c00b8764cf76c20454d9405006853965007fc38f7fc5f0b867f12b"
       },
-      "bytes": 132276,
+      "bytes": 308308,
       "url": "anim_female_real.glb",
       "format": "glb",
       "scale": 1,
@@ -1537,6 +1633,102 @@
           "durationSec": 3.1416,
           "loop": true,
           "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_1",
+          "durationSec": 1.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_2",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_kata",
+          "durationSec": 3.7,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_punch_combo",
+          "durationSec": 2.01,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave",
+          "durationSec": 1.95,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_apologize",
+          "durationSec": 1.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_startle",
+          "durationSec": 1.55,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_hit",
+          "durationSec": 1.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_down",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_angry_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave_at",
+          "durationSec": 1.66,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_handshake",
+          "durationSec": 1.72,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_high_five",
+          "durationSec": 1.12,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_bow",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_point_at",
+          "durationSec": 1.6,
+          "loop": false,
+          "rootMotion": "in-place"
         }
       ],
       "license": {
@@ -1559,9 +1751,9 @@
       "version": "1.0.0",
       "hash": {
         "algo": "sha256",
-        "value": "7de038de3ff6cf2d4360ff9018b33bfcf88a1f451665bf9c4197ae3d6ce2ab03"
+        "value": "827b32a7a406f7c65fcd58bb721d535fc277d44c292dd772a7e7155a493db0fa"
       },
-      "bytes": 132380,
+      "bytes": 308284,
       "url": "anim_chibi.glb",
       "format": "glb",
       "scale": 1,
@@ -1666,6 +1858,102 @@
           "name": "Dance",
           "durationSec": 3.1416,
           "loop": true,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_1",
+          "durationSec": 1.6,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_dance_2",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_kata",
+          "durationSec": 3.7,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_punch_combo",
+          "durationSec": 2.01,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave",
+          "durationSec": 1.95,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_apologize",
+          "durationSec": 1.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_startle",
+          "durationSec": 1.55,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_hit",
+          "durationSec": 1.5,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_down",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_angry_stance",
+          "durationSec": 0.3,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_wave_at",
+          "durationSec": 1.66,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_handshake",
+          "durationSec": 1.72,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_high_five",
+          "durationSec": 1.12,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_bow",
+          "durationSec": 1.2,
+          "loop": false,
+          "rootMotion": "in-place"
+        },
+        {
+          "name": "Emote_point_at",
+          "durationSec": 1.6,
+          "loop": false,
           "rootMotion": "in-place"
         }
       ],

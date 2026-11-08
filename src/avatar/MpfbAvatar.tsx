@@ -15,7 +15,7 @@ import {
   type AvatarPose,
   type PoseJoint,
 } from './animation';
-import { getEmoteState, sampleEmotePose } from '../emotes/player';
+import { getEmoteState, isEmoteReduced, sampleEmotePose } from '../emotes/player';
 import type { EmoteId } from '../emotes/types';
 import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
@@ -39,7 +39,7 @@ import { playerPose } from '../scene/controls/playerPose';
 import { getHeldItem } from '../scene/interact/objects/smallItem';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
 import { useBakedPlayer, playerClipDebug } from './useBakedClips';
-import { chooseBakedClip, clipTimeScale } from './bakedClips';
+import { chooseBakedClip, clipTimeScale, emoteFadeSec } from './bakedClips';
 import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -521,7 +521,13 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     const emoting = emote && sampleEmotePose(scratch);
     let pose: AvatarPose;
     // Chọn clip theo animation (NPC) hoặc trạng thái FSM (người chơi); thiếu clip/lỗi tải/?baked=0 thì procedural.
-    const choice = chooseBakedClip(animation, playerLocomotion.fsm, baked?.names ?? null, !!emoting);
+    const emoteId = emoting ? getEmoteState().id : null;
+    const choice = chooseBakedClip(animation, playerLocomotion.fsm, baked?.names ?? null, !!emoting, {
+      emoteId,
+      emoteReduced: emoting ? isEmoteReduced() : false,
+      turn: animation === 'locomotion' ? playerLocomotion.turn : 0,
+      prevClip: baked?.player.current,
+    });
     const useBaked = !!baked && choice.clip !== null;
     if (animation === 'locomotion') {
       playerClipDebug.clip = choice.clip;
@@ -529,8 +535,8 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     }
     if (baked) {
       if (useBaked && choice.clip) {
-        baked.player.play(choice.clip);
-        baked.player.setTimeScale(animation === 'locomotion' ? clipTimeScale(choice.clip, playerLocomotion.speed) : 1);
+        baked.player.play(choice.clip, emoteId ? emoteFadeSec(emoteId) : undefined);
+        baked.player.setTimeScale(animation === 'locomotion' ? clipTimeScale(choice.clip, playerLocomotion.speed, playerLocomotion.turn) : 1);
       } else baked.player.stop();
     }
     if (useBaked && baked) {
@@ -568,7 +574,6 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     // Biểu cảm: emote đang phát (nếu có trong bảng) hoặc biểu cảm nền; trộn mượt.
     const infl = rig.morphMesh?.morphTargetInfluences;
     if (!infl) return;
-    const emoteId = emoting ? getEmoteState().id : null;
     const goal = (emoteId && EMOTE_FACE[emoteId]) || expressionBase;
     const f = face.current;
     const d = Math.min(Math.max(dt, 0), 0.1);

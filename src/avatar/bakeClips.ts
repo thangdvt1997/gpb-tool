@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { applyMpfbPose, buildRig, createPoseWork } from './MpfbAvatar';
 import { POSE_HIP_HEIGHT, REST_POSE, type AvatarPose } from './animation';
-import { BAKED_BONES, BAKED_CLIP_DEFS, BAKED_ROOT_BONE, type BakedClipDef } from './bakedClips';
+import { BAKED_BONES, ALL_BAKED_CLIP_DEFS, BAKED_ROOT_BONE, type BakedClipDef } from './bakedClips';
 import { buildSkeletonScene, readGlbJson } from './glbSkeleton';
 
 export interface BakeResult {
@@ -64,7 +64,7 @@ export function bakeClip(def: BakedClipDef, rig: ReturnType<typeof buildRig>, re
   return new THREE.AnimationClip(def.name, def.durationSec, tracks);
 }
 
-/** Bake toàn bộ BAKED_CLIP_DEFS cho một tệp nhân vật GLB (đọc cấu trúc xương từ JSON, không cần giải mã texture). */
+/** Bake toàn bộ ALL_BAKED_CLIP_DEFS (locomotion và emote) cho một tệp nhân vật GLB (đọc cấu trúc xương từ JSON, không cần giải mã texture). */
 export function bakeForCharacter(glb: ArrayBuffer | Uint8Array): BakeResult {
   const json = readGlbJson(glb);
   const scene = buildSkeletonScene(json);
@@ -72,6 +72,6 @@ export function bakeForCharacter(glb: ArrayBuffer | Uint8Array): BakeResult {
   const root = rig.root.getObjectByName(BAKED_ROOT_BONE) as THREE.Object3D;
   const restPos = root.position.clone();
   const restQuat = root.quaternion.clone();
-  const clips = BAKED_CLIP_DEFS.map((d) => bakeClip(d, rig, restPos, restQuat));
+  const clips = ALL_BAKED_CLIP_DEFS.map((d) => bakeClip(d, rig, restPos, restQuat));
   return { scene, clips };
 }

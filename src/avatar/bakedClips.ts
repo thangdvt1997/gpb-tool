@@ -8,6 +8,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { REST_POSE, computePose, type AvatarAnimation, type AvatarPose } from './animation';
 import { resolveClip } from '../scene/motion/clipMap';
+import { EMOTES, LEAD_IN } from '../emotes/library';
+import { emoteDurationSec, samplePoseOf } from '../emotes/player';
+import type { EmoteDef, EmoteId } from '../emotes/types';
 import type { LocoState } from '../scene/motion/locomotionFsm';
 
 export type BakedModelId = 'male_real' | 'female_real' | 'chibi';
@@ -158,6 +161,45 @@ export const BAKED_CLIP_DEFS: readonly BakedClipDef[] = [
   { name: 'Dance', durationSec: Math.PI, loop: true, fps: 20, pose: fromProcedural('dance') },
 ];
 
+/** Tên clip bake của một emote. */
+export function emoteClipName(id: string): string {
+  return `Emote_${id}`;
+}
+
+function cycleSec(def: EmoteDef): number {
+  let sum = 0;
+  for (const f of def.frames) sum += f.dur;
+  return sum;
+}
+
+/**
+ * Clip emote bake từ chính bộ phát emote (samplePoseOf), nên khớp từng khung với procedural.
+ * - loop: đúng một chu kỳ (bắt đầu sau lead-in, khép kín); lead-in do crossfade LEAD_IN giây đảm nhận.
+ * - once: toàn bộ từ nghỉ, lead-in, các mốc, lead-out về nghỉ.
+ * - hold: lead-in và các mốc, kết thúc giữ ở mốc cuối (clampWhenFinished).
+ */
+function emoteClipDef(def: EmoteDef): BakedClipDef {
+  const name = emoteClipName(def.id);
+  if (def.mode === 'loop') {
+    return { name, durationSec: cycleSec(def), loop: true, fps: 30, pose: (t, o) => void samplePoseOf(o, def, t + LEAD_IN, false) };
+  }
+  const durationSec = def.mode === 'once' ? emoteDurationSec(def) : LEAD_IN + cycleSec(def) - def.frames[0].dur;
+  return { name, durationSec, loop: false, fps: 30, pose: (t, o) => void samplePoseOf(o, def, t, false) };
+}
+
+export const EMOTE_CLIP_DEFS: readonly BakedClipDef[] = (Object.keys(EMOTES) as EmoteId[]).map((id) => emoteClipDef(EMOTES[id]));
+
+/** Mọi clip cần bake: clip locomotion/NPC và clip emote. */
+export const ALL_BAKED_CLIP_DEFS: readonly BakedClipDef[] = [...BAKED_CLIP_DEFS, ...EMOTE_CLIP_DEFS];
+
+/** Tên clip lặp (LoopRepeat); các clip khác phát một lần. */
+export const BAKED_LOOP_CLIPS: ReadonlySet<string> = new Set(ALL_BAKED_CLIP_DEFS.filter((d) => d.loop).map((d) => d.name));
+
+/** Thời gian crossfade vào clip emote: emote lặp dùng LEAD_IN (thay lead-in), còn lại lead-in đã nằm trong clip. */
+export function emoteFadeSec(id: string): number {
+  return (EMOTES as Record<string, EmoteDef | undefined>)[id]?.mode === 'loop' ? LEAD_IN : 0.1;
+}
+
 /** Tên clip bake cho một AvatarAnimation cố định (không gồm 'locomotion': người chơi dùng FSM + CLIP_MAP). */
 export const CLIP_FOR_ANIMATION: Readonly<Partial<Record<AvatarAnimation, string>>> = {
   idle: 'Idle',
@@ -177,33 +219,69 @@ export interface BakedChoice {
 
 const PROCEDURAL: BakedChoice = { clip: null, source: 'procedural' };
 
+export interface BakedChoiceOptions {
+  /** Id emote đang phát (người chơi). */
+  emoteId?: string | null;
+  /** Emote đang ở chế độ giảm chuyển động/đóng băng (chụp ảnh): luôn procedural (tư thế tĩnh). */
+  emoteReduced?: boolean;
+  /** Mức xoay tại chỗ 0..1 (playerLocomotion.turn). */
+  turn?: number;
+  /** Clip đang phát, để có trễ (hysteresis) khi vào/ra xoay tại chỗ. */
+  prevClip?: string | null;
+}
+
+/** Ngưỡng vào và ra chế độ bước tại chỗ khi xoay mà không di chuyển. */
+export const TURN_STEP_ON = 0.2;
+export const TURN_STEP_OFF = 0.08;
+
 /**
  * Chọn clip bake cho một khung. Hàm thuần.
  * - available: tên clip đã nạp (rỗng/null khi chưa tải xong, tải lỗi hoặc ?baked=0) -> procedural.
  * - animation cố định: theo CLIP_FOR_ANIMATION. 'locomotion' (người chơi): theo trạng thái FSM qua CLIP_MAP/resolveClip.
- * - emoting: emote do hệ emote điều khiển nên luôn procedural.
+ * - emoting: có clip Emote_<id> (và không giảm chuyển động) thì phát clip đó, ngược lại procedural do hệ emote điều khiển.
+ * - xoay tại chỗ (FSM idle, turn cao): phát Walk ở tốc độ thấp (xem clipTimeScale) để chân bước như procedural.
  */
 export function chooseBakedClip(
   animation: AvatarAnimation,
   fsmState: LocoState | string,
   available: ReadonlySet<string> | null,
   emoting: boolean,
+  opts: BakedChoiceOptions = {},
 ): BakedChoice {
-  if (!available || available.size === 0 || emoting) return PROCEDURAL;
+  if (!available || available.size === 0) return PROCEDURAL;
+  if (emoting) {
+    const name = opts.emoteId ? emoteClipName(opts.emoteId) : null;
+    return name && !opts.emoteReduced && available.has(name) ? { clip: name, source: 'baked' } : PROCEDURAL;
+  }
   if (animation !== 'locomotion') {
     const name = CLIP_FOR_ANIMATION[animation];
     return name && available.has(name) ? { clip: name, source: 'baked' } : PROCEDURAL;
   }
   const r = resolveClip(fsmState as LocoState, available);
-  return r.source === 'clip' && r.clip ? { clip: r.clip, source: 'baked' } : PROCEDURAL;
+  if (r.source !== 'clip' || !r.clip) return PROCEDURAL;
+  const turn = opts.turn ?? 0;
+  if (fsmState === 'idle' && r.clip === 'Idle' && available.has('Walk') && turn > (opts.prevClip === 'Walk' ? TURN_STEP_OFF : TURN_STEP_ON)) {
+    return { clip: 'Walk', source: 'baked' };
+  }
+  return { clip: r.clip, source: 'baked' };
 }
 
 // Pha procedural: đi 6 rad/s ứng 1,5 rad/m (4 m/s); chạy 10 rad/s ứng 1,3 rad/m (xem WALK_STRIDE/RUN_STRIDE trong animation.ts).
 const WALK_RAD_PER_M = 1.5;
 const RUN_RAD_PER_M = 1.3;
 
-/** Tốc độ phát clip theo tốc độ di chuyển (m/s) để chân không trượt; clip khác Walk/Run luôn 1. Kẹp 0,5 đến 1,6. */
-export function clipTimeScale(clip: string | null, speed: number): number {
+/** Pha bước khi xoay tại chỗ: 10 rad/s ứng turn = 1 (TURN_FULL 2,5 rad/s nhân TURN_STRIDE 4 trong animation.ts). */
+const TURN_RAD_PER_S = 10;
+
+/**
+ * Tốc độ phát clip theo tốc độ di chuyển (m/s) để chân không trượt; clip khác Walk/Run luôn 1. Kẹp 0,5 đến 1,6.
+ * Walk lúc đứng yên (speed < 0,4) là bước tại chỗ khi xoay: tốc độ theo mức xoay `turn`, kẹp 0,3 đến 1,2.
+ */
+export function clipTimeScale(clip: string | null, speed: number, turn = 0): number {
+  if (clip === 'Walk' && speed < 0.4 && turn > 0) {
+    const k = (turn * TURN_RAD_PER_S) / 6;
+    return k < 0.3 ? 0.3 : k > 1.2 ? 1.2 : k;
+  }
   const k = clip === 'Walk' ? (speed * WALK_RAD_PER_M) / 6 : clip === 'Run' ? (speed * RUN_RAD_PER_M) / 10 : 1;
   return !(k > 0) ? 1 : k < 0.5 ? 0.5 : k > 1.6 ? 1.6 : k;
 }

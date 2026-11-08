@@ -30,7 +30,7 @@ Mỗi script có `--check` (không ghi, thoát 1 nếu tệp/manifest lệch). �
 
 ## Clip animation
 
-- Định nghĩa: `src/avatar/bakedClips.ts` (Idle, Walk, Run, JumpStart, Airborne, Land, SitDown, SeatedIdle, StandUp, Interact, Stunned, Wave, Dance). Tên khớp `CLIP_MAP` (src/scene/motion/clipMap.ts); chỉ Emote vẫn procedural.
+- Định nghĩa: `src/avatar/bakedClips.ts` (Idle, Walk, Run, JumpStart, Airborne, Land, SitDown, SeatedIdle, StandUp, Interact, Stunned, Wave, Dance) cùng 16 clip emote `Emote_<id>` (`EMOTE_CLIP_DEFS`), tổng 29 clip mỗi tệp. Tên khớp `CLIP_MAP` (src/scene/motion/clipMap.ts).
 - Walk, Run, Dance lấy thẳng từ `computePose`; các clip chuyển tiếp (ngồi, đứng, nhảy, chạm, choáng) là nội suy giữa tư thế procedural do task này viết, không phải chuyển động thu thập.
 - Mỗi nhân vật một tệp vì rest pose xương khác nhau. Track: quaternion 10 xương mà AvatarPose điều khiển, cùng Root.position (rootY) và Root.quaternion. Track không đổi chỉ giữ 2 khóa. Mỗi tệp khoảng 130 KB.
 - Runtime: `src/avatar/useBakedClips.ts` được `MpfbAvatar.tsx` gọi. Với animation cố định (idle, walk, run, jump, sit, wave, dance) nó ưu tiên clip bake khi tải được; tải lỗi hoặc `?baked=0` thì dùng procedural như cũ. Animation `locomotion` của người chơi và emote KHÔNG dùng clip bake (còn trộn theo tốc độ, nhìn theo camera, xoay tại chỗ), nên FSM 12 trạng thái chưa lái clip.
@@ -59,3 +59,10 @@ Lần 4: manifest ghi `runtimeAlphaMode` (OPAQUE cho body/low-poly, MASK cho eye
 - Đo (e2e `/home/cc/gpb-e2e/pending/35-glb-furniture.spec.ts`, `?perf=1`, swiftshader, camera mặc định): trước (`?glbFurniture=0`, đường mã cũ) 66 draw call, sau (GLB) 66. Lý do bằng nhau: GLB và hộp đều 2 lệnh vẽ, và cảnh hiện không có bàn nào đi qua `DeskField` (`plainDesks` rỗng, mọi bàn thật do `DeskDecorField` vẽ bằng atlas, 2 draw call cho cả khu, chi tiết hơn GLB tự sinh nên KHÔNG thay). Vì vậy thay đổi này không tăng draw call và cũng không đổi hình cảnh hiện tại; nó có hiệu lực khi có bàn không decor. Trần 200 theo PENDING_DECISIONS mục 3 giữ nguyên (chỉ cảnh báo).
 - Ba biến thể bàn dev/design/ops chỉ có trong `DeskDecorField` (nội dung màn hình), không áp dụng cho GLB tự sinh (một kiểu bàn).
 - PIVOT_OFFSET_REQUIRED còn 3 cảnh báo thuộc nhân vật (char.male_real, char.female_real, char.chibi), không phải bàn/ghế/phụ kiện (các asset này đã gốc ở sàn hoặc socket, không cảnh báo). Không sửa trong lần này. Validator: 0 lỗi, 6 cảnh báo, như trước.
+
+## Clip emote và bước tại chỗ khi xoay (task 02, lần 7)
+
+- 16 clip `Emote_<id>` bake từ chính `samplePoseOf` (src/emotes/player.ts): emote loop là đúng một chu kỳ khép kín (lead-in do crossfade 0,3 s); once gồm lead-in, các mốc, lead-out; hold gồm lead-in và các mốc rồi giữ mốc cuối. Mỗi tệp anim_*.glb tăng từ khoảng 130 KB lên khoảng 308 KB (30 fps).
+- Runtime: `chooseBakedClip` nhận `opts.emoteId`; có clip `Emote_<id>` thì phát qua AnimationMixer (MpfbAvatar), vòng đời emote (hết giờ, hủy khi di chuyển, tấn bật/tắt) vẫn do `src/emotes/player.ts` điều khiển. Rơi về procedural khi: thiếu clip (GLB cũ), tải lỗi, `?baked=0`, giảm chuyển động hoặc chế độ chụp ảnh (`isEmoteReduced`). `?debug=controls`: `clipName` = `Emote_<id>` khi đang phát.
+- Xoay tại chỗ (FSM idle, `playerLocomotion.turn` > 0,2, tắt dưới 0,08) phát clip Walk với `clipTimeScale(Walk, speed < 0,4, turn)` = turn x 10 / 6, kẹp 0,3 đến 1,2, để chân bước như procedural thay vì đứng Idle trượt. Biên độ chân của Walk lớn hơn bước nhỏ procedural (chưa chỉnh); chưa có e2e cho xoay tại chỗ, chỉ vitest.
+- Test: vitest (bakedClips, chooseBakedClip), e2e `e2e-new/36-player-emote-baked-clip.spec.ts` (tấn hold, nhảy loop, `?baked=0`). Emote once chỉ kiểm bằng vitest vì khung hình swiftshader dưới tải quá thưa.
