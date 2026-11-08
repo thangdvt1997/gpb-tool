@@ -258,3 +258,41 @@ Trình đọc màn hình thật: **chưa kiểm trình đọc thật trên bản
 ## Production 2026-11-08 — commit c0e2265 (deploy 07:15 UTC, watcher root): manifest license đã duyệt
 
 Acceptance c0e2265 PASS (e2e 97 + đăng nhập thật 1). /models/manifest.json trên production: 3 GLB MPFB verified=true, approvedBy "Chủ dự án duyệt dùng trong sản phẩm (08/11/2026)". Spec đọc manifest trên production (02-scene-mock, 34-player-baked-clip, 35-glb-furniture, 36-player-emote-baked-clip): **10/10 PASS**. Mã giao diện giống 5c0d0d2, nên kết quả 31-hud-expanded ở mục trên vẫn áp dụng.
+
+## Môi trường test VPS cho 22–27 — lần lặp 12 (08/11/2026), mã main ff21ea7
+
+Theo quyết định chủ dự án 08/11 07:40 UTC: không tạo tài khoản và không dùng auth production để test. Kiểm trên môi trường test chạy trên VPS, cùng mã với commit đang triển khai:
+
+| Thành phần | Địa chỉ | Ghi chú |
+|---|---|---|
+| Auth TEST | 127.0.0.1:3902 (container gpb-e2e-auth) | ba tài khoản test trong /home/cc/gpb-e2e/.env: e2e-test, e2e-test2 (employee), e2e-admin (admin) |
+| World | 127.0.0.1:3903 (`scripts/e2e/world-local.sh`, chạy từ services/world của repo) | services/world không đổi từ 9de7442 (bản production deploy 04:44 UTC); khởi động lại lúc 07:45 UTC |
+| Layout | 127.0.0.1:3904 (container gpb-e2e-layout, image build từ services/layout của repo) | dữ liệu riêng /home/cc/e2e-layout-data |
+| TURN | coturn gpb-turn-coturn, 198.204.229.10:3478 | world test nạp TURN_SECRET từ /home/cc/gpb-turn/.env |
+| Web | vite preview bản build main, cổng 4173 (spec 29) và 4174 (`playwright.testenv.config.ts`) | `GPB_PREVIEW_AUTH_API`, `GPB_PREVIEW_WORLD_API`, `GPB_PREVIEW_LAYOUT_API` |
+
+Kết quả (mỗi người dùng một trình duyệt riêng ở 32, 40, 42):
+
+| Spec | Task | Kết quả | Nội dung |
+|---|---|---|---|
+| tests/29-multiplayer.spec.ts (gồm voice-suite) | 23, 24, 25, 27 | **9/9 PASS** | presence và di chuyển; chat hai chiều (HTML hiện như chữ thuần); lease ghế; rớt kết nối (đóng socket, setOffline) rồi resume; thoại: mic chỉ xin khi bấm, PeerConnection connected và nhận audio (bytesReceived > 0 hai bên), gain theo khoảng cách, tắt mic thì bên kia đóng kết nối |
+| pending/32-room-roles.spec.ts | 25, 26 | **7/7 PASS** | admin là owner thấy "Thành viên phòng", employee là member; member → editor → guest (guest không chat, không ngồi ghế, vẫn đọc chat) → member; mute và bỏ mute; chặn và bỏ chặn; kick (B thấy thông báo, mất kết nối, A ở lại) |
+| pending/40-profile-item.spec.ts | 22, 24, 15, 05 | **5/5 PASS** | đổi tên hiển thị, tải lại vẫn còn, B thấy tên mới; đồng bộ nhân vật lên máy chủ; ngoại hình tài khoản của A đến B qua world; vật cầm (A cầm thì B bị từ chối "Vật này đang có người cầm", A trả thì B cầm được); bắt tay có đồng ý (B thấy lời mời, chấp nhận, hai bên phát emote); server ghi đè vị trí khi nhảy 40 m (ack corrected, nhân vật và camera về vị trí server, B thấy cùng vị trí) |
+| pending/42-editor-layout-real.spec.ts | 17 | **1/1 PASS** | admin thêm, nhân bản, xóa vật, thêm tường có cửa, lưu một request batch, tải lại còn nguyên; employee thấy vật nhưng không có nút sắp xếp, batch trả 403; batch có thao tác sai trả 409 và không ghi gì |
+
+Lượt chạy cuối (mã main ff21ea7, world chạy từ /home/cc/gpb-dev/services/world, kiểm bằng /proc/<pid>/cwd trước và sau lượt chạy): tests/29-multiplayer.spec.ts --workers=1 **9/9 PASS** (VOICE_STATS A nhận 1313 byte/31 gói, B nhận 1219 byte/31 gói); `playwright.testenv.config.ts` (32, 40, 42) **13/13 PASS** trong 8,3 phút.
+
+Sự cố trong lần lặp: afterAll của 32 (sau ca kick) khởi động lại world bằng script mặc định trong worktree cũ /home/cc/wt/roles. World khi đó chạy mã cũ và không nạp TURN_SECRET, nên các lượt 40/42 chạy sau 32 và ca thoại trong acceptance bị ảnh hưởng (thoại báo "no_turn"). Đã đổi mặc định sang /home/cc/gpb-dev/scripts/e2e/world-local.sh, đặt WORLD_LOCAL_SH trong playwright.testenv.config.ts và chạy lại toàn bộ. Số liệu trong bảng trên là của lượt chạy lại.
+
+Lỗi thật mà e2e mới bắt được, đã sửa ở 9fa1ccd:
+- **Ngoại hình không bao giờ gửi lên world.** `useAppearanceSync` phụ thuộc vào cả object `world`, mà `useWorld` trả object mới mỗi lần render. Effect chạy lại liên tục, mỗi lần tạo bộ gửi mới ở trạng thái "chưa vào phòng", nên không gửi gì. Sửa: phụ thuộc vào `client` và `subscribe`; đã kết nối thì coi như đã vào phòng. Đo bằng WebSocket: trước khi sửa không có khung `appearance` nào được gửi.
+- **Lời mời bắt tay, đập tay không hiện ở người nhận.** World gửi id dạng chuỗi (`to:"2"`), còn SocialBar so với `user.id` dạng số (2). Sửa: `String(user.id)` cho SocialBar và transport xã hội.
+- Task 17 (từ subagent): client đặt vật mới đè lên 10 vật cố định không có trong it.json nên máy chủ trả 409. Sửa `FIXTURE_SIZES` và `fixedRectsOf`.
+
+Ghi chú môi trường: ba cảnh swiftshader trong cùng một trình duyệt dùng chung một tiến trình GPU, khung hình đứng hàng chục giây, heartbeat phía client hết hạn và world client bỏ cuộc (trạng thái disconnected). Vì vậy 32, 40, 42 mở mỗi người một trình duyệt. Đây là giới hạn của máy test không có GPU, không phải lỗi app.
+
+Production: chỉ kiểm smoke theo quyết định. Trang chủ 200, /api/auth/providers 200, /api/world/health 401 khi chưa đăng nhập.
+
+Chưa kiểm được trên môi trường test:
+- **Thoại trên production:** container gpb-tool-world-1 có TURN_SECRET rỗng (không khớp coturn), nên /api/world/turn sẽ trả 503 cho người đã đăng nhập. User cc không ghi được /opt/gpb-tool/.env. Chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/enable-turn-prod.sh`.
+- **Layout batch trên production:** endpoint `POST /api/layout/batch` (task 17) mới có ở môi trường test. deploy-svc.sh không phủ layout. Chủ dự án chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh <sha>`. Trước khi deploy layout, client trên production vẫn lưu được vị trí vật gốc theo đường cũ (nhận 404 thì lưu từng vật), còn vật thêm, tường và cửa chưa lưu được.

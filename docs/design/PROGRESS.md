@@ -289,3 +289,27 @@ Không tạo PROJECT_COMPLETE.txt.
 | 12 | Phần tự động đạt. Chờ chủ dự án chạy NVDA (Speech Viewer) trên 5c0d0d2 trở về sau, gồm Trợ giúp |
 
 Không tạo PROJECT_COMPLETE.txt (01, 22–27, 12 chưa xong).
+
+## 2026-11-08 — Lần lặp 12
+
+Theo quyết định chủ dự án 07:40 UTC: 22–27 kiểm trên môi trường test VPS (auth TEST 127.0.0.1:3902, world mã repo 127.0.0.1:3903, layout test 127.0.0.1:3904), production chỉ smoke. Chi tiết và bảng kết quả ở BROWSER_QA.md mục "Môi trường test VPS cho 22–27 — lần lặp 12".
+
+| Subagent | Worktree / nhánh | Task | Kết quả (đã kiểm lại bằng lệnh) |
+|---|---|---|---|
+| misc12 | /home/cc/wt/misc12, wt12/misc12 | 11 giảm chuyển động; 07 GLB nhân vật qua bộ điều phối; 04 mép cổ áo | 4ba5f5f, 795617d, 75e565e; e2e 39-misc12 2/2 |
+| lib18 | /home/cc/wt/lib18, wt12/lib18 | 18 thumbnail, tải GLB cục bộ; 20 ZIP | a096e2e; e2e 38 2/2 |
+| ed17 | /home/cc/wt/ed17, wt12/ed17 | 17 thêm/xóa/nhân bản, tường/cửa, lưu batch; layout test 3904; scripts/deploy-layout.sh | f15c123, 73d9649; e2e 37 2/2, 42 1/1 |
+| assets12 | /home/cc/wt/assets12, wt12/assets12 | 01 origin nhân vật ở sàn, bàn GLB | 68dafc8, aee1e4b; validator 0 lỗi 0 cảnh báo; e2e 41 4/4 |
+
+Điều phối viên:
+- 8dae97b (owner gán vai trò khách) chỉ nằm ở wt3/roles, chưa vào main nên 32-room-roles bị để pending. Đã cherry-pick.
+- E2E mới bắt được hai lỗi thật, sửa ở 9fa1ccd: ngoại hình không bao giờ gửi lên world (`useAppearanceSync` chạy lại mỗi render); lời mời bắt tay không hiện ở người nhận (id số so với id chuỗi).
+- ff21ea7: nút Xuất ZIP có aria-label không chứa chữ hiển thị (axe label-content-name-mismatch, 30-a11y-full bắt được).
+- Kết quả trên môi trường test (main ff21ea7): 29-multiplayer gồm thoại 9/9; 32-room-roles 7/7; 40-profile-item 5/5 (22, 24, 15, 05); 42-editor-layout-real 1/1.
+- GPU: docs/design/GPU_REQUEST.md (bản sao /home/cc/gpu-handoff/gpu_request.md) cho 03, 04, 07, 08, 13, 14, 15, 16, 19.
+
+Bị chặn, cần root (user cc không có sudo):
+- **25 thoại production:** gpb-tool-world-1 có TURN_SECRET rỗng (không khớp coturn). Chạy `sudo bash /home/cc/gpb-dev/scripts/enable-turn-prod.sh` (sao lưu .env, chỉ tạo lại container world, không in secret).
+- **17 layout production:** endpoint batch mới chưa deploy. Chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh <sha>` (rollback: scripts/rollback-layout.sh).
+- **/home/cc/handoff-20261107 đổi chủ sang root lúc 08:15 UTC**, cc không ghi được nữa. Không ghi được gpu_request.md, bundle hay log stub vào đó. Có tiến trình root cũng đã build vào /home/cc/gpb-dev/dist (đã đổi tên thành dist.root-owned-20261108T0813, không xóa), tạo test-results thuộc root trong /home/cc/gpb-e2e, và có object git thuộc root.
+- **Acceptance song song:** tiến trình root /home/cc/deploy622/run.sh chạy acceptance cho 622b58f nhiều lần (11:11, 11:41 UTC). Nó ghi cùng /home/cc/gpb-acceptance.txt, dùng chung tài khoản test và world 3903, và chạy bộ test /home/cc/gpb-e2e/tests hiện tại, trong đó có spec cho tính năng chưa có ở 622b58f (37, 38, 39, 41), nên lượt đó luôn FAIL. 622b58f đã nằm trong main. Đã thêm `PW_OUTPUT_DIR` (playwright.config.ts, gpb-acceptance.sh) và khóa /tmp/gpb-mp-e2e.lock cho spec nhiều người để hai lượt không phá nhau.
