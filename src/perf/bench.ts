@@ -41,6 +41,8 @@ export interface BenchResult {
   renderer: { drawCallsMax: number; drawCallsAvg: number; trianglesMax: number; geometries: number; textures: number; programs: number };
   jsHeapMB: number | null;
   warnings: string[];
+  /** Thời gian GPU đo bằng EXT_disjoint_timer_query_webgl2; null khi trình duyệt không hỗ trợ hoặc chưa có mẫu. */
+  gpu: { samples: number; avgMs: number; p50Ms: number; p95Ms: number; p99Ms: number; maxMs: number; discarded: number } | null;
 }
 
 export interface RendererSnap { drawCalls: number; triangles: number; geometries: number; textures: number; programs: number }
@@ -49,14 +51,17 @@ export interface RendererSnap { drawCalls: number; triangles: number; geometries
 export function createBenchRecorder(durationSec: number, env: BenchEnv = {}) {
   const ms: number[] = [];
   const snaps: RendererSnap[] = [];
+  const gpuMs: number[] = [];
   return {
     durationSec,
     /** elapsed < 0 hoặc vượt thời lượng không được ghi. */
     done: (elapsedSec: number) => elapsedSec >= durationSec,
     progress: (elapsedSec: number) => Math.min(1, Math.max(0, elapsedSec / durationSec)),
     record(frameMs: number, snap?: RendererSnap) { ms.push(frameMs); if (snap) snaps.push(snap); },
-    result(extra: { jsHeapMB?: number | null; warnings?: string[] } = {}): BenchResult {
+    recordGpu(v: number) { gpuMs.push(v); },
+    result(extra: { jsHeapMB?: number | null; warnings?: string[]; gpuDiscarded?: number } = {}): BenchResult {
       const n = snaps.length || 1;
+      const g = summarize(gpuMs);
       const last = snaps[snaps.length - 1];
       return {
         schema: 1, durationSec, env, frame: summarize(ms), timing: 'rAF-wall-clock',
@@ -68,6 +73,10 @@ export function createBenchRecorder(durationSec: number, env: BenchEnv = {}) {
         },
         jsHeapMB: extra.jsHeapMB ?? null,
         warnings: extra.warnings ?? [],
+        gpu: g.frames === 0 ? null : {
+          samples: g.frames, avgMs: g.avgMs, p50Ms: g.p50Ms, p95Ms: g.p95Ms, p99Ms: g.p99Ms, maxMs: g.maxMs,
+          discarded: extra.gpuDiscarded ?? 0,
+        },
       };
     },
   };

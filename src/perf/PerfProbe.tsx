@@ -1,10 +1,11 @@
 // <PerfProbe /> đặt TRONG <Canvas>. Đo thời gian khung, đọc renderer.info, kiểm ngân sách, cấp mẫu cho adaptive quality,
-// và chạy benchmark ?bench=1. Không setState mỗi khung. Chưa kiểm chứng trên GPU/trình duyệt thật.
+// và chạy benchmark ?bench=1. Không setState mỗi khung. Thời gian GPU đo qua gpuTimer (EXT_disjoint_timer_query_webgl2), chưa kiểm chứng trên GPU thật.
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { AdaptiveController, Change } from '../quality';
 import { perfStore, type PerfStore } from './store';
 import { checkBudget, createWarnThrottle, estimateTextureBytes, type Budget } from './budget';
+import { createGpuTimer, type GpuTimer, type TimerGL } from './gpuTimer';
 import { createBenchRecorder, DEFAULT_BENCH_PATH, parsePerfParams, sampleBenchPath, type BenchResult, type Waypoint } from './bench';
 
 export interface PerfProbeProps {
@@ -47,6 +48,22 @@ export function PerfProbe({
   const last = useRef(0), lastSlow = useRef(0), lastEmit = useRef(0);
   const rec = useRef<ReturnType<typeof createBenchRecorder> | null>(null);
   const benchStart = useRef(0);
+  const gpuTimer = useRef<GpuTimer | null>(null);
+
+  // Thời gian GPU: bọc gl.render bằng truy vấn TIME_ELAPSED (chỉ WebGL2 có extension). Trả lại render gốc khi gỡ.
+  useEffect(() => {
+    const ctx = gl.getContext() as unknown as Partial<TimerGL>;
+    const timer = createGpuTimer(typeof ctx.createQuery === 'function' ? (ctx as TimerGL) : null);
+    gpuTimer.current = timer;
+    store.setGpuSupported(timer.supported);
+    if (!timer.supported) return () => { gpuTimer.current = null; };
+    const orig = gl.render;
+    gl.render = function (this: typeof gl, ...args: Parameters<typeof orig>) {
+      const on = timer.begin();
+      try { return orig.apply(this, args); } finally { if (on) timer.end(); }
+    } as typeof orig;
+    return () => { gl.render = orig; timer.dispose(); gpuTimer.current = null; store.setGpuSupported(null); };
+  }, [gl, store]);
 
   // Khởi tạo bench. info.render.* là số của khung vừa render xong (autoReset mặc định).
   useEffect(() => {
@@ -78,6 +95,8 @@ export function PerfProbe({
     };
     store.pushFrame(ms);
     store.setRenderer(snap);
+    const gpuMs = gpuTimer.current?.poll() ?? [];
+    for (const g of gpuMs) store.pushGpu(g);
 
     if (adaptive) {
       const ch = adaptive.push({ ms, drawCalls: snap.drawCalls }, now);
@@ -93,9 +112,10 @@ export function PerfProbe({
         const w = sampleBenchPath(benchPath, r.progress(el));
         camera.position.set(...w.pos); camera.lookAt(...w.look);
         r.record(ms, snap);
+        for (const g of gpuMs) r.recordGpu(g);
         store.setBench({ running: true, progress: r.progress(el) });
       } else {
-        const res = r.result({ jsHeapMB: heapMB(), warnings: store.snapshot().warnings.map((w) => w.message) });
+        const res = r.result({ jsHeapMB: heapMB(), warnings: store.snapshot().warnings.map((w) => w.message), gpuDiscarded: gpuTimer.current?.discarded ?? 0 });
         rec.current = null;
         store.setBench({ running: false, progress: 1 });
         console.info('[perf] bench', res);

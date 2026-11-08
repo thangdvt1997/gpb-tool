@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   percentile, summarize, minWindowFps, createRollingWindow, checkBudget, DEFAULT_BUDGET, createWarnThrottle, estimateTextureBytes,
   analyzeLeak, createLeakCounter, slope, sampleBenchPath, createBenchRecorder, parsePerfParams, createPerfStore,
-  DEFAULT_BENCH_PATH,
+  DEFAULT_BENCH_PATH, createGpuTimer,
 } from './index';
 import { createAdaptiveController } from '../quality';
 
@@ -114,5 +114,95 @@ describe('store + adaptive', () => {
     let ch = null as unknown;
     for (let i = 0; i < 10; i++) ch = a.push({ ms: 40, drawCalls: 150 }, 1000 + i) ?? ch;
     expect(a.level).toBe('medium'); expect(ch).toBeTruthy();
+  });
+});
+
+describe('gpuTimer (EXT_disjoint_timer_query_webgl2)', () => {
+  // GL giả: truy vấn sẵn sàng sau `lag` lần poll, kết quả ns đặt trước theo thứ tự.
+  function fakeGl(opts: { ext?: boolean; lag?: number; results?: number[] } = {}) {
+    const { ext = true, lag = 1, results = [] } = opts;
+    let id = 0, disjoint = false, active: number | null = null;
+    const born = new Map<number, number>(), value = new Map<number, number>();
+    let polls = 0; let next = 0;
+    const calls: string[] = [];
+    const gl = {
+      QUERY_RESULT: 1, QUERY_RESULT_AVAILABLE: 2,
+      getExtension: (n: string) => (ext && n === 'EXT_disjoint_timer_query_webgl2' ? { TIME_ELAPSED_EXT: 10, GPU_DISJOINT_EXT: 11 } : null),
+      createQuery: () => ({ id: ++id }) as unknown as WebGLQuery,
+      deleteQuery: () => { calls.push('delete'); },
+      beginQuery: (_t: number, q: WebGLQuery) => {
+        if (active !== null) throw new Error('lồng truy vấn');
+        active = (q as unknown as { id: number }).id; calls.push('begin');
+      },
+      endQuery: () => { born.set(active!, polls); value.set(active!, results[next++] ?? 0); active = null; calls.push('end'); },
+      getQueryParameter: (q: WebGLQuery, p: number) => {
+        const k = (q as unknown as { id: number }).id;
+        return p === 2 ? polls - born.get(k)! >= lag : value.get(k);
+      },
+      getParameter: (p: number) => (p === 11 ? disjoint : null),
+    };
+    return { gl, calls, tick: () => { polls++; }, setDisjoint: (v: boolean) => { disjoint = v; } };
+  }
+
+  it('không có extension: supported=false, không đo', () => {
+    const t = createGpuTimer(fakeGl({ ext: false }).gl);
+    expect(t.supported).toBe(false);
+    expect(t.begin()).toBe(false);
+    expect(t.poll()).toEqual([]);
+    expect(createGpuTimer(null).supported).toBe(false);
+  });
+
+  it('trả kết quả ms theo thứ tự, trễ theo độ sẵn sàng', () => {
+    const f = fakeGl({ lag: 2, results: [2_000_000, 3_500_000] });
+    const t = createGpuTimer(f.gl);
+    expect(t.begin()).toBe(true); t.end();
+    expect(t.poll()).toEqual([]);
+    f.tick(); expect(t.begin()).toBe(true); t.end();
+    expect(t.poll()).toEqual([]);
+    f.tick(); expect(t.poll()).toEqual([2]);
+    f.tick(); expect(t.poll()).toEqual([3.5]);
+  });
+
+  it('render lồng nhau chỉ đo lần ngoài; giới hạn số truy vấn chờ', () => {
+    const f = fakeGl({ lag: 99 });
+    const t = createGpuTimer(f.gl, 2);
+    expect(t.begin()).toBe(true);
+    expect(t.begin()).toBe(false); // lồng: không mở truy vấn thứ hai
+    t.end(); t.end();
+    expect(t.begin()).toBe(true); t.end();
+    expect(t.begin()).toBe(false); // đủ 2 truy vấn chờ
+    expect(f.calls.filter((c) => c === 'begin').length).toBe(2);
+  });
+
+  it('bỏ mẫu khi GPU báo disjoint và đếm discarded', () => {
+    const f = fakeGl({ lag: 0, results: [1_000_000, 4_000_000] });
+    const t = createGpuTimer(f.gl);
+    t.begin(); t.end();
+    f.setDisjoint(true);
+    expect(t.poll()).toEqual([]);
+    expect(t.discarded).toBe(1);
+    f.setDisjoint(false);
+    t.begin(); t.end();
+    expect(t.poll()).toEqual([4]);
+  });
+
+  it('dispose xóa mọi truy vấn', () => {
+    const f = fakeGl({ lag: 99 });
+    const t = createGpuTimer(f.gl);
+    t.begin(); t.end(); t.begin();
+    t.dispose();
+    expect(f.calls.filter((c) => c === 'delete').length).toBe(2);
+  });
+
+  it('bench và store ghi thời gian GPU; không có mẫu thì gpu=null', () => {
+    const r = createBenchRecorder(1);
+    expect(r.result().gpu).toBeNull();
+    r.record(16); r.recordGpu(2); r.recordGpu(4);
+    const g = r.result({ gpuDiscarded: 1 }).gpu!;
+    expect(g.samples).toBe(2); expect(g.avgMs).toBe(3); expect(g.discarded).toBe(1);
+    const s = createPerfStore(8);
+    expect(s.snapshot().gpu.supported).toBeNull();
+    s.setGpuSupported(true); s.pushGpu(5);
+    expect(s.snapshot().gpu).toMatchObject({ supported: true, samples: 1, p50Ms: 5 });
   });
 });

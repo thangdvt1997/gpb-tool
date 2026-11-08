@@ -30,6 +30,8 @@ export function PerfOverlay({ store = perfStore }: { store?: PerfStore }) {
       {`FPS ${f(s.frame.fps)} (thấp nhất/1s ${f(s.frame.minFps1s)})  p50 ${f(s.frame.p50Ms)}  p95 ${f(s.frame.p95Ms)}  p99 ${f(s.frame.p99Ms)} ms\n` +
         `giật>50ms ${s.frame.hitches}  max ${f(s.frame.maxMs)} ms\n` +
         `draw ${r?.drawCalls ?? '–'}  tri ${r?.triangles ?? '–'}  geo ${r?.geometries ?? '–'}  tex ${r?.textures ?? '–'}  prog ${r?.programs ?? '–'}\n` +
+        (s.gpu.supported === false ? 'GPU: trình duyệt không hỗ trợ đo\n'
+          : s.gpu.supported ? `GPU ${f(s.gpu.avgMs, 2)} ms  p50 ${f(s.gpu.p50Ms, 2)}  p95 ${f(s.gpu.p95Ms, 2)} ms (${s.gpu.samples} mẫu)\n` : '') +
         `tex~${f(s.textureMB)} MB (ước lượng)  heap ${f(s.jsHeapMB)} MB${s.jsHeapMB === null ? ' (không hỗ trợ)' : ''}` +
         (s.bench ? `\nbench ${s.bench.running ? 'đang chạy' : 'xong'} ${Math.round(s.bench.progress * 100)}%` : '')}
       {s.warnings.map((w) => <div key={w.key} style={{ color: '#fb6' }}>! {w.message}</div>)}
