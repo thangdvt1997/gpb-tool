@@ -1973,6 +1973,270 @@
         "Track Root.position mang độ cao thân (rootY); xương Root là gốc skin nên mesh đi theo.",
         "Chưa có clip Emote (hệ emote vẫn procedural)."
       ]
+    },
+    {
+      "assetId": "furn.desk_workstation_dev",
+      "type": "furniture",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "471c10ebd36fe49be27020b2a012733363555dfb063d20fee8a93beb8e296ea0"
+      },
+      "bytes": 120876,
+      "url": "furn_desk_dev.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.598,
+          0,
+          -0.325
+        ],
+        "max": [
+          0.598,
+          1.2,
+          0.8562
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "base-center",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z."
+      },
+      "colliderProfile": {
+        "shape": "box",
+        "size": [
+          1.2,
+          0.75,
+          0.65
+        ],
+        "center": [
+          0,
+          0.375,
+          0
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "furn_desk_dev.glb",
+          "triangles": 1878
+        }
+      ],
+      "materials": [
+        {
+          "name": "furn.desk_atlas",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "sockets": [
+        {
+          "name": "interact.use",
+          "node": "interact.use",
+          "offset": [
+            0,
+            0.75,
+            0.35
+          ],
+          "calibrated": true
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-desk-variants.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-desk-variants.ts",
+        "checkedAt": "2026-11-08",
+        "verified": true
+      },
+      "knownIssues": [
+        "Nối vào cảnh: DeskDecorField (src/env/desk.tsx) vẽ bằng InstancedMesh với vật liệu atlas chung (UV trỏ vào atlas deskAtlas.ts, GLB không nhúng texture); GLB lỗi hoặc ?glbDesks=0 thì vẽ procedural.",
+        "Biến thể dev: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng)."
+      ]
+    },
+    {
+      "assetId": "furn.desk_workstation_design",
+      "type": "furniture",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "04b3f014cfef42dc822e4ed3e57a00476ee326feba0efa0f2303c2250774e10a"
+      },
+      "bytes": 146804,
+      "url": "furn_desk_design.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.598,
+          0,
+          -0.325
+        ],
+        "max": [
+          0.598,
+          1.24,
+          0.8565
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "base-center",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z."
+      },
+      "colliderProfile": {
+        "shape": "box",
+        "size": [
+          1.2,
+          0.75,
+          0.65
+        ],
+        "center": [
+          0,
+          0.375,
+          0
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "furn_desk_design.glb",
+          "triangles": 2282
+        }
+      ],
+      "materials": [
+        {
+          "name": "furn.desk_atlas",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "sockets": [
+        {
+          "name": "interact.use",
+          "node": "interact.use",
+          "offset": [
+            0,
+            0.75,
+            0.35
+          ],
+          "calibrated": true
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-desk-variants.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-desk-variants.ts",
+        "checkedAt": "2026-11-08",
+        "verified": true
+      },
+      "knownIssues": [
+        "Nối vào cảnh: DeskDecorField (src/env/desk.tsx) vẽ bằng InstancedMesh với vật liệu atlas chung (UV trỏ vào atlas deskAtlas.ts, GLB không nhúng texture); GLB lỗi hoặc ?glbDesks=0 thì vẽ procedural.",
+        "Biến thể design: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng)."
+      ]
+    },
+    {
+      "assetId": "furn.desk_workstation_ops",
+      "type": "furniture",
+      "version": "1.0.0",
+      "hash": {
+        "algo": "sha256",
+        "value": "7cd47f594157fac0bd6701f4fe7a11f74a083b1d1b210cb373457fb1925ba945"
+      },
+      "bytes": 151500,
+      "url": "furn_desk_ops.glb",
+      "format": "glb",
+      "scale": 1,
+      "bounds": {
+        "min": [
+          -0.598,
+          0,
+          -0.325
+        ],
+        "max": [
+          0.598,
+          1.19,
+          0.8516
+        ],
+        "space": "local",
+        "measuredBy": "accessor POSITION min/max, đo bằng validate-manifest.mjs (sync-baked-manifest.mjs)"
+      },
+      "pivot": {
+        "kind": "base-center",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "note": "Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z."
+      },
+      "colliderProfile": {
+        "shape": "box",
+        "size": [
+          1.2,
+          0.75,
+          0.65
+        ],
+        "center": [
+          0,
+          0.375,
+          0
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "furn_desk_ops.glb",
+          "triangles": 2332
+        }
+      ],
+      "materials": [
+        {
+          "name": "furn.desk_atlas",
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "maps": []
+        }
+      ],
+      "sockets": [
+        {
+          "name": "interact.use",
+          "node": "interact.use",
+          "offset": [
+            0,
+            0.75,
+            0.35
+          ],
+          "calibrated": true
+        }
+      ],
+      "license": {
+        "spdx": "LicenseRef-GPB-project",
+        "source": "Tự sinh từ mã dự án (scripts/assets/bake-desk-variants.ts); không dùng asset bên ngoài. Theo license của repo (chủ dự án duyệt dùng trong sản phẩm 08/11/2026).",
+        "attributionRequired": false,
+        "originPath": "scripts/assets/bake-desk-variants.ts",
+        "checkedAt": "2026-11-08",
+        "verified": true
+      },
+      "knownIssues": [
+        "Nối vào cảnh: DeskDecorField (src/env/desk.tsx) vẽ bằng InstancedMesh với vật liệu atlas chung (UV trỏ vào atlas deskAtlas.ts, GLB không nhúng texture); GLB lỗi hoặc ?glbDesks=0 thì vẽ procedural.",
+        "Biến thể ops: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng)."
+      ]
     }
   ]
 }

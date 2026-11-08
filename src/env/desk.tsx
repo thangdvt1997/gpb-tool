@@ -22,6 +22,7 @@ import { OFFICE_DAY_SCENE as REAL } from '../theme/tokens';
 import { ShadowBatch, type ShadowSpot } from './contactShadow';
 import { AtlasBatch, buildDeskAtlas, type ScreenCell } from './deskAtlas';
 import { ACCESSORY_CHANCE, ACCESSORY_COLORS, DESK_CONFIG, SETUP_WEIGHTS, type SeatSetup } from './deskConfig';
+import { deskGlbEnabled, useDeskGlb, type DeskGlbGeometries } from './deskGlb';
 import { palettes } from './palette';
 import {
   canvasTexture,
@@ -221,6 +222,11 @@ interface Ctx {
   t: number;
   variant: DeskVariant;
   plants: boolean;
+  /**
+   * Chế độ GLB: chỗ ngồi đầy đủ (bàn, hộc, ghế, thiết bị, đồ dùng) do InstancedMesh của GLB đảm nhiệm, nên ở đây
+   * chỉ ghi lại khung chỗ ngồi theo biến thể, cộng bóng tiếp xúc và thùng rác (hình học nhỏ ở lại mesh atlas).
+   */
+  inst?: Record<DeskVariant, THREE.Matrix4[]>;
 }
 
 function pickSetup(rng: () => number, variant: DeskVariant): SeatSetup {
@@ -454,6 +460,17 @@ const ADDERS: Record<Accessory, (c: Ctx, f: THREE.Matrix4, x: number, z: number)
 function addWorkstation(c: Ctx, f: THREE.Matrix4, full: boolean, panel: boolean, bin: boolean): void {
   const { b, rng, t, variant } = c;
   const pedSide = rng() < CFG.pedestalRightChance ? 1 : -1;
+  if (full && c.inst) {
+    c.inst[variant].push(f.clone());
+    c.sh.addLocal(f, 0, 0, CFG.width + 0.14, CFG.depth + 0.14, 0.3);
+    for (const sx of [-1, 1]) c.sh.addLocal(f, sx * (CFG.width / 2 - 0.045), 0, 0.14, CFG.depth, 0.3);
+    if (bin) {
+      b.add(CYL12, f, [-pedSide * 0.4, 0.14, -0.17], [0.11, 0.28, 0.11], REAL.binBody, 'plastic');
+      b.add(CYL12, f, [-pedSide * 0.4, 0.29, -0.17], [0.12, 0.025, 0.12], REAL.binBag, 'plastic');
+      c.sh.addLocal(f, -pedSide * 0.4, -0.17, 0.3, 0.3, 0.4);
+    }
+    return;
+  }
   if (full) {
     addDeskFrame(c, f, panel);
     addPedestal(c, f, pedSide);
@@ -512,6 +529,26 @@ function addWorkstation(c: Ctx, f: THREE.Matrix4, full: boolean, panel: boolean,
   }
 }
 
+/** Hạt giống cố định của chỗ ngồi mẫu từng biến thể khi bake GLB (scripts/assets/bake-desk-variants.ts). */
+export const BAKE_SEEDS: Record<DeskVariant, number> = { dev: 4, design: 2, ops: 5 };
+export const DESK_VARIANTS: readonly DeskVariant[] = ['dev', 'design', 'ops'];
+/** Độ cao mặt bàn mà GLB đã bake (CFG.height). Bàn có độ cao khác vẫn vẽ procedural. */
+export const BAKED_DESK_HEIGHT = CFG.height;
+
+/**
+ * Hình học một chỗ làm việc đầy đủ của biến thể (bàn, hộc, ghế, màn hình, đồ dùng), gốc ở tâm bàn trên sàn,
+ * ghế phía +z. Cùng mã với cảnh nên GLB bake ra giống hệt hình procedural (một chỗ, không vách chắn, không thùng rác).
+ * Thuộc tính: position, normal, uv (trỏ vào atlas của buildDeskAtlas), color. Người gọi dispose.
+ */
+export function bakeWorkstationGeometry(variant: DeskVariant, seed: number = BAKE_SEEDS[variant]): THREE.BufferGeometry {
+  const b = new AtlasBatch();
+  const c: Ctx = { b, sh: new ShadowBatch(), rng: makeRng(seed), t: CFG.height, variant, plants: true };
+  addWorkstation(c, new THREE.Matrix4(), true, false, false);
+  const geo = b.build();
+  if (!geo) throw new Error('chỗ ngồi rỗng');
+  return geo;
+}
+
 interface Built {
   meshes: THREE.Mesh[];
   owned: Disposable[];
@@ -520,13 +557,16 @@ interface Built {
 }
 
 /** Toàn bộ bàn của khu: một mesh atlas (bàn, hộc, ghế, thiết bị, đồ dùng) và một mesh bóng tiếp xúc. */
-function buildDeskField(desks: readonly DeskSpec[], extraShadows: readonly ShadowSpot[]): Built {
+function buildDeskField(desks: readonly DeskSpec[], extraShadows: readonly ShadowSpot[], glb: DeskGlbGeometries | null): Built {
   const b = new AtlasBatch();
   const sh = new ShadowBatch().addAll(extraShadows);
   const origin = new THREE.Matrix4();
+  const inst: Record<DeskVariant, THREE.Matrix4[]> | undefined = glb ? { dev: [], design: [], ops: [] } : undefined;
   for (const d of desks) {
     const rng = makeRng(d.seed);
-    const c: Ctx = { b, sh, rng, t: d.height, variant: d.variant, plants: d.plants };
+    // Bàn có độ cao khác bản bake thì vẽ procedural như cũ.
+    const useGlb = inst !== undefined && Math.abs(d.height - BAKED_DESK_HEIGHT) < 0.02;
+    const c: Ctx = { b, sh, rng, t: d.height, variant: d.variant, plants: d.plants, inst: useGlb ? inst : undefined };
     const panel = rng() < CFG.modestyPanelChance;
     seatsOf(d).forEach((s, i) => {
       addWorkstation(c, sub(origin, s.x, 0, s.z, s.yaw), d.chairs, panel, d.chairs && i === 0);
@@ -537,14 +577,32 @@ function buildDeskField(desks: readonly DeskSpec[], extraShadows: readonly Shado
   const meshes: THREE.Mesh[] = [];
   let material: THREE.MeshStandardMaterial | null = null;
   const geo = b.build();
-  if (geo) {
-    const atlas = buildDeskAtlas();
+  const instanced: Array<[DeskVariant, THREE.Matrix4[]]> = inst ? DESK_VARIANTS.map((v) => [v, inst[v]]) : [];
+  const needAtlas = geo !== null || instanced.some(([, m]) => m.length > 0);
+  const atlas = needAtlas ? buildDeskAtlas() : null;
+  if (atlas) {
     material = atlas.material;
-    owned.push(geo, ...atlas.owned);
+    owned.push(...atlas.owned);
+  }
+  if (geo && atlas) {
+    owned.push(geo);
     const mesh = new THREE.Mesh(geo, atlas.material);
     mesh.name = 'desk-field';
     mesh.receiveShadow = true;
     meshes.push(mesh);
+  }
+  if (glb && atlas) {
+    for (const [v, mats] of instanced) {
+      if (mats.length === 0) continue;
+      const im = new THREE.InstancedMesh(glb[v], atlas.material, mats.length);
+      mats.forEach((m, i) => im.setMatrixAt(i, m));
+      im.instanceMatrix.needsUpdate = true;
+      // Các chỗ ngồi rải khắp khu, hình cầu bao của một bản sao ở gốc không đại diện: không cull theo hình cầu đó.
+      im.frustumCulled = false;
+      im.receiveShadow = true;
+      im.name = `desk-glb-${v}`;
+      meshes.push(im);
+    }
   }
   const shadows = sh.build();
   if (shadows) {
@@ -568,8 +626,18 @@ export function DeskDecorField({
   desks: readonly DeskSpec[];
   extraShadows?: readonly ShadowSpot[];
 }) {
-  const built = useMemo(() => buildDeskField(desks, extraShadows), [desks, extraShadows]);
+  const { source, geometries } = useDeskGlb();
+  const built = useMemo(() => buildDeskField(desks, extraShadows, geometries), [desks, extraShadows, geometries]);
   useDisposeOnChange(built.owned);
+  useEffect(() => {
+    const instancedMeshes = built.meshes.filter((m) => (m as THREE.InstancedMesh).isInstancedMesh && m.name.startsWith('desk-glb-'));
+    window.__gpbDeskGlb = {
+      source,
+      flag: deskGlbEnabled(location.search),
+      instancedMeshes: instancedMeshes.length,
+      instances: instancedMeshes.reduce((n, m) => n + (m as THREE.InstancedMesh).count, 0),
+    };
+  }, [built, source]);
   // Env map nướng từ trần đèn panel (dùng chung với sàn): khung thép, trụ ghế, viền màn hình có phản chiếu nhẹ.
   const env = useOfficeEnvMap();
   useEffect(() => {

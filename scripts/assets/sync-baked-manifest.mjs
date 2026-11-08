@@ -30,6 +30,7 @@ const SELF_LICENSE = (script) => ({
 
 const r4 = (v) => Math.round(v * 10000) / 10000 + 0;
 const OPAQUE = (name) => [{ name, alphaMode: 'OPAQUE', doubleSided: false, maps: [] }];
+const NOTE_DESK = 'Nối vào cảnh: DeskDecorField (src/env/desk.tsx) vẽ bằng InstancedMesh với vật liệu atlas chung (UV trỏ vào atlas deskAtlas.ts, GLB không nhúng texture); GLB lỗi hoặc ?glbDesks=0 thì vẽ procedural.';
 const NOTE_VC = 'Màu theo đỉnh (COLOR_0), một vật liệu, một mesh: 1 draw call.';
 
 /** Khai báo mục asset tự sinh. Số đo (hash, bytes, bounds, tam giác, clip) được điền từ file. */
@@ -41,6 +42,30 @@ const BAKED = [
     materials: OPAQUE('furn.baked'),
     sockets: [{ name: 'interact.use', node: 'interact.use', offset: [0, 0.75, 0.35], calibrated: true }],
     knownIssues: [NOTE_VC, 'Chưa nối vào cảnh: DeskField vẫn vẽ bằng InstancedBoxes (2 draw call cho mọi bàn). Thay bằng GLB riêng từng bàn sẽ tăng draw call.'],
+  },
+  {
+    assetId: 'furn.desk_workstation_dev', type: 'furniture', url: 'furn_desk_dev.glb', script: 'scripts/assets/bake-desk-variants.ts',
+    pivot: { kind: 'base-center', offset: [0, 0, 0], note: 'Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z.' },
+    colliderProfile: { shape: 'box', size: [1.2, 0.75, 0.65], center: [0, 0.375, 0] },
+    materials: [{ name: 'furn.desk_atlas', alphaMode: 'OPAQUE', doubleSided: false, maps: [] }],
+    sockets: [{ name: 'interact.use', node: 'interact.use', offset: [0, 0.75, 0.35], calibrated: true }],
+    knownIssues: [NOTE_DESK, 'Biến thể dev: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng).'],
+  },
+  {
+    assetId: 'furn.desk_workstation_design', type: 'furniture', url: 'furn_desk_design.glb', script: 'scripts/assets/bake-desk-variants.ts',
+    pivot: { kind: 'base-center', offset: [0, 0, 0], note: 'Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z.' },
+    colliderProfile: { shape: 'box', size: [1.2, 0.75, 0.65], center: [0, 0.375, 0] },
+    materials: [{ name: 'furn.desk_atlas', alphaMode: 'OPAQUE', doubleSided: false, maps: [] }],
+    sockets: [{ name: 'interact.use', node: 'interact.use', offset: [0, 0.75, 0.35], calibrated: true }],
+    knownIssues: [NOTE_DESK, 'Biến thể design: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng).'],
+  },
+  {
+    assetId: 'furn.desk_workstation_ops', type: 'furniture', url: 'furn_desk_ops.glb', script: 'scripts/assets/bake-desk-variants.ts',
+    pivot: { kind: 'base-center', offset: [0, 0, 0], note: 'Tâm bàn trên mặt sàn (y = 0); ghế và người ngồi phía +z, màn hình phía -z.' },
+    colliderProfile: { shape: 'box', size: [1.2, 0.75, 0.65], center: [0, 0.375, 0] },
+    materials: [{ name: 'furn.desk_atlas', alphaMode: 'OPAQUE', doubleSided: false, maps: [] }],
+    sockets: [{ name: 'interact.use', node: 'interact.use', offset: [0, 0.75, 0.35], calibrated: true }],
+    knownIssues: [NOTE_DESK, 'Biến thể ops: hình học bake từ bakeWorkstationGeometry (src/env/desk.tsx), một chỗ ngồi đầy đủ (bàn, hộc, ghế, hai màn hoặc laptop, đồ dùng).'],
   },
   {
     assetId: 'furn.chair_swivel', type: 'chair', url: 'furn_chair.glb', script: 'scripts/assets/bake-furniture.mjs',
