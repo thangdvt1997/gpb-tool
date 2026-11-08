@@ -188,7 +188,7 @@ export function BackupPanel({ service, onClose }: Props) {
         <button type="button" onClick={doExport} aria-label="Xuất toàn bộ dữ liệu ra tệp JSON">
           Xuất toàn bộ dữ liệu
         </button>{' '}
-        <button type="button" onClick={doExportZip} aria-label="Xuất toàn bộ dữ liệu ra tệp ZIP">
+        <button type="button" onClick={doExportZip} aria-label="Xuất ZIP toàn bộ dữ liệu">
           Xuất ZIP
         </button>
       </fieldset>
