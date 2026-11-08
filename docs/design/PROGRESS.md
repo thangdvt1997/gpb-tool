@@ -366,3 +366,17 @@ Kết quả lần lặp 13:
 | Test production | playwright.prod.config.ts --workers=4 **56/56 PASS** (thêm 43–50) |
 
 Việc còn lại: 25 và layout batch production cần root (như trên); GPU_REQUEST cho 03, 04, 07 (bản build), 08 (bản build), 13, 14, 15, 16, 19 và xem bằng mắt bàn, hình thể; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+Đợt 2 lần lặp 13:
+
+| Subagent | Worktree / nhánh | Việc | Kết quả |
+|---|---|---|---|
+| limb13 | /home/cc/wt/limb13, wt13/limb13 | user.txt: morph cẳng tay, bắp chân | 8cc0085; validator 0 lỗi; e2e 49, 41, 23 |
+| rot13 | /home/cc/wt/rot13, wt13/rot13 | 17 khối ghép xoay thật; 14 nguồn âm theo bố trí | 1fc19ae; e2e 51 |
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance d237702 lần 1 | FAIL: 45-photo-layout (máy tải nặng, camera tiến chưa đủ trong 2,5 s; spec nay giữ W tới khi tiến > 0,5 m) và vitest accessory "co tuyến tính theo thân" (không tái hiện: 5 lần vitest đầy đủ sau đó đều 1211/1211; theo dõi tiếp) |
+| Acceptance d237702 lần 2 | **PASS** 19:35 UTC (e2e 121 + đăng nhập thật 1) |
+| Push, deploy | origin/main 0992c40..d237702; watcher deploy d237702; smoke 200/200/401 |
+| Test production | --workers=4 **57/57 PASS** (thêm 51) |

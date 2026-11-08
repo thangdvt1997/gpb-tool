@@ -312,3 +312,4 @@ Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính 
 - `playwright.prod.config.ts --workers=4`: **56/56 PASS** (16,1 phút). Thêm vào bộ production: 43-desk-variety (01), 44-audio-ambient (14), 45-photo-layout (16), 46-gfx-options (13), 47-tattoo-mask (19), 48-layout-draft-backup (20), 49-body-morph (user.txt), 50-editor-move-original (17). Các spec 45, 48, 50 giả lập /api/layout trong trình duyệt vì POST /api/layout/batch chưa có trên production (cần root, scripts/deploy-layout.sh).
 - 41-assets01 "mắt cá cách sàn": kỳ vọng cũ 0,10 m đo khi nhân vật còn lơ lửng; nay kiểm cổ chân 0,064–0,083 m (tỉ lệ xương foot nghỉ 4,1–4,5 % chiều cao, đo từ GLB), hai chân lệch < 5 mm.
 - Chưa kiểm: nghe âm thanh thật, xem bằng mắt trên GPU (bàn, xăm, hình thể, AO). Xem docs/design/GPU_REQUEST.md.
+- Production d237702 (cẳng tay, bắp chân; khối ghép xoay; nguồn âm theo bố trí): `--workers=4` **57/57 PASS** (thêm 51-editor-rotate-composite).
