@@ -5,6 +5,7 @@ import { requestStand } from '../scene/controls/session';
 import { contextOf, getInteractable, listInteractables } from '../scene/interact/registry';
 import { getObjectState } from '../scene/interact/objectStates';
 import { getCharacterState } from '../scene/interact/characterState';
+import { getHeldItem } from '../scene/interact/objects/smallItem';
 import type { WorldApi } from './useWorld';
 
 export interface WorldDebug {
@@ -15,7 +16,17 @@ export interface WorldDebug {
   chat: { from: string; text: string; channel: string; status: string }[];
   leases: { resource: string; ownerId: string | null }[];
   chairs: string[];
+  /** Đồ nhỏ cầm được (kind small_item). */
+  items: string[];
+  /** Đồ đang cầm trên tay người chơi này. */
+  held: string | null;
   character: string;
+  /** Ngoại hình của người chơi khác đã nhận qua world (JSON rút gọn), rỗng nếu chưa có. */
+  appearanceOf(id: string): string;
+  /** Chạy một hành động tương tác sẵn có (ví dụ pickup, drop) như khi người chơi bấm. */
+  act(id: string, actionId: string): boolean;
+  /** Trả đồ đang cầm về chỗ cũ (hành động "return" của bề mặt bất kỳ). */
+  returnHeld(): boolean;
   occupant(chairId: string): string;
   sit(chairId: string): boolean;
   stand(): boolean;
@@ -50,7 +61,28 @@ export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'cli
       get chat() { return ref.current.chat.map((c) => ({ from: c.from.name, text: c.text, channel: c.channel, status: c.status })); },
       get leases() { return Object.values(ref.current.leases).map((l) => ({ resource: l.resource, ownerId: l.ownerId })); },
       get chairs() { return listInteractables().filter((i) => i.kind === 'chair').map((i) => i.id); },
+      get items() { return listInteractables().filter((i) => i.kind === 'small_item').map((i) => i.id); },
+      get held() { return getHeldItem(); },
       get character() { return getCharacterState(); },
+      appearanceOf: (id) => {
+        const a = ref.current.remote.appearanceOf(id);
+        return a ? JSON.stringify(a) : '';
+      },
+      act(id, actionId) {
+        const def = getInteractable(id);
+        const a = def?.actions.find((x) => x.id === actionId);
+        if (!def || !a) return false;
+        a.run(contextOf(def));
+        return true;
+      },
+      returnHeld() {
+        if (getHeldItem() === null) return false;
+        for (const def of listInteractables()) {
+          const a = def.actions.find((x) => x.id === 'return');
+          if (a) { a.run(contextOf(def)); return true; }
+        }
+        return false;
+      },
       occupant: (id) => String(getObjectState(id).occupant ?? ''),
       sit(id) {
         const def = getInteractable(id);

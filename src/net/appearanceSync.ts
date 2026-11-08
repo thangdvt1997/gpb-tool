@@ -77,6 +77,7 @@ export function createAppearanceSender(d: AppearanceSenderDeps): AppearanceSende
 interface WorldLike {
   client: { current: { send(m: Record<string, unknown>): boolean } | null };
   subscribe: (fn: (m: ServerMessage) => void) => () => void;
+  state?: string;
 }
 
 /** Gắn bộ gửi ngoại hình vào world. Không render gì. */
@@ -84,11 +85,14 @@ export function useAppearanceSync(world: WorldLike, appearance: Appearance | nul
   const sender = useRef<AppearanceSender | null>(null);
   const latest = useRef(appearance);
   latest.current = appearance;
+  const { client, subscribe } = world;
+  // Phụ thuộc vào client (ref) và subscribe (useCallback) thay vì cả object world: useWorld trả object mới mỗi lần render,
+  // effect chạy lại sẽ tạo bộ gửi mới chưa "vào phòng" và ngoại hình không bao giờ được gửi.
   useEffect(() => {
-    const s = createAppearanceSender({ send: (m) => world.client.current?.send(m) ?? false });
+    const s = createAppearanceSender({ send: (m) => client.current?.send(m) ?? false });
     sender.current = s;
     s.set(latest.current);
-    const off = world.subscribe((m) => {
+    const off = subscribe((m) => {
       if (m.type === 'snapshot') s.joined();
     });
     return () => {
@@ -96,7 +100,11 @@ export function useAppearanceSync(world: WorldLike, appearance: Appearance | nul
       s.dispose();
       sender.current = null;
     };
-  }, [world]);
+  }, [client, subscribe]);
+  // Snapshot có thể đến trước khi effect trên đăng ký: khi đã kết nối thì coi như đã vào phòng.
+  useEffect(() => {
+    if (world.state === 'connected') sender.current?.joined();
+  }, [world.state]);
   useEffect(() => {
     sender.current?.set(appearance);
   }, [appearance]);
