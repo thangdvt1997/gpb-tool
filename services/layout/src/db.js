@@ -13,6 +13,17 @@ CREATE TABLE IF NOT EXISTS items (
   version   INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS props (
+  id        TEXT PRIMARY KEY,
+  kind      TEXT NOT NULL,
+  x         REAL NOT NULL,
+  z         REAL NOT NULL,
+  rotation  INTEGER NOT NULL,
+  door      INTEGER NOT NULL DEFAULT 0,
+  moved_by  TEXT NOT NULL,
+  moved_at  TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -78,9 +89,77 @@ export function createStore(db) {
     return items;
   }
 
-  function snapshot() {
-    return { items: readItems(), version: readVersion() };
+  const selectProps = db.prepare('SELECT id, kind, x, z, rotation, door, moved_by, moved_at FROM props');
+  const upsertProp = db.prepare(`
+    INSERT INTO props (id, kind, x, z, rotation, door, moved_by, moved_at)
+    VALUES (@id, @kind, @x, @z, @rotation, @door, @movedBy, @movedAt)
+    ON CONFLICT(id) DO UPDATE SET
+      kind = excluded.kind, x = excluded.x, z = excluded.z, rotation = excluded.rotation,
+      door = excluded.door, moved_by = excluded.moved_by, moved_at = excluded.moved_at
+  `);
+  const deleteProp = db.prepare('DELETE FROM props WHERE id = ?');
+
+  function readProps() {
+    const props = {};
+    for (const row of selectProps.all()) {
+      props[row.id] = {
+        kind: row.kind,
+        x: row.x,
+        z: row.z,
+        rotation: row.rotation,
+        door: row.door === 1,
+        movedBy: row.moved_by,
+        movedAt: row.moved_at,
+      };
+    }
+    return props;
   }
+
+  function snapshot() {
+    return { items: readItems(), props: readProps(), version: readVersion() };
+  }
+
+  const samePose = (a, b) => a && b && a.x === b.x && a.z === b.z && a.rotation === b.rotation;
+  const sameProp = (a, b) => samePose(a, b) && a.kind === b.kind && !!a.door === !!b.door;
+
+  // input: { who, movedBy, apply(items, props) }. apply trả { ok, items, props, ... } (trạng thái cuối) hoặc { ok: false, ... }.
+  // Một giao dịch SQLite: ghi mọi thay đổi vật gốc và vật thêm, tăng version đúng một lần; không ok thì không ghi gì.
+  const batchTx = db.transaction((input) => {
+    const items0 = readItems();
+    const props0 = readProps();
+    const verdict = input.apply(items0, props0);
+    if (!verdict.ok) return verdict;
+
+    const at = new Date().toISOString();
+    let changed = 0;
+    for (const id of Object.keys(items0)) {
+      if (!Object.hasOwn(verdict.items, id)) {
+        deleteOne.run(id);
+        changed++;
+      }
+    }
+    const version = readVersion() + 1;
+    for (const [id, p] of Object.entries(verdict.items)) {
+      if (samePose(items0[id], p)) continue;
+      upsertItem.run({ id, x: p.x, z: p.z, rotation: p.rotation, movedBy: input.movedBy, movedAt: at, version });
+      changed++;
+    }
+    for (const id of Object.keys(props0)) {
+      if (!Object.hasOwn(verdict.props, id)) {
+        deleteProp.run(id);
+        changed++;
+      }
+    }
+    for (const [id, p] of Object.entries(verdict.props)) {
+      if (sameProp(props0[id], p)) continue;
+      upsertProp.run({ id, kind: p.kind, x: p.x, z: p.z, rotation: p.rotation, door: p.door ? 1 : 0, movedBy: input.movedBy, movedAt: at });
+      changed++;
+    }
+    if (changed === 0) return { ok: true, changed: false, version: version - 1 };
+    writeVersionStmt.run(String(version));
+    insertAudit.run(input.who, 'batch', `${changed} thay đổi`, at);
+    return { ok: true, changed: true, version };
+  });
 
   // input: { id, x, z, rotation, movedBy, who, check }. check(items) trả { ok }.
   // Chỉ ghi và tăng version khi kiểm tra đạt. Lần di chuyển được ghi audit.
@@ -134,6 +213,7 @@ export function createStore(db) {
     snapshot,
     move: (input) => moveTx(input),
     reset: (input) => resetTx(input),
+    batch: (input) => batchTx(input),
     close: () => db.close(),
   };
 }

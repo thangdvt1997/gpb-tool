@@ -18,6 +18,8 @@ export function createApp({ config, store, model, hub, fetchImpl }) {
   // Mọi route còn lại phải đăng nhập. Auth chạy trước khi đọc body.
   app.use(createAuthMiddleware({ authUrl: config.authUrl, fetchImpl }));
   // Body chỉ gồm id, x, z, rotation: 4kb là đủ.
+  // Riêng batch cần chứa tới 100 thao tác; đăng ký trước để parser 4kb bên dưới bỏ qua (body đã đọc).
+  app.use('/api/layout/batch', express.json({ limit: '32kb' }));
   app.use(express.json({ limit: '4kb' }));
 
   app.use('/api/layout', createLayoutRouter({ store, model, hub }));
