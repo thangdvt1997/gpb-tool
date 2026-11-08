@@ -259,3 +259,18 @@ Vẫn bị chặn, như lần lặp 8:
 - 12: chờ chủ dự án chạy NVDA thật trên production (f55cddd) cho Phòng thay đồ, Cài đặt, Sao lưu.
 
 Chỉ đổi tài liệu, không chạy lại acceptance. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-08 — Lần lặp 10
+
+Đã rà giao việc V1–V6. V1, V2, V3 đã có trên main từ lần lặp 4 (478bdc8: Esc đóng mọi panel HUD và aria-expanded đúng sau khi đóng modal; 1c2b1f9: trả focus dự phòng, thông báo ghi danh chỉ đọc một lần). Không làm lại. Ba lỗi trong NVDA đợt 3 (Phòng thay đồ, Cài đặt, Sao lưu) được kiểm trên 1235903, tức là bản trước khi sửa.
+
+| Việc | Kết quả |
+|---|---|
+| V1–V3 trên production (image 03:34:56 UTC, mã f55cddd) | playwright.prod.config.ts **26/26 PASS** (19,4 phút). 31-hud-expanded có 14 ca: 7 nút × (Esc, nút đóng), kiểm aria-expanded="false" và focus về nút. Bảng từng nút ở BROWSER_QA.md |
+| V4 | Main chỉ có thêm commit tài liệu kể từ f55cddd. Không chạy lại acceptance, không deploy lại. Smoke: trang chủ 200 |
+| V5 22–27, 25b | Vẫn cần root: `sudo -n true` đòi mật khẩu, /opt/gpb-tool thuộc root, /api/world/health trả 404. Chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>` |
+| V5 01, 02 | wt/assets3 không còn thay đổi chưa commit (d837dfc đã ở main). Phần còn lại **chờ chủ dự án quyết định license** |
+| V5 12 | Phần tự động đạt. Còn chờ chủ dự án chạy NVDA thật trên production hiện tại |
+| V6 | **Chờ chủ dự án quyết định license** (3 GLB MPFB, asset và clip tự sinh LicenseRef-GPB-project). Không chặn việc khác |
+
+Không tạo PROJECT_COMPLETE.txt.

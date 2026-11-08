@@ -211,3 +211,22 @@ Gồm 2431d63 (emote phát clip bake, bước tại chỗ khi xoay). Acceptance 
 Thêm 36-player-emote-baked-clip vào cấu hình production: **2/2 PASS** (tấn hold và nhảy loop phát clip bake rồi về Idle; ?baked=0 dùng procedural).
 
 Trình đọc màn hình thật: chưa kiểm trên bản này. Chủ dự án cần chạy lại NVDA cho Phòng thay đồ, Cài đặt, Sao lưu (đợt 3 kiểm bản 1235903, trước bản sửa 478bdc8 và 1c2b1f9).
+
+## Production 2026-11-08 — kiểm lại lần lặp 10 (image tạo 03:34:56 UTC, mã f55cddd)
+
+Đây là lần kiểm lại trên cùng image đã đánh giá ở mục trên. Main chỉ có thêm commit tài liệu, nên không deploy lại.
+`playwright.prod.config.ts`: **26/26 PASS** (19,4 phút). Gồm 30-hanging, 02-scene-mock (2), 20-controls, 31-hud-expanded 14 ca, 34-player-baked-clip (2), 35-glb-furniture (4), 36-player-emote-baked-clip (2).
+
+31-hud-expanded kiểm từng nút HUD. Mỗi nút có 2 ca: đóng bằng Esc và đóng bằng nút đóng. Sau khi đóng, kiểm aria-expanded="false" (nếu nút có thuộc tính này) và focus đã về nút.
+
+| Nút | Esc | Nút đóng | Ghi chú |
+|---|---|---|---|
+| Thư viện | ĐẠT | ĐẠT | panel không modal |
+| Hồ sơ | ĐẠT | ĐẠT | panel không modal |
+| Sao lưu | ĐẠT | ĐẠT | Esc đóng panel (useEscapeClose). Nút × có tên "Đóng bảng sao lưu" |
+| Phòng thay đồ | ĐẠT | ĐẠT | modal. Esc gọi onCancel, wardrobeOpen=false |
+| Vẽ xăm | ĐẠT | ĐẠT | |
+| Cài đặt | ĐẠT | ĐẠT | modal. Esc gọi onClose, settingsOpen=false |
+| Trợ giúp | ĐẠT | ĐẠT | không có aria-expanded. Kiểm hộp thoại đóng và focus về nút |
+
+Trình đọc màn hình thật: **chưa kiểm trình đọc thật trên bản này**. NVDA đợt 3 kiểm bản 1235903, trước bản sửa 478bdc8/1c2b1f9. Chủ dự án cần chạy lại NVDA trên production hiện tại cho Phòng thay đồ, Cài đặt, Sao lưu.
