@@ -30,8 +30,8 @@ export const QUALITY_TABLE: Record<QualityLevel, QualityConfig> = {
  * (yêu cầu spec: không hiện tùy chọn không đổi renderer). Cập nhật khi nối vào renderer.
  */
 export const ENGINE_SUPPORT: Record<keyof QualityConfig, boolean> = {
-  dprCap: true, shadows: true, shadowMapSize: false, antialias: false /* cần remount Canvas */, textureTier: false,
-  lodDistanceScale: false, ambientOcclusion: false, reflections: false, postFx: true, fpsCap: false,
+  dprCap: true, shadows: true, shadowMapSize: false, antialias: false /* cần remount Canvas */, textureTier: true,
+  lodDistanceScale: true, ambientOcclusion: true, reflections: false, postFx: true, fpsCap: false,
 };
 /** Tùy chọn cần reload/remount mới có hiệu lực. */
 export const REQUIRES_REMOUNT: ReadonlyArray<keyof QualityConfig> = ['antialias'];
