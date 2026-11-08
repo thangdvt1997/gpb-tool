@@ -208,7 +208,7 @@ export function ITOffice({
   lightTheme = 'office-day',
   appearance,
   look,
-  audioEnabled = false,
+  audioEnabled = true,
   plantTool = null,
   userName = '',
   role,
@@ -530,7 +530,7 @@ export function ITOffice({
       {/* Vật tương tác (tuongtac.txt): ngăn kéo, cây nước, máy in, công tắc, đồ nhỏ, TV, ghế. */}
       <InteractObjects objects={zone.objects} blocked={isBlockedAt} />
       <DuelLayer world={world} myId={selfId} duel={duel} />
-      <AmbientAudio zone={audioZone} enabled={audioEnabled} />
+      <AmbientAudio zone={audioZone} enabled={audioEnabled} objects={zone.objects} />
     </SceneContext.Provider>
   );
 }
