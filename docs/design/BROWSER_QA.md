@@ -184,3 +184,21 @@ Trang phục vụ `assets/index-BeJKSoJM.js` (mã giống 409d1d5, 5dbc123 chỉ
 ## Production 2026-11-08 — commit c4688f7 (deploy 01:25 UTC, watcher root)
 
 Acceptance PASS 01:04 (e2e 88 + đăng nhập thật). Trang phục vụ `assets/index-hhuG20op.js`, trùng log deploy. playwright.prod.config.ts (thêm 34-player-baked-clip, 35-glb-furniture) `--workers=1`: **23/24**, ca fail là `?baked=0` của spec 34, do spec chờ cố định 1,5 s. Nguyên nhân phía test: điểm xuất phát (-4, 3) vướng vật cản sau khoảng 0,45 m khi đi thẳng, và swiftshader trên production có khung trên 300 ms nên `clipName` (ghi ở khung vẽ) trễ `loco` (ghi ở bước FSM) tới khoảng 1 s. Đã sửa spec: dịch chuyển tới (-10, 3) hướng 0, poll tới khi FSM và clip cùng là đi. Chạy lại spec 34 trên production `--repeat-each=5`: **10/10 PASS** (Idle bake, giữ W thì Walk bake, nhả W thì về Idle; `?baked=0` thì procedural). Spec 35: 4/4 (nguồn glb, `?glbFurniture=0` thì boxes, draw call 66 = 66, GLB lỗi thì về boxes). 31-hud-expanded 14/14.
+
+## Production 2026-11-08 — commit 4a03739 (deploy 02:28 UTC, watcher root)
+
+`playwright.prod.config.ts`: **24/24 PASS** (19,9 phút). Gồm 30-hanging, 02-scene-mock (2), 20-controls, 31-hud-expanded 14 ca, 34-player-baked-clip (2), 35-glb-furniture (4).
+
+Kiểm V3 trên production 4a03739. Mỗi nút được mở bằng chuột, rồi đóng hai cách: Esc và nút đóng. Sau khi đóng, nút có aria-expanded="false" (Trợ giúp không có aria-expanded, chỉ có aria-haspopup) và focus trở về nút.
+
+| Nút | Esc | Nút đóng |
+|---|---|---|
+| Thư viện | ĐẠT | ĐẠT |
+| Hồ sơ | ĐẠT | ĐẠT |
+| Sao lưu | ĐẠT (Esc đóng panel, nút × "Đóng bảng sao lưu") | ĐẠT |
+| Phòng thay đồ | ĐẠT | ĐẠT |
+| Vẽ xăm | ĐẠT | ĐẠT |
+| Cài đặt | ĐẠT | ĐẠT |
+| Trợ giúp | ĐẠT | ĐẠT |
+
+NVDA thật đợt 3 kiểm bản 1235903, là bản trước khi có sửa 478bdc8 và 1c2b1f9. Chủ dự án cần chạy lại NVDA trên production hiện tại cho Phòng thay đồ, Cài đặt, Sao lưu. Trình đọc màn hình thật: chưa kiểm trên bản này.
