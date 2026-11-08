@@ -244,3 +244,18 @@ Vẫn bị chặn, không đổi so với lần lặp 6:
 - 12: chờ chủ dự án chạy NVDA thật trên production hiện tại (f55cddd) cho Phòng thay đồ, Cài đặt, Sao lưu.
 
 Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-08 — Lần lặp 9
+
+Kiểm lại hiện trạng, không có mã mới:
+- V1, V2 có trên main: SettingsPanel Esc gọi onClose (nút "Đóng cài đặt"); WardrobeRoom onCancel đặt wardrobeOpen=false; BackupPanel dùng useEscapeClose và nút × có aria-label "Đóng bảng sao lưu". Production chạy image tạo lúc 03:34 UTC (f55cddd), lần lặp 8 đã test 24/24 PASS, trong đó 31-hud-expanded kiểm aria-expanded và focus của từng nút HUD.
+- LỖI 2 NVDA (thông báo ghi danh đọc hai lần) đã sửa sau 478bdc8, vùng live chỉ còn một chuỗi.
+- wt/assets3 sạch, d837dfc đã nằm trong main.
+- Smoke production: trang chủ trả 200; /api/world/health trả 404 vì service world chưa deploy.
+
+Vẫn bị chặn, như lần lặp 8:
+- 22–27: cần root chạy `sudo bash /home/cc/gpb-dev/scripts/deploy-svc.sh <sha>`. `sudo -n true` vẫn đòi mật khẩu, /opt/gpb-tool thuộc root.
+- 01, 02: **chờ chủ dự án quyết định license**.
+- 12: chờ chủ dự án chạy NVDA thật trên production (f55cddd) cho Phòng thay đồ, Cài đặt, Sao lưu.
+
+Chỉ đổi tài liệu, không chạy lại acceptance. Không tạo PROJECT_COMPLETE.txt.
