@@ -404,6 +404,16 @@ export function buildRig(gltf: GLTF): MpfbRig {
       maxY = box.max.y;
     }
   }
+  // Đáy chân thật = đỉnh thấp nhất của vị trí nghỉ (không tính morph). Hộp bao của three cộng dồn biên độ mọi morph nên
+  // min.y âm khoảng 0,13 m: dùng nó làm mặt sàn thì nhân vật lơ lửng khoảng 11 cm. Chiều cao (nativeHeight) giữ số đo cũ.
+  let soleY = minY;
+  if (body) {
+    const pos = body.geometry.getAttribute('position');
+    if (pos && pos.count > 0) {
+      soleY = Infinity;
+      for (let i = 0; i < pos.count; i++) soleY = Math.min(soleY, pos.getY(i));
+    }
+  }
 
   const missing: string[] = [];
   const joints: Partial<Record<PoseJoint, JointRig>> = {};
@@ -447,7 +457,7 @@ export function buildRig(gltf: GLTF): MpfbRig {
   const thigh = root.getObjectByName('thigh_l');
   const hipY = thigh ? thigh.getWorldPosition(new THREE.Vector3()).y : (maxY - minY) * 0.55;
 
-  return { root, joints, morphMesh: body, nativeHeight: Math.max(0.1, maxY - minY), minY, hipY, missing };
+  return { root, joints, morphMesh: body, nativeHeight: Math.max(0.1, maxY - minY), minY: soleY, hipY, missing };
 }
 
 function disposeRig(rig: MpfbRig): void {
