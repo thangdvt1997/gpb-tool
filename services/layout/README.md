@@ -8,9 +8,10 @@ Cổng mặc định 3008, base path `/api/layout`. Mọi route trừ `/api/heal
 
 | Method | Đường dẫn | Ghi chú |
 |---|---|---|
-| GET | `/api/layout/state` | `{items, defaults, version}`. `items` chỉ có vật đã được di chuyển. |
+| GET | `/api/layout/state` | `{items, defaults, props, version}`. `items` chỉ có vật đã được di chuyển; `props` là vật thêm bằng trình biên tập (bàn, ghế, cây, tủ, tường ngăn có thể có cửa). |
 | GET | `/api/layout/stream` | SSE. Gửi `state` khi kết nối, `move` và `reset` khi có thay đổi. `: ping` mỗi 25 giây. Tối đa 2000 client, vượt thì 503. |
 | POST | `/api/layout/move` | Body `{id, x, z, rotation}`. Trả `{ok, item, version}`. |
+| POST | `/api/layout/batch` | Body `{ops: [...]}` tối đa 100 thao tác: `move`, `reset`, `put` (thêm/sửa vật thêm, `kind` thuộc `table, chair, plant, cabinet, wall2, wall4`, `door` chỉ cho tường), `remove`. Chỉ `it`/`admin`. Nguyên tử: kiểm trạng thái cuối, một giao dịch SQLite, version tăng một lần; 409 thì không ghi gì (kèm `id` vật vướng). Phát SSE `reset` (client tải lại). Logic ở `src/extras.js`, test `npm test`. |
 | POST | `/api/layout/reset` | Body `{id?}`. Chỉ role `it` hoặc `admin`. Không có `id` thì đặt lại toàn bộ. |
 
 Mã lỗi của `move`: 400 dữ liệu sai, 403 bàn làm việc (`desk_*`), 404 vật không di chuyển được, 409 vị trí vướng hoặc chặn lối, 429 vượt 30 lần mỗi phút cho mỗi người.

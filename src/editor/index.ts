@@ -5,3 +5,5 @@ export * from './EditorGrid';
 export * from './EditorPanel';
 export * from './useLayoutEditor';
 export * from './EditorHost';
+export * from './props';
+export * from './PropsLayer';

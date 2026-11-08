@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { diffPoses, GRID_STEPS, isDirty, type EditorAction, type EditorState } from './core';
+import { useMemo, useState } from 'react';
+import { describeChanges, GRID_STEPS, isDirty, type EditorAction, type EditorState } from './core';
+import { isPropId, newPropId, PROP_CATALOG, PROP_KINDS, type PropKind } from './props';
 
 export interface EditorPanelProps {
   state: EditorState;
@@ -10,10 +11,11 @@ export interface EditorPanelProps {
 /**
  * Bảng điều khiển trình biên tập. Người không có quyền (khác it/admin) thấy thông báo chỉ xem.
  * Phím tắt (do useLayoutEditor cài): Ctrl+Z hoàn tác, Ctrl+Y / Ctrl+Shift+Z làm lại, Ctrl+S lưu,
- * R xoay, Delete đặt lại vật, mũi tên di chuyển (Shift = 5 bước), Esc hủy.
+ * R xoay, Delete xóa vật thêm (vật gốc thì đặt lại), Ctrl+D nhân bản, mũi tên di chuyển (Shift = 5 bước), Esc hủy.
  */
 export function EditorPanel({ state, dispatch, onSave }: EditorPanelProps) {
-  const diff = useMemo(() => diffPoses(state.saved, state.draft, state.defaults), [state.saved, state.draft, state.defaults]);
+  const changes = useMemo(() => describeChanges(state), [state.saved, state.draft, state.defaults, state.env]);
+  const [kind, setKind] = useState<PropKind>('table');
   if (!state.canEdit) {
     return <p role="status">Bạn chỉ có quyền xem bố trí. Chỉ IT hoặc admin được sắp xếp nội thất.</p>;
   }
@@ -26,10 +28,13 @@ export function EditorPanel({ state, dispatch, onSave }: EditorPanelProps) {
   }
   const busy = state.saving;
   const sel = state.selectedId;
+  const selKind = sel ? state.env.props?.[sel] : undefined;
+  const selIsWall = !!selKind && PROP_CATALOG[selKind].wall;
+  const selDoor = !!(sel && state.draft[sel]?.door);
   return (
     <section aria-label="Trình biên tập bố trí" className="layout-editor-panel">
       <h2>Sắp xếp nội thất</h2>
-      <p>{sel ? `Đang chọn: ${sel}` : 'Chọn một vật trong cảnh để sắp xếp.'}</p>
+      <p>{sel ? `Đang chọn: ${selKind ? PROP_CATALOG[selKind].label + ' (' + sel + ')' : sel}` : 'Chọn một vật trong cảnh để sắp xếp.'}</p>
       <label>
         Bước lưới{' '}
         <select value={state.gridStep} disabled={busy} onChange={(e) => dispatch({ type: 'setGrid', step: Number(e.target.value) })}>
@@ -60,7 +65,31 @@ export function EditorPanel({ state, dispatch, onSave }: EditorPanelProps) {
           Đặt lại tất cả
         </button>
       </div>
-      <p>{diff.length === 0 ? 'Chưa có thay đổi.' : `${diff.length} vật đã đổi so với bản đã lưu: ${diff.map((d) => d.id).join(', ')}`}</p>
+      <div role="group" aria-label="Thêm vật">
+        <label>
+          Loại vật{' '}
+          <select value={kind} disabled={busy} onChange={(e) => setKind(e.target.value as PropKind)}>
+            {PROP_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {PROP_CATALOG[k].label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" disabled={busy} onClick={() => dispatch({ type: 'addProp', kind, id: newPropId() })}>
+          Thêm vật
+        </button>
+        <button type="button" disabled={busy || !sel} onClick={() => dispatch({ type: 'duplicate', id: newPropId() })}>
+          Nhân bản vật đang chọn (Ctrl+D)
+        </button>
+        <button type="button" disabled={busy || !sel || !isPropId(sel)} onClick={() => dispatch({ type: 'delete' })}>
+          Xóa vật đang chọn (Delete)
+        </button>
+        <button type="button" disabled={busy || !selIsWall} onClick={() => dispatch({ type: 'toggleDoor' })}>
+          {selDoor ? 'Bỏ cửa khỏi tường đang chọn' : 'Thêm cửa vào tường đang chọn'}
+        </button>
+      </div>
+      <p>{changes.length === 0 ? 'Chưa có thay đổi.' : `${changes.length} vật đã đổi so với bản đã lưu: ${changes.join(', ')}`}</p>
       <div role="group" aria-label="Lưu">
         <button type="button" disabled={busy || !isDirty(state)} onClick={onSave}>
           {busy ? 'Đang lưu...' : 'Lưu'}

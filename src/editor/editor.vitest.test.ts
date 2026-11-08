@@ -206,7 +206,7 @@ describe('phím tắt và lưới', () => {
     expect(actionForKey({ key: 'Z', ctrlKey: true, shiftKey: true })).toEqual({ type: 'redo' });
     expect(actionForKey({ key: 'y', ctrlKey: true })).toEqual({ type: 'redo' });
     expect(actionForKey({ key: 'r' })).toEqual({ type: 'rotate' });
-    expect(actionForKey({ key: 'Delete' })).toEqual({ type: 'resetItem' });
+    expect(actionForKey({ key: 'Delete' })).toEqual({ type: 'delete' });
     expect(actionForKey({ key: 'ArrowLeft', shiftKey: true })).toEqual({ type: 'nudge', dir: 'left', steps: 5 });
     expect(actionForKey({ key: 'q' })).toBeNull();
   });

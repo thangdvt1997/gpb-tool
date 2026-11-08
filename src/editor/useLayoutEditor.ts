@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { Role, ZoneObject } from '../content/types';
 import { useLayout } from '../layout/LayoutStore';
 import { actionForKey, buildEditorEnv, createEditorState, editorReducer, type EditorAction } from './core';
+import { newPropId, propRects } from './props';
+import type { Rect } from '../scene/layout';
 import { realApi, saveDraft, type SaveApi } from './save';
 
 /** Phần tử đang gõ chữ thì không bắt phím tắt. */
@@ -36,8 +38,8 @@ export function useLayoutEditor(objects: readonly ZoneObject[], role: Role | nul
   // Đồng bộ dữ liệu máy chủ khi chưa biên tập; reducer bỏ qua nếu đang biên tập.
   useEffect(() => {
     if (!layout.loaded) return;
-    dispatch({ type: 'sync', server: { items: layout.items, defaults: layout.defaults, version: layout.version }, env, role });
-  }, [layout.loaded, layout.version, layout.items, layout.defaults, env, role]);
+    dispatch({ type: 'sync', server: { items: layout.items, defaults: layout.defaults, props: layout.props, version: layout.version }, env, role });
+  }, [layout.loaded, layout.version, layout.items, layout.defaults, layout.props, env, role]);
 
   useEffect(() => {
     if (!state.active) return;
@@ -47,11 +49,22 @@ export function useLayoutEditor(objects: readonly ZoneObject[], role: Role | nul
       if (!intent) return;
       e.preventDefault();
       if (intent.type === 'save') void save();
+      else if (intent.type === 'duplicate') dispatch({ type: 'duplicate', id: newPropId() });
       else dispatch(intent as EditorAction);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [state.active, save]);
 
-  return { state, dispatch, save };
+  // Hộp va chạm của vật thêm ĐÃ LƯU (nháp chưa lưu chưa chặn đường, tránh kẹt nhân vật trong tường nháp).
+  const blockers = useMemo<Rect[]>(() => {
+    const out: Rect[] = [];
+    for (const [id, pose] of Object.entries(state.saved)) {
+      const kind = state.env.props?.[id];
+      if (kind) out.push(...propRects(kind, pose));
+    }
+    return out;
+  }, [state.saved, state.env.props]);
+
+  return { state, dispatch, save, blockers };
 }

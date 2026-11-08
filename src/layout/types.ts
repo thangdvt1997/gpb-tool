@@ -9,6 +9,14 @@ export interface Pose {
   x: number;
   z: number;
   rotation: Rotation;
+  /** Chỉ dùng cho tường ngăn do trình biên tập thêm: true khi có cửa ở giữa đoạn tường. */
+  door?: boolean;
+}
+
+/** Vật do trình biên tập thêm (bàn, ghế, tường ngăn...). kind thuộc PROP_CATALOG (src/editor/props.ts). */
+export interface PropRecord extends Pose {
+  kind: string;
+  movedBy?: string | null;
 }
 
 /** Vật đã được di chuyển (có trong items của bố cục). */
@@ -24,6 +32,8 @@ export interface LayoutItem extends Pose {
 export interface LayoutState {
   items: Record<string, LayoutItem>;
   defaults: Record<string, Pose>;
+  /** Vật thêm bằng trình biên tập. Máy chủ cũ không có trường này. */
+  props?: Record<string, PropRecord>;
   version: number;
 }
 

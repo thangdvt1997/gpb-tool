@@ -11,7 +11,7 @@ import {
 import type { ApiResult } from '../ui/api';
 import { getLayoutState, moveItem, normalizeState, resetLayout } from './api';
 import { asRotation } from './placement';
-import type { LayoutItem, LayoutState, MoveEvent, Pose } from './types';
+import type { LayoutItem, LayoutState, MoveEvent, Pose, PropRecord } from './types';
 
 interface Snapshot extends LayoutState {
   /** Đã nhận dữ liệu từ máy chủ (qua GET hoặc sự kiện SSE 'state'). */
@@ -26,6 +26,8 @@ export interface LayoutActions {
 export interface LayoutContextValue {
   items: Record<string, LayoutItem>;
   defaults: Record<string, Pose>;
+  /** Vật thêm bằng trình biên tập (rỗng nếu máy chủ cũ). */
+  props: Record<string, PropRecord>;
   version: number;
   loaded: boolean;
   /** Vị trí hiện thời: items[id] nếu đã di chuyển, không thì defaults[id]. undefined nếu chưa có dữ liệu. */
@@ -41,9 +43,12 @@ const NO_ACTIONS: LayoutActions = {
   reset: async () => OFFLINE,
 };
 
+const NO_PROPS: Record<string, PropRecord> = {};
+
 const LayoutContext = createContext<LayoutContextValue>({
   items: {},
   defaults: {},
+  props: NO_PROPS,
   version: 0,
   loaded: false,
   poseOf: () => undefined,
@@ -167,6 +172,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     () => ({
       items: snap.items,
       defaults: snap.defaults,
+      props: snap.props ?? NO_PROPS,
       version: snap.version,
       loaded: snap.loaded,
       poseOf,

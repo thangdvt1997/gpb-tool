@@ -1,6 +1,6 @@
 import { api, type ApiResult } from '../ui/api';
 import { asRotation } from './placement';
-import type { LayoutItem, LayoutState, Pose } from './types';
+import type { LayoutItem, LayoutState, Pose, PropRecord } from './types';
 
 const BASE = '/api/layout';
 
@@ -32,7 +32,15 @@ export function normalizeState(s: LayoutState): LayoutState {
   for (const [id, p] of Object.entries(s.defaults ?? {})) {
     defaults[id] = { x: p.x, z: p.z, rotation: asRotation(p.rotation) };
   }
-  return { items, defaults, version: Number(s.version) || 0 };
+  const out: LayoutState = { items, defaults, version: Number(s.version) || 0 };
+  if (s.props && typeof s.props === 'object') {
+    const props: Record<string, PropRecord> = {};
+    for (const [id, p] of Object.entries(s.props)) {
+      if (p && typeof p.kind === 'string') props[id] = { ...p, rotation: asRotation(p.rotation), door: !!p.door };
+    }
+    out.props = props;
+  }
+  return out;
 }
 
 /** Tải toàn bộ bố cục: items, defaults, version. */

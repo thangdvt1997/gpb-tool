@@ -1,4 +1,5 @@
 import express from 'express';
+import { applyBatch, checkMovableAgainstProps } from '../extras.js';
 import {
   MOVE_ROTATIONS,
   PLACEMENT_ERROR,
@@ -63,7 +64,7 @@ export function createLayoutRouter({ store, model, hub }) {
 
   function currentState() {
     const snap = store.snapshot();
-    return { items: snap.items, defaults: model.defaults, version: snap.version };
+    return { items: snap.items, defaults: model.defaults, props: snap.props ?? {}, version: snap.version };
   }
 
   router.get('/state', (_req, res) => {
@@ -111,7 +112,10 @@ export function createLayoutRouter({ store, model, hub }) {
       rotation,
       who: user.email || user.id,
       movedBy: displayName(user),
-      check: (items) => checkPlacement(model, { id, x, z, rotation }, placedPositions(model, items)),
+      check: (items) => {
+        const verdict = checkPlacement(model, { id, x, z, rotation }, placedPositions(model, items));
+        return verdict.ok ? checkMovableAgainstProps(model, { id, x, z, rotation }, store.snapshot().props ?? {}) : verdict;
+      },
     });
     if (!result.ok) {
       return res.status(409).json({ ok: false, error: PLACEMENT_ERROR });
@@ -126,6 +130,35 @@ export function createLayoutRouter({ store, model, hub }) {
       movedBy: result.item.movedBy,
     });
     return res.json({ ok: true, item: result.item, version: result.version });
+  });
+
+  // Lưu nguyên tử nhiều thay đổi một lần (trình biên tập bố trí): di chuyển/đặt lại vật gốc, thêm/sửa/xóa vật thêm.
+  // Chỉ it/admin. 409 thì không ghi gì. Phát sự kiện 'reset' (client tải lại toàn bộ) để máy khách cũ cũng đồng bộ.
+  router.post('/batch', (req, res) => {
+    const user = req.user;
+    if (!RESET_ROLES.has(user.role)) {
+      return res.status(403).json({ ok: false, error: 'Chỉ IT hoặc admin mới được sửa bố trí hàng loạt.' });
+    }
+    if (!allowMove(user.id)) {
+      return res.status(429).json({ ok: false, error: RATE_MESSAGE });
+    }
+    const body = bodyOf(req);
+    let failure = null;
+    const result = store.batch({
+      who: user.email || user.id,
+      movedBy: displayName(user),
+      apply: (items, props) => {
+        const r = applyBatch(model, items, props, body.ops);
+        if (!r.ok) failure = r;
+        return r;
+      },
+    });
+    if (!result.ok) {
+      const f = failure || result;
+      return res.status(f.status || 400).json({ ok: false, error: f.error, ...(f.index !== undefined ? { index: f.index } : {}), ...(f.id ? { id: f.id } : {}) });
+    }
+    if (result.changed) hub.broadcast('reset', { version: result.version, batch: true });
+    return res.json({ ok: true, version: result.version });
   });
 
   router.post('/reset', (req, res) => {

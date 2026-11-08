@@ -13,7 +13,7 @@ import { Minimap, NavMarkers } from './minimap';
 import { SpatialAudioListener } from './audio/spatial';
 import { QualityPicker, clampDpr, useQuality } from './quality';
 import { PerfOverlay, PerfProbe } from './perf';
-import { EditorLayer, EditorPanel, LayoutEditorHost } from './editor';
+import { EditorLayer, EditorPanel, LayoutEditorHost, PropsLayer } from './editor';
 import { SettingsPanel } from './settings';
 import { createContextRecovery, useContextLoss, type ContextPhase, type ContextRecovery } from './loading';
 import { holdPause } from './scene/controls';
@@ -523,7 +523,9 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
               reactBump={reactBump}
               interactions={!editor.state.active}
               restoreSpawn={restoreSpawn}
+              extraBlockers={editor.blockers}
             />
+            <PropsLayer state={editor.state} dispatch={editor.dispatch} />
             <PhotoScene />
             <SpatialAudioListener getZone={(x, z) => audioZoneAt(audioRects, x, z)} />
             <PerfProbe adaptive={quality.adaptive} onQualityChange={quality.onChange} />

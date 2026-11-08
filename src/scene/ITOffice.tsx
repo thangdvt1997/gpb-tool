@@ -34,7 +34,7 @@ import { DecorBoxes, InstancedBoxes, ObjectBoxes, type BoxItem } from './Instanc
 import { Floorplan } from './Floorplan';
 import { Player } from './Player';
 import { SceneContext, stateOf, type ObjState, type SceneState } from './context';
-import { PLAYER_RADIUS, collisionRects, labelY, partsOf, toWorldX, toWorldZ, type Part, type V3 } from './layout';
+import { PLAYER_RADIUS, collisionRects, labelY, partsOf, toWorldX, toWorldZ, type Part, type Rect, type V3 } from './layout';
 import { InteractObjects, useInteractBlockers } from './interact/objects/InteractObjects';
 import { onInteractEvent } from './interact/objects/interactEvents';
 import { bridgeInteractAudio, getSpatialAudio } from '../audio/spatial';
@@ -51,6 +51,8 @@ import { DuelLayer, useSelfId } from './social/DuelLayer';
 import { SocialLayer } from './social/SocialLayer';
 import { createSocialWorld } from './social/world';
 import { InteractionLayer, useInteractionSelect } from './interact';
+
+const NO_RECTS: readonly Rect[] = [];
 
 interface Props {
   zone: ZoneDef;
@@ -88,6 +90,8 @@ interface Props {
    * Đổi `seq` thì Player mount lại tại điểm này (Player chỉ đọc spawn khi mount).
    */
   restoreSpawn?: { x: number; z: number; rotY?: number; seq: number } | null;
+  /** Hộp va chạm của vật thêm bằng trình biên tập (tường ngăn, bàn ghế...); chặn đi lại và camera như vật cố định. */
+  extraBlockers?: readonly Rect[];
 }
 
 /**
@@ -213,6 +217,7 @@ export function ITOffice({
   reactBump,
   interactions = true,
   restoreSpawn = null,
+  extraBlockers = NO_RECTS,
 }: Props) {
   // Ẩn vật thể chỉ dành cho vai trò khác (bàn kiểm duyệt chỉ moderator và admin thấy).
   // Chỉ dựng vật thể có footprint nằm trọn trong chữ L (officeBounds.ts, isObjectInOffice); vật khác không dựng,
@@ -288,8 +293,8 @@ export function ITOffice({
   const nocObjects = useMemo(() => zone.objects.filter((o) => o.action === 'noc'), [zone]);
   const interactBlockers = useInteractBlockers();
   const obstacles = useMemo(
-    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects), ...interactBlockers],
-    [zone, showPlants, interactBlockers],
+    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects), ...interactBlockers, ...extraBlockers],
+    [zone, showPlants, interactBlockers, extraBlockers],
   );
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
   // Âm thanh khi dùng vật (TASK 14): bus tương tác -> âm tổng hợp có vị trí.
