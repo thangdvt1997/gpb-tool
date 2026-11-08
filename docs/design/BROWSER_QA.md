@@ -230,3 +230,31 @@ Trình đọc màn hình thật: chưa kiểm trên bản này. Chủ dự án c
 | Trợ giúp | ĐẠT | ĐẠT | không có aria-expanded. Kiểm hộp thoại đóng và focus về nút |
 
 Trình đọc màn hình thật: **chưa kiểm trình đọc thật trên bản này**. NVDA đợt 3 kiểm bản 1235903, trước bản sửa 478bdc8/1c2b1f9. Chủ dự án cần chạy lại NVDA trên production hiện tại cho Phòng thay đồ, Cài đặt, Sao lưu.
+
+## Production 2026-11-08 — commit 5c0d0d2 (deploy 06:22 UTC, watcher root): nút Trợ giúp
+
+Kiểm độc lập 08/11 trên f55cddd: nút Trợ giúp không có aria-expanded (null), và bản test cũ bỏ qua vì đánh dấu Trợ giúp là `expanded: false`. Báo cáo "7 nút đạt" ở hai mục trên vì vậy **không kiểm aria-expanded của Trợ giúp**.
+
+Sửa (5c0d0d2): HelpCenter xuất `useHelpCenterOpen`, App gắn `aria-expanded` cho nút Trợ giúp. 31-hud-expanded: Trợ giúp kiểm aria-expanded như các nút khác, thêm 7 ca bàn phím (Enter mở, aria-expanded="true", hộp modal có focus bên trong; Esc, aria-expanded="false", focus về nút).
+
+Chứng minh test bắt được lỗi: ca bàn phím Trợ giúp chạy trên production f55cddd (trước deploy) **FAIL**: aria-expanded nhận `null`.
+
+Acceptance 5c0d0d2 PASS (e2e 97 + đăng nhập thật 1). `playwright.prod.config.ts --workers=4` trên 5c0d0d2: **32/33**. 31-hud-expanded 21/21 PASS. 20-controls FAIL một lần ở bước "D: thân quay theo hướng đi" (lệch 20,4° so với ngưỡng 20°), khi acceptance e2e chạy song song trên cùng máy; 5c0d0d2 không chạm điều khiển. Chạy lại riêng 20-controls trên production 5c0d0d2 khi máy rảnh: **PASS** (thân lệch hướng đi tối đa 3,3°; W/A/S/D mỗi phím 10–13 s). Hai lần FAIL trước đó có mỗi lần đọc trạng thái mất vài giây (vòng lặp 12 s ghi 24–33 s), do quá tải. Tổng: 33/33 (20-controls ở lần chạy lại).
+
+| Nút | Enter mở: aria-expanded | Focus khi mở bằng Enter | Esc: aria-expanded, focus về nút | Chuột + Esc / nút đóng |
+|---|---|---|---|---|
+| Thư viện | "true" | ở nút (panel không modal) | ĐẠT | ĐẠT / ĐẠT |
+| Hồ sơ | "true" | ở nút (panel không modal) | ĐẠT | ĐẠT / ĐẠT |
+| Sao lưu | "true" | ở nút (panel không modal) | ĐẠT | ĐẠT / ĐẠT |
+| Phòng thay đồ | "true" | trong hộp (modal) | ĐẠT | ĐẠT / ĐẠT |
+| Vẽ xăm | "true" | ở nút (panel không modal) | ĐẠT | ĐẠT / ĐẠT |
+| Cài đặt | "true" | trong hộp (modal) | ĐẠT | ĐẠT / ĐẠT |
+| Trợ giúp | "true" (trước: null) | trong hộp, ô "Tìm chủ đề" (modal) | ĐẠT | ĐẠT / ĐẠT |
+
+Focus Trợ giúp: trên mã mới (local và production 5c0d0d2), mở bằng Enter thì focus vào ô "Tìm chủ đề" (trapFocus). Chưa kiểm focus trên mã cũ (ca chạy trên f55cddd dừng ở bước aria-expanded), nên chưa rõ nguyên nhân lỗi "activeElement rỗng" đã báo. Ca bàn phím mới giữ kiểm này trên production. Bốn panel không modal (aria-modal="false") giữ focus ở nút mở, kiểu disclosure; NVDA đợt 3 chấm đạt Thư viện, Hồ sơ, Vẽ xăm. Nếu muốn các panel này cũng đưa focus vào trong khi mở, cần quyết định của chủ dự án.
+
+Trình đọc màn hình thật: **chưa kiểm trình đọc thật trên bản này**. Chủ dự án chạy NVDA (Speech Viewer) trên 5c0d0d2 trở về sau: Trợ giúp phải đọc "collapsed" khi đóng và "expanded" khi mở.
+
+## Production 2026-11-08 — commit c0e2265 (deploy 07:15 UTC, watcher root): manifest license đã duyệt
+
+Acceptance c0e2265 PASS (e2e 97 + đăng nhập thật 1). /models/manifest.json trên production: 3 GLB MPFB verified=true, approvedBy "Chủ dự án duyệt dùng trong sản phẩm (08/11/2026)". Spec đọc manifest trên production (02-scene-mock, 34-player-baked-clip, 35-glb-furniture, 36-player-emote-baked-clip): **10/10 PASS**. Mã giao diện giống 5c0d0d2, nên kết quả 31-hud-expanded ở mục trên vẫn áp dụng.

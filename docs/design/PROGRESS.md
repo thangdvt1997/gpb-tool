@@ -274,3 +274,18 @@ Chỉ đổi tài liệu, không chạy lại acceptance. Không tạo PROJECT_C
 | V6 | **Chờ chủ dự án quyết định license** (3 GLB MPFB, asset và clip tự sinh LicenseRef-GPB-project). Không chặn việc khác |
 
 Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-08 — Lần lặp 11
+
+| Việc | Kết quả |
+|---|---|
+| Trợ giúp (ưu tiên 1) | 5c0d0d2: nút Trợ giúp có aria-expanded theo trạng thái HelpCenter (trước là null). 31-hud-expanded: Trợ giúp hết miễn kiểm aria-expanded; thêm 7 ca bàn phím (Enter mở → "true", hộp modal có focus bên trong; Esc → "false", focus về nút). Ca Trợ giúp chạy trên production f55cddd FAIL (null), nên test mới bắt được lỗi mà báo cáo "7 nút đạt" ở lần lặp 8–10 bỏ sót |
+| Acceptance 5c0d0d2 | **PASS** 06:19 UTC (e2e 97 + đăng nhập thật 1). Push origin/main 4462e24..5c0d0d2. Bundle /home/cc/bundles/gpb-5c0d0d2.bundle |
+| Deploy 5c0d0d2 | 06:22 UTC, watcher root, smoke OK |
+| Production 5c0d0d2 | `--workers=4`: 32/33, 31-hud-expanded 21/21. 20-controls FAIL khi chạy cùng acceptance (quá tải), chạy lại riêng PASS. Chi tiết ở BROWSER_QA.md |
+| 01, 02 license | **License đã duyệt bởi chủ dự án 08/11** (3 GLB MPFB, asset và clip tự sinh). c0e2265: manifest verified=true, approvedBy; validator 0 lỗi, 3 cảnh báo (PIVOT_OFFSET_REQUIRED). 02 → ĐÃ LÀM (clip bake đã kiểm trên production, 34 và 36). 01 còn MỘT PHẦN: bàn trong cảnh vẫn là DeskDecorField; nhân vật nên xuất lại với origin ở sàn |
+| Acceptance c0e2265 | Lần 1 FAIL: chỉ 20-controls (chạy cùng lúc test production và docker build, mỗi lần đọc trạng thái mất vài giây). Lần 2 chạy một mình **PASS** 07:12 UTC (e2e 97 + đăng nhập thật 1). Push 5c0d0d2..c0e2265, bundle /home/cc/bundles/gpb-c0e2265.bundle. Deploy 07:15 UTC (watcher root, smoke OK). Production: manifest phục vụ verified=true, approvedBy; 02-scene-mock, 34, 35, 36 **10/10 PASS** |
+| 22–27 | Service auth, world và route /api/world đã deploy 04:44 UTC (chủ dự án chạy deploy-svc.sh). Gateway công khai: /api/world/ws và /api/world/turn trả 401 khi chưa đăng nhập. Hai trình duyệt chỉ kiểm được trên stack cục bộ (29-multiplayer, auth test 3902). **Chưa có e2e nhiều người trên production**: cần phiên production, mà quy định cấm tạo tài khoản và cấm dùng auth production để test. Cần chủ dự án cấp tài khoản test production hoặc tự kiểm hai trình duyệt |
+| 12 | Phần tự động đạt. Chờ chủ dự án chạy NVDA (Speech Viewer) trên 5c0d0d2 trở về sau, gồm Trợ giúp |
+
+Không tạo PROJECT_COMPLETE.txt (01, 22–27, 12 chưa xong).
