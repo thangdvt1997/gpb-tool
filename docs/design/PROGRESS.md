@@ -332,3 +332,37 @@ Việc còn lại:
 - Đề nghị chủ dự án trả quyền ghi /home/cc/handoff-20261107 cho cc (hoặc chỉ định thư mục khác), và cho tiến trình root dùng thư mục test và tệp kết quả acceptance riêng.
 
 Không tạo PROJECT_COMPLETE.txt (25, 12 và các mục cần GPU chưa xong).
+
+## 2026-11-08 — Lần lặp 13
+
+Hai lỗi acceptance của ff21ea7 (26-autowalk, voice-suite WebRTC) đã hết từ lần lặp 12: acceptance 0fc3119 lúc 14:17 UTC có 26-autowalk 2/2 và voice-suite 4/4 PASS (log /home/cc/gpb-acc-e2e.log), không cần sửa thêm.
+
+gpu_result.md (máy Windows RTX 3070 Ti, dev server 622b58f): 07 ĐẠT trên GPU thật; 08 có số đo FPS (TB 57,2, p95 14,7 ms). 03, 11, 13, 14, 15, 16, 19 máy đó ghi "chưa kiểm". Đã ghi vào TASK_STATUS.
+
+| Subagent | Worktree / nhánh | Task | Kết quả (điều phối viên kiểm lại tsc, vitest sau khi gộp) |
+|---|---|---|---|
+| desk13 | /home/cc/wt/desk13, wt13/desk13 | 01 đồ dùng theo chỗ với bàn GLB | 6d56775; 118 chỗ, 49 cấu hình, draw call 66/69 không đổi; e2e 41 4/4, 43 2/2 |
+| audio13 | /home/cc/wt/audio13, wt13/audio13 | 14 ambient qua engine mới, cone, âm lượng chung | d43f105, 499c1ae; e2e 44 1/1 |
+| photo13 | /home/cc/wt/photo13, wt13/photo13 | 16 vật cản chụp ảnh theo bố trí người dùng | 48023b4; e2e 45 1/1 |
+| gfx13 | /home/cc/wt/gfx13, wt13/gfx13 | 13 texture tier, LOD, AO áp dụng thật | a230427; e2e 46 2/2 |
+| tattoo13 | /home/cc/wt/tattoo13, wt13/tattoo13 | 19 mask vùng 256x256 | 2416e39; e2e 47 3/3 |
+| draft13 | /home/cc/wt/draft13, wt13/draft13 | 20 nguồn bố cục nháp | 1e1a6d1; e2e 48 2/2 |
+| morph13 | /home/cc/wt/morph13, wt13/morph13 | user.txt bắp tay, đùi, bàn tay, bàn chân; lỗi lơ lửng 11 cm; chiều cao hiển thị thấp 9% | 5a6c58c, fd6c3f4, b4c8743; e2e 49, 41, 20, 23, 25, 34, 36, 12 PASS |
+| ed13 | /home/cc/wt/ed13, wt13/ed13 | 17 lỗi phát hiện khi gộp: vật gốc đã di chuyển vẫn vẽ ở chỗ cũ | e471194; e2e 50, 37, 45, 48, 12 14/14 |
+
+Sau khi gộp (1f06373): tsc sạch, vitest 1206/1206, validator manifest 0 lỗi 0 cảnh báo. Xung đột gộp: useLayoutEditor.ts (draft13 với photo13), App.tsx (ed13 với gfx13), đã gỡ tay.
+
+Lỗi thật tìm thấy trong lần lặp: nhân vật (cả trong văn phòng và phòng thay đồ) lơ lửng ~11 cm và thấp hơn heightCm ~9% vì minY và nativeHeight lấy từ boundingBox có cộng biên độ morph. Spec 41 trước đây hiệu chỉnh theo trạng thái sai (mắt cá 0,10 m); nay kiểm theo tỉ lệ xương foot đo từ GLB.
+
+Vẫn cần root (không đổi so với lần lặp 12): 25 thoại production (`sudo bash /home/cc/gpb-dev/scripts/enable-turn-prod.sh`; world production vẫn TURN_SECRET rỗng lúc 14:20 UTC), 17 POST /api/layout/batch production (`sudo bash /home/cc/gpb-dev/scripts/deploy-layout.sh <sha>`; gpb-tool-layout-1 vẫn là image 06/11).
+
+Kết quả lần lặp 13:
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance 1361ca2 | **PASS** 15:56 UTC (e2e 120 + đăng nhập thật 1) |
+| Push | origin/main 0fc3119..1361ca2 (fast-forward) |
+| Deploy | watcher root, deployed.sha 1361ca2, smoke 200/200/401 |
+| Test production | playwright.prod.config.ts --workers=4 **56/56 PASS** (thêm 43–50) |
+
+Việc còn lại: 25 và layout batch production cần root (như trên); GPU_REQUEST cho 03, 04, 07 (bản build), 08 (bản build), 13, 14, 15, 16, 19 và xem bằng mắt bàn, hình thể; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.

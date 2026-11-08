@@ -304,3 +304,11 @@ Acceptance 2d00d8b **PASS** 13:11–13:35 UTC (e2e 107 + đăng nhập thật 1,
 `playwright.prod.config.ts --workers=4`: **43/43 PASS** (13,6 phút), gồm spec mới 37-editor-add-remove (API layout giả lập), 38-library-backup-zip (thumbnail, tải GLB lên, ZIP), 39-misc12 (GLB nhân vật retry, FallbackAvatar), 41-assets01 (bàn GLB 3 InstancedMesh, origin nhân vật ở sàn). Không spec nào bị bỏ qua.
 
 Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính năng (`buildHas` trong tests/helpers.ts). Lý do: tiến trình root chạy acceptance cho 622b58f bằng cùng thư mục test. 28-overview không còn ghi /tmp/overview-on.png (tệp đó đã thuộc root), mà ghi vào thư mục kết quả của test.
+
+## Production 1361ca2 — lần lặp 13 (08/11/2026)
+
+- Acceptance 1361ca2 **PASS** 15:56 UTC: tsc, build, vitest 1206, test service, validator 0 lỗi; e2e 120 (stub 3901) + đăng nhập thật 1 (auth test 3902).
+- Deploy: watcher root, deployed.sha = 1361ca2; smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401; /models/tattoo-masks.json 200 (32 346 byte).
+- `playwright.prod.config.ts --workers=4`: **56/56 PASS** (16,1 phút). Thêm vào bộ production: 43-desk-variety (01), 44-audio-ambient (14), 45-photo-layout (16), 46-gfx-options (13), 47-tattoo-mask (19), 48-layout-draft-backup (20), 49-body-morph (user.txt), 50-editor-move-original (17). Các spec 45, 48, 50 giả lập /api/layout trong trình duyệt vì POST /api/layout/batch chưa có trên production (cần root, scripts/deploy-layout.sh).
+- 41-assets01 "mắt cá cách sàn": kỳ vọng cũ 0,10 m đo khi nhân vật còn lơ lửng; nay kiểm cổ chân 0,064–0,083 m (tỉ lệ xương foot nghỉ 4,1–4,5 % chiều cao, đo từ GLB), hai chân lệch < 5 mm.
+- Chưa kiểm: nghe âm thanh thật, xem bằng mắt trên GPU (bàn, xăm, hình thể, AO). Xem docs/design/GPU_REQUEST.md.
