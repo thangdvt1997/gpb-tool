@@ -3,6 +3,8 @@ import type { ZoneObject } from '../content/types';
 import { stateOf, toneFor, useScene } from './context';
 import { InstancedBoxes, type BoxItem } from './InstancedBoxes';
 import type { V3 } from './layout';
+import { GlbInstances, useFurnitureFlag, useFurnitureSources } from './GlbFurniture';
+import { furniturePlacements } from './furnitureGlb';
 
 /** Lưới bàn: bàn rộng 1.0 m, sâu 0.6 m, bước giữa các cột và các hàng 1.2 m. */
 const DESK_W = 1.0;
@@ -34,8 +36,31 @@ interface Slot {
   size: V3;
 }
 
-/** Toàn bộ bàn làm việc trong hai lệnh vẽ: mặt bàn và màn hình. Bấm hoặc rê vào bàn tác động tới khối bàn. */
+/**
+ * Bàn làm việc không có decor. Nguồn GLB (furn_desk, furn_chair): mỗi cặp geometry+vật liệu một InstancedMesh, bàn và ghế
+ * tổng cộng 2 lệnh vẽ. GLB chưa tải xong, tải lỗi hoặc ?glbFurniture=0 thì dùng hộp (BoxDeskField) như cũ.
+ */
 export function DeskField({ objects }: { objects: ZoneObject[] }) {
+  const { source, sources } = useFurnitureSources();
+  const seats = useMemo(
+    () => objects.flatMap((o) => deskSeats(o).map((s) => ({ owner: o.id, x: s.x, z: s.z }))),
+    [objects],
+  );
+  const placements = useMemo(() => furniturePlacements(seats), [seats]);
+  useFurnitureFlag(source, sources, seats.length);
+  if (source === 'glb' && sources) {
+    return (
+      <>
+        <GlbInstances sources={sources.desk} placements={placements.desks} />
+        <GlbInstances sources={sources.chair} placements={placements.chairs} />
+      </>
+    );
+  }
+  return <BoxDeskField objects={objects} />;
+}
+
+/** Toàn bộ bàn làm việc trong hai lệnh vẽ: mặt bàn và màn hình. Bấm hoặc rê vào bàn tác động tới khối bàn. */
+export function BoxDeskField({ objects }: { objects: ZoneObject[] }) {
   const { selected, hovered } = useScene();
 
   const slots = useMemo(() => {

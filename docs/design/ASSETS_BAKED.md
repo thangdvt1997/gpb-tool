@@ -42,10 +42,20 @@ Cả 7 socket nhân vật (hand_l, hand_r, head, neck, back, foot_l, foot_r) đo
 
 ## Draw call
 
-Mỗi GLB tĩnh có đúng 1 mesh, 1 vật liệu (màu theo đỉnh). Bàn và ghế CHƯA nối vào cảnh: DeskField vẫn dùng InstancedBoxes, nên `static-census.mjs` không đổi (chỉ thêm dòng liệt kê GLB). Thay bằng GLB riêng từng bàn sẽ tăng draw call, trái trần 200.
+Mỗi GLB tĩnh có đúng 1 mesh, 1 vật liệu (màu theo đỉnh). (Lần 6: đã nối vào cảnh, xem mục Bàn ghế GLB trong cảnh bên dưới.)
 
 ## Validator
 
 Sửa nhỏ để chấp nhận tệp chỉ có xương + animation: `readGlbFacts` lấy tên node làm xương khi không có skin/mesh, `checkFacts` bỏ so bounds khi tệp không có hình học. Kết quả: 0 lỗi, 15 cảnh báo (giảm từ 24: hết 9 SOCKET_UNCALIBRATED).
 
 Lần 4: manifest ghi `runtimeAlphaMode` (OPAQUE cho body/low-poly, MASK cho eyebrow) vì `fixMaterials` trong MpfbAvatar ép lại lúc chạy; validator bỏ 9 cảnh báo BLEND_UNAPPROVED tương ứng. Kết quả: 0 lỗi, 6 cảnh báo (3 LICENSE_UNVERIFIED, 3 PIVOT_OFFSET_REQUIRED).
+
+## Bàn ghế GLB trong cảnh (task 01, lần 6)
+
+- Hàm thuần: `src/scene/furnitureGlb.ts` (`sourcesFromScene` gom mesh theo vật liệu bằng `mergeGeometries`, `furniturePlacements`, `glbFurnitureEnabled`). Test: `src/scene/furnitureGlb.vitest.test.ts` (gồm kiểm hai GLB thật mỗi tệp đúng 1 cặp geometry+vật liệu).
+- Dựng: `src/scene/GlbFurniture.tsx`. `DeskField` (`src/scene/Desks.tsx`) dựng bàn rồi ghế bằng InstancedMesh từ `furn_desk.glb` và `furn_chair.glb`: 2 InstancedMesh, tức 2 draw call (cũ: `BoxDeskField` cũng 2 draw call, mặt bàn và màn hình). Ghế đặt cách bàn 0,55 m về +z, xoay pi, khớp lưới ghế của hệ tương tác (`SEAT.chairOffset`); không đổi va chạm. Bấm và rê vẫn tác động khối bàn.
+- Rơi về hộp (`BoxDeskField`) khi GLB đang tải, tải lỗi hoặc `?glbFurniture=0`.
+- Cờ debug: `window.__gpbFurniture = { source: 'glb' | 'boxes' | 'loading', flag, instancedMeshes, desks, chairs }`.
+- Đo (e2e `/home/cc/gpb-e2e/pending/35-glb-furniture.spec.ts`, `?perf=1`, swiftshader, camera mặc định): trước (`?glbFurniture=0`, đường mã cũ) 66 draw call, sau (GLB) 66. Lý do bằng nhau: GLB và hộp đều 2 lệnh vẽ, và cảnh hiện không có bàn nào đi qua `DeskField` (`plainDesks` rỗng, mọi bàn thật do `DeskDecorField` vẽ bằng atlas, 2 draw call cho cả khu, chi tiết hơn GLB tự sinh nên KHÔNG thay). Vì vậy thay đổi này không tăng draw call và cũng không đổi hình cảnh hiện tại; nó có hiệu lực khi có bàn không decor. Trần 200 theo PENDING_DECISIONS mục 3 giữ nguyên (chỉ cảnh báo).
+- Ba biến thể bàn dev/design/ops chỉ có trong `DeskDecorField` (nội dung màn hình), không áp dụng cho GLB tự sinh (một kiểu bàn).
+- PIVOT_OFFSET_REQUIRED còn 3 cảnh báo thuộc nhân vật (char.male_real, char.female_real, char.chibi), không phải bàn/ghế/phụ kiện (các asset này đã gốc ở sàn hoặc socket, không cảnh báo). Không sửa trong lần này. Validator: 0 lỗi, 6 cảnh báo, như trước.
