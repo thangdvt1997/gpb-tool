@@ -5,7 +5,7 @@ import { createMotionInput, createMotionState, stepMotion, wrapAngle } from './g
 const H = 1 / 60;
 
 function loco(): LocomotionState {
-  return { phase: 0, move: 0, run: 0, air: 0, sit: 0, headYaw: 0, turn: 0, turnPhase: 0 };
+  return { phase: 0, move: 0, run: 0, air: 0, sit: 0, headYaw: 0, turn: 0, turnPhase: 0, fsm: 'idle', speed: 0 };
 }
 
 describe('xoay tại chỗ (turnYaw)', () => {

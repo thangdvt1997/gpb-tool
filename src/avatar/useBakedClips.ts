@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
-import type { AvatarAnimation } from './animation';
-import { BAKED_MODEL_IDS, CLIP_FOR_ANIMATION, bakedClipUrl, loadBakedClips, type BakedModelId } from './bakedClips';
+import { BAKED_MODEL_IDS, bakedClipUrl, loadBakedClips, type BakedModelId } from './bakedClips';
 
 /** Crossfade mặc định giữa hai clip bake (giây), khớp DEFAULT_BLEND trong scene/motion/clipMap.ts. */
 const FADE = 0.2;
@@ -15,7 +14,14 @@ function enabled(): boolean {
   return typeof window === 'undefined' || !/[?&]baked=0\b/.test(window.location.search);
 }
 
+/** Clip người chơi đang dùng (MpfbModel của animation='locomotion' ghi mỗi khung; ?debug=controls đọc). */
+export const playerClipDebug: { clip: string | null; source: 'baked' | 'procedural' } = { clip: null, source: 'procedural' };
+
 export interface BakedPlayer {
+  /** Tên clip đang phát ('' nếu không). */
+  readonly current: string;
+  /** Tốc độ phát clip hiện tại. */
+  setTimeScale(s: number): void;
   /** Phát clip theo tên (crossfade). */
   play(name: string): void;
   /** Dừng mọi clip và trả xương về trạng thái trước khi phát (để tư thế procedural tiếp quản sạch). */
@@ -30,6 +36,12 @@ function createPlayer(root: THREE.Object3D, clips: Map<string, THREE.AnimationCl
   let currentName = '';
   return {
     player: {
+      get current() {
+        return currentName;
+      },
+      setTimeScale(sc) {
+        if (current) current.timeScale = sc;
+      },
       play(name) {
         if (name === currentName) return;
         const clip = clips.get(name);
@@ -44,6 +56,7 @@ function createPlayer(root: THREE.Object3D, clips: Map<string, THREE.AnimationCl
         currentName = name;
       },
       stop() {
+        if (currentName === '' && current === null) return;
         mixer.stopAllAction();
         current = null;
         currentName = '';
@@ -59,11 +72,17 @@ function createPlayer(root: THREE.Object3D, clips: Map<string, THREE.AnimationCl
   };
 }
 
+export interface BakedHandle {
+  player: BakedPlayer;
+  /** Tên các clip đã nạp. */
+  names: ReadonlySet<string>;
+}
+
 /**
- * Nạp clip bake cho nhân vật MPFB và trả về player khi sẵn sàng; null khi chưa tải xong, tải lỗi hoặc bị tắt
- * (runtime rơi về tư thế procedural). Chỉ dùng cho animation cố định có trong CLIP_FOR_ANIMATION.
+ * Nạp clip bake cho nhân vật MPFB; trả handle khi sẵn sàng, null khi chưa tải xong, tải lỗi hoặc bị tắt
+ * (runtime rơi về tư thế procedural). Việc chọn clip theo khung do chooseBakedClip (bakedClips.ts) quyết định.
  */
-export function useBakedPlayer(root: THREE.Object3D, url: string, animation: AvatarAnimation): BakedPlayer | null {
+export function useBakedPlayer(root: THREE.Object3D, url: string): BakedHandle | null {
   const [clips, setClips] = useState<Map<string, THREE.AnimationClip> | null>(null);
   useEffect(() => {
     const id = bakedModelForUrl(url);
@@ -76,13 +95,7 @@ export function useBakedPlayer(root: THREE.Object3D, url: string, animation: Ava
       alive = false;
     };
   }, [url]);
-  const built = useMemo(() => (clips ? createPlayer(root, clips) : null), [root, clips]);
+  const built = useMemo(() => (clips ? { ...createPlayer(root, clips), names: new Set(clips.keys()) as ReadonlySet<string> } : null), [root, clips]);
   useEffect(() => () => built?.dispose(), [built]);
-  const clipName = CLIP_FOR_ANIMATION[animation];
-  useEffect(() => {
-    if (!built) return;
-    if (clipName) built.player.play(clipName);
-    else built.player.stop();
-  }, [built, clipName]);
-  return built && clipName ? built.player : null;
+  return useMemo(() => (built ? { player: built.player, names: built.names } : null), [built]);
 }

@@ -7,6 +7,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { REST_POSE, computePose, type AvatarAnimation, type AvatarPose } from './animation';
+import { resolveClip } from '../scene/motion/clipMap';
+import type { LocoState } from '../scene/motion/locomotionFsm';
 
 export type BakedModelId = 'male_real' | 'female_real' | 'chibi';
 
@@ -166,6 +168,45 @@ export const CLIP_FOR_ANIMATION: Readonly<Partial<Record<AvatarAnimation, string
   wave: 'Wave',
   dance: 'Dance',
 };
+
+export interface BakedChoice {
+  /** Tên clip bake cần phát; null khi dùng tư thế procedural. */
+  clip: string | null;
+  source: 'baked' | 'procedural';
+}
+
+const PROCEDURAL: BakedChoice = { clip: null, source: 'procedural' };
+
+/**
+ * Chọn clip bake cho một khung. Hàm thuần.
+ * - available: tên clip đã nạp (rỗng/null khi chưa tải xong, tải lỗi hoặc ?baked=0) -> procedural.
+ * - animation cố định: theo CLIP_FOR_ANIMATION. 'locomotion' (người chơi): theo trạng thái FSM qua CLIP_MAP/resolveClip.
+ * - emoting: emote do hệ emote điều khiển nên luôn procedural.
+ */
+export function chooseBakedClip(
+  animation: AvatarAnimation,
+  fsmState: LocoState | string,
+  available: ReadonlySet<string> | null,
+  emoting: boolean,
+): BakedChoice {
+  if (!available || available.size === 0 || emoting) return PROCEDURAL;
+  if (animation !== 'locomotion') {
+    const name = CLIP_FOR_ANIMATION[animation];
+    return name && available.has(name) ? { clip: name, source: 'baked' } : PROCEDURAL;
+  }
+  const r = resolveClip(fsmState as LocoState, available);
+  return r.source === 'clip' && r.clip ? { clip: r.clip, source: 'baked' } : PROCEDURAL;
+}
+
+// Pha procedural: đi 6 rad/s ứng 1,5 rad/m (4 m/s); chạy 10 rad/s ứng 1,3 rad/m (xem WALK_STRIDE/RUN_STRIDE trong animation.ts).
+const WALK_RAD_PER_M = 1.5;
+const RUN_RAD_PER_M = 1.3;
+
+/** Tốc độ phát clip theo tốc độ di chuyển (m/s) để chân không trượt; clip khác Walk/Run luôn 1. Kẹp 0,5 đến 1,6. */
+export function clipTimeScale(clip: string | null, speed: number): number {
+  const k = clip === 'Walk' ? (speed * WALK_RAD_PER_M) / 6 : clip === 'Run' ? (speed * RUN_RAD_PER_M) / 10 : 1;
+  return !(k > 0) ? 1 : k < 0.5 ? 0.5 : k > 1.6 ? 1.6 : k;
+}
 
 const cache = new Map<string, Promise<Map<string, THREE.AnimationClip> | null>>();
 

@@ -38,7 +38,8 @@ import {
 import { playerPose } from '../scene/controls/playerPose';
 import { getHeldItem } from '../scene/interact/objects/smallItem';
 import { MpfbOutfit } from './outfit/MpfbOutfit';
-import { useBakedPlayer } from './useBakedClips';
+import { useBakedPlayer, playerClipDebug } from './useBakedClips';
+import { chooseBakedClip, clipTimeScale } from './bakedClips';
 import { useBodyTattoo } from '../tattoo/useBodyTattoo';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -417,13 +418,16 @@ export function createPoseWork(): PoseWork {
   return { euler: new THREE.Euler(0, 0, 0, 'XYZ'), own: new THREE.Quaternion(), chain, delta, tmp: new THREE.Quaternion() };
 }
 
+const HEAD_ONLY: ReadonlySet<PoseJoint> = new Set<PoseJoint>(['neck', 'head']);
+
 /**
  * Áp AvatarPose lên xương MPFB. Góc tính trong không gian mô hình (cùng quy ước FallbackAvatar: Euler XYZ),
  * rồi đổi sang cục bộ: local = inv(Wnghỉ_cha) * inv(D_cha) * D * Wnghỉ, với D = Rchuỗi * Rcăn.
  * Không cấp phát.
  */
-export function applyMpfbPose(rig: MpfbRig, p: AvatarPose, w: PoseWork): void {
+export function applyMpfbPose(rig: MpfbRig, p: AvatarPose, w: PoseWork, only?: ReadonlySet<PoseJoint>): void {
   for (const id of MPFB_JOINT_ORDER) {
+    if (only && !only.has(id)) continue;
     const j = rig.joints[id];
     const chain = w.chain[id] as THREE.Quaternion;
     const delta = w.delta[id] as THREE.Quaternion;
@@ -468,7 +472,8 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
   const rig = useMemo(() => buildRig(gltf), [gltf]);
   const work = useMemo(createPoseWork, []);
   // Clip bake (public/models/anim_*.glb) thay tư thế procedural cho animation cố định khi tải được; lỗi thì rơi về procedural.
-  const baked = useBakedPlayer(rig.root, url, animation);
+  const baked = useBakedPlayer(rig.root, url);
+  const headPose = useMemo(createPoseScratch, []);
   const scratch = useMemo(createPoseScratch, []);
   const rootRef = useRef<THREE.Group>(null);
   const face = useRef<FaceTarget>({ ...FACE_REST });
@@ -515,9 +520,22 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     const t = state.clock.elapsedTime;
     const emoting = emote && sampleEmotePose(scratch);
     let pose: AvatarPose;
-    if (baked && !emoting) {
+    // Chọn clip theo animation (NPC) hoặc trạng thái FSM (người chơi); thiếu clip/lỗi tải/?baked=0 thì procedural.
+    const choice = chooseBakedClip(animation, playerLocomotion.fsm, baked?.names ?? null, !!emoting);
+    const useBaked = !!baked && choice.clip !== null;
+    if (animation === 'locomotion') {
+      playerClipDebug.clip = choice.clip;
+      playerClipDebug.source = useBaked ? 'baked' : 'procedural';
+    }
+    if (baked) {
+      if (useBaked && choice.clip) {
+        baked.player.play(choice.clip);
+        baked.player.setTimeScale(animation === 'locomotion' ? clipTimeScale(choice.clip, playerLocomotion.speed) : 1);
+      } else baked.player.stop();
+    }
+    if (useBaked && baked) {
       // Clip bake điều khiển xương (kể cả Root: độ cao thân, xoay), nên không áp tư thế procedural và không dịch group.
-      baked.update(dt);
+      baked.player.update(dt);
       pose = scratch;
     } else if (emoting) {
       // Emote không ghi gối: duỗi thẳng như VrmAvatar.
@@ -528,10 +546,16 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
       pose = computePose(animation, t);
     }
     const g = rootRef.current;
-    if (baked && !emoting) {
+    if (useBaked) {
       if (g) {
         g.position.y = 0;
         g.rotation.y = 0;
+      }
+      // Quay đầu theo camera của người chơi: chồng lên cổ/đầu sau khi clip đã ghi xương.
+      if (animation === 'locomotion' && Math.abs(playerLocomotion.headYaw) > 1e-3) {
+        headPose.neckRotY = playerLocomotion.headYaw * 0.4;
+        headPose.headRotY = playerLocomotion.headYaw * 0.6;
+        applyMpfbPose(rig, headPose, work, HEAD_ONLY);
       }
     } else {
       applyMpfbPose(rig, pose, work);

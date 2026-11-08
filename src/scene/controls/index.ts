@@ -15,6 +15,7 @@ import { advanceFixedStep, createFixedStepper, lerpAngle } from '../motion/fixed
 import { createLocoInput, createLocomotionFsm, stepLocomotionFsm } from '../motion/locomotionFsm';
 import { onInteractEvent } from '../interact/objects/interactEvents';
 import { createLocoPulses, interactActive, noteInteractEvent, stunActive } from './locoPulses';
+import { playerClipDebug } from '../../avatar/useBakedClips';
 import { clipForState, fillLocoInput, locoBlendInputs, type LocoBlendInputs } from './locoBridge';
 
 export { useGtaControls, useSessionHotkeys, isTypingTarget, type GtaControls, type MoveInput } from './useGtaControls';
@@ -81,6 +82,9 @@ export interface ControlsDebug {
   loco: string;
   /** Nguồn hoạt ảnh của trạng thái loco: 'procedural' (chưa có clip rig thật), 'clip' hoặc 'none' (emote nhường hệ emote). */
   locoClip: string;
+  /** Clip bake đang phát cho người chơi (null khi procedural) và nguồn thực tế (baked|procedural). */
+  clipName: string | null;
+  clipSource: 'baked' | 'procedural';
   /** Camera khung trước: điểm nhìn, vị trí, tỷ lệ kéo lại do biển treo (1 = không chặn). */
   cam: { eyeX: number; eyeY: number; eyeZ: number; x: number; y: number; z: number; hangingPull: number };
   /** Ghi vào đây để dịch chuyển nhân vật ở khung kế tiếp (chỉ cho Playwright). yaw: hướng thân và camera (rad). */
@@ -89,7 +93,7 @@ export interface ControlsDebug {
 const debugHook: ControlsDebug | null = (() => {
   if (typeof window === 'undefined') return null;
   if (new URLSearchParams(window.location.search).get('debug') !== 'controls') return null;
-  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false, loco: 'idle', locoClip: 'procedural', cam: { ...cameraProbe }, teleport: null };
+  const h: ControlsDebug = { cameraYaw: 0, bodyYaw: 0, headYaw: 0, turn: 0, dragging: false, x: 0, z: 0, speed: 0, seated: false, live: false, grounded: false, seatPending: false, loco: 'idle', locoClip: 'procedural', clipName: null, clipSource: 'procedural', cam: { ...cameraProbe }, teleport: null };
   (window as unknown as { __gpbControls?: ControlsDebug }).__gpbControls = h;
   return h;
 })();
@@ -375,6 +379,8 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
     stepLocomotionFsm(locoFsm, locoInput, dt);
     locoBlendInputs(locoFsm.state, seat !== null, blendIn, motion.grounded);
     stepLocomotion(playerLocomotion, motion.speed, blendIn.grounded, blendIn.sitting, dt);
+    playerLocomotion.fsm = locoFsm.state;
+    playerLocomotion.speed = motion.speed;
     // Đầu nhìn theo hướng camera (kẹp ±70 độ so với thân), trừ khi ngồi hoặc ở góc nhìn thứ nhất.
     stepHeadLook(
       playerLocomotion,
@@ -399,7 +405,9 @@ export function useGtaPlayer({ start, obstacles, enabled = true, isLocked, autop
       debugHook.grounded = motion.grounded;
       debugHook.seatPending = pendingSeat.current !== null;
       debugHook.loco = locoFsm.state;
-      debugHook.locoClip = clipForState(locoFsm.state).source;
+      debugHook.locoClip = playerClipDebug.source === 'baked' ? 'clip' : clipForState(locoFsm.state).source;
+      debugHook.clipName = playerClipDebug.clip;
+      debugHook.clipSource = playerClipDebug.source;
       Object.assign(debugHook.cam, cameraProbe);
     }
     const sitW = playerLocomotion.sit;

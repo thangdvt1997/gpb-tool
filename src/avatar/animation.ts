@@ -287,10 +287,14 @@ export interface LocomotionState {
   turn: number;
   /** Pha bước nhỏ khi xoay tại chỗ (rad), tăng theo góc đã quay. */
   turnPhase: number;
+  /** Trạng thái FSM locomotion (idle, walk, run, ...) khung trước; avatar chọn clip bake theo đây. */
+  fsm: string;
+  /** Tốc độ ngang (m/s) khung trước, để chỉnh tốc độ phát clip. */
+  speed: number;
 }
 
 export const playerLocomotion: LocomotionState = {
-  phase: 0, move: 0, run: 0, air: 0, sit: 0, headYaw: 0, turn: 0, turnPhase: 0,
+  phase: 0, move: 0, run: 0, air: 0, sit: 0, headYaw: 0, turn: 0, turnPhase: 0, fsm: 'idle', speed: 0,
 };
 
 /** Giới hạn quay đầu so với thân (rad), khoảng ±70 độ. */
