@@ -32,8 +32,13 @@ function subscribe(cb: () => void): () => void {
  * keydown một lần khi mount, gỡ khi unmount), đóng bằng Esc hoặc nút Đóng. Là hộp thoại modal nhẹ:
  * bẫy focus, focus vào ô tìm khi mở và trả lại khi đóng.
  */
+/** Trạng thái mở cho nút Trợ giúp ở HUD (aria-expanded). */
+export function useHelpCenterOpen(): boolean {
+  return useSyncExternalStore(subscribe, isHelpCenterOpen, isHelpCenterOpen);
+}
+
 export function HelpCenter({ role }: { role?: string }) {
-  const open = useSyncExternalStore(subscribe, isHelpCenterOpen, isHelpCenterOpen);
+  const open = useHelpCenterOpen();
   const { settings } = useSettings();
   const touch = useTouch();
   const gamepad = useGamepadConnected();

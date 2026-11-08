@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Canvas } from '@react-three/fiber';
 import { ITOffice } from './scene/ITOffice';
 import { InteractionHelp, InteractionHud, TouchLayer } from './scene/interact';
-import { HelpCenter, HelpLayer, HelpReplayButton, openHelpCenter } from './help';
+import { HelpCenter, HelpLayer, HelpReplayButton, openHelpCenter, useHelpCenterOpen } from './help';
 import { ProfilePanel } from './profile';
 import { WardrobeRoom } from './wardrobe';
 import { TattooStudio } from './tattoo/TattooStudio';
@@ -257,6 +257,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
   const getQuickContext = useQuickHost();
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const helpOpen = useHelpCenterOpen();
   const [profileOpen, setProfileOpen] = useState(false);
   // Phòng thay đồ (fashion.txt, user.txt): khóa di chuyển khi mở.
   const [wardrobeOpen, setWardrobeOpen] = useState(false);
@@ -629,7 +630,7 @@ function Workspace({ user, appearance, onLoggedOut }: WorkspaceProps) {
             <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)}>
               Cài đặt
             </button>
-            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" onClick={openHelpCenter}>
+            <button type="button" className="btn btn-ghost" aria-haspopup="dialog" aria-expanded={helpOpen} onClick={openHelpCenter}>
               Trợ giúp
             </button>
             <button type="button" className="btn btn-ghost" aria-expanded={backupOpen} onClick={() => setBackupOpen((v) => !v)}>
