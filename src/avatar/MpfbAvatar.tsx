@@ -1,7 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Appearance } from './appearance';
 import {
@@ -21,6 +21,7 @@ import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
 import { applyBoneShape, boneShapeOf, footDrop, REST_SPANS } from './boneShape';
+import { useAvatarGltf } from './glbLoad';
 import { FallbackAvatar } from './FallbackAvatar';
 import {
   FingerGrip,
@@ -321,7 +322,7 @@ function findMorphMesh(root: THREE.Object3D): THREE.Mesh | null {
   return found[0] ?? null;
 }
 
-/** Tạo bản sao riêng (xương riêng, geometry và vật liệu dùng chung với bộ đệm của useLoader) và đo rig. */
+/** Tạo bản sao riêng (xương riêng, geometry và vật liệu dùng chung với bộ đệm glbLoad) và đo rig. */
 export function buildRig(gltf: GLTF): MpfbRig {
   const root = cloneSkinned(gltf.scene);
   root.updateMatrixWorld(true);
@@ -388,7 +389,7 @@ export function buildRig(gltf: GLTF): MpfbRig {
 }
 
 function disposeRig(rig: MpfbRig): void {
-  // Geometry, vật liệu, texture thuộc bộ đệm useLoader và dùng chung giữa các bản sao: không dispose ở đây.
+  // Geometry, vật liệu, texture thuộc bộ đệm glbLoad và dùng chung giữa các bản sao: không dispose ở đây.
   // Mỗi bản sao có Skeleton riêng; dispose giải phóng boneTexture (renderer tạo lại nếu bản sao còn được vẽ,
   // nên an toàn với StrictMode chạy effect hai lần). Tách khỏi cảnh do R3F làm khi gỡ <primitive>.
   rig.root.traverse((o) => {
@@ -468,7 +469,7 @@ function approach(cur: number, goal: number, rate: number, dt: number): number {
 }
 
 function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps) {
-  const gltf = useLoader(GLTFLoader, url);
+  const gltf = useAvatarGltf(url);
   const rig = useMemo(() => buildRig(gltf), [gltf]);
   const work = useMemo(createPoseWork, []);
   // Clip bake (public/models/anim_*.glb) thay tư thế procedural cho animation cố định khi tải được; lỗi thì rơi về procedural.

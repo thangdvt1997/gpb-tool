@@ -12,6 +12,7 @@ import {
 import type { Accessory, Appearance, BodyType, HairStyle, Outfit, ShoeStyle } from '../avatar/appearance';
 import { ApiError, completeOnboarding, putAppearance } from '../auth/api';
 import { AuthNotice, Spinner } from '../auth/AuthUi';
+import { useReducedMotion } from '../settings/reducedMotion';
 import { COPY } from './messages';
 import {
   ACCESSORY_LIMIT,
@@ -73,18 +74,6 @@ function hasWebGL(): boolean {
   } catch {
     return false;
   }
-}
-
-function usePrefersReducedMotion(): boolean {
-  const query = '(prefers-reduced-motion: reduce)';
-  const [reduce, setReduce] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const onChange = () => setReduce(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduce;
 }
 
 type Tab = 'body' | 'hair' | 'outfit' | 'acc' | 'review';
@@ -273,7 +262,7 @@ export function AvatarCreator({ initial, displayName, onSaved, onSessionLost, on
   const [previewKey, setPreviewKey] = useState(0);
   const [announce, setAnnounce] = useState('');
   const [webgl] = useState(hasWebGL);
-  const reduceMotion = usePrefersReducedMotion();
+  const reduceMotion = useReducedMotion();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const dragRef = useRef<number | null>(null);
 

@@ -224,7 +224,26 @@ export function ownOffset(cls: Classification, spec: ShellClass, variant: Covera
   if (spec.flare > 0 && (r === Region.thigh || r === Region.calf || r === Region.pelvis)) {
     flare = spec.flare * smoothstep(0, 0.6, -cls.u[v] + 0.1);
   }
-  return (thick + loose + flare) * scale;
+  return (thick + loose + flare) * scale * neckTaper(cls, spec, v);
+}
+
+/** Bề rộng dải thu mép cổ áo (m, cỡ 1,8 m): trong dải này độ đẩy giảm dần về sát da. */
+export const NECK_TAPER_BAND = 0.035;
+/** Tỉ lệ độ đẩy còn lại ngay tại mép cổ (và ngoài mép). */
+export const NECK_TAPER_MIN = 0.12;
+
+/**
+ * Hệ số thu mép cổ áo: 1 ở xa mép, giảm mượt về NECK_TAPER_MIN tại mép cổ (khoảng cách theo độ cao tới u = neckU),
+ * để mép không gồ lên khỏi cổ. Chỉ áp cho món có phần thân trên, ở vùng thân và cổ.
+ */
+export function neckTaper(cls: Classification, spec: ShellClass, v: number): number {
+  if (spec.part !== 'top' && spec.part !== 'full') return 1;
+  const r = cls.region[v];
+  if (r !== Region.torso && r !== Region.neck) return 1;
+  const span = Math.max(1e-6, cls.yNeck - cls.yPelvis);
+  const dist = (spec.neckU - cls.u[v]) * span;
+  const band = NECK_TAPER_BAND * (cls.bodyHeight / REFERENCE_HEIGHT);
+  return NECK_TAPER_MIN + (1 - NECK_TAPER_MIN) * smoothstep(0, band, dist);
 }
 
 /**
