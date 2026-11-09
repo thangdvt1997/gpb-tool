@@ -6,6 +6,7 @@ import { cancelEmote, getEmoteState, holdEmotePose, playEmote, releaseHeldPose }
 import itZone from '../content/zones/it.json';
 import type { ZoneDef } from '../content/types';
 import { decorBlockersOf } from '../env';
+import { lobbyBlockers } from '../scene/entry/lobbyLayout';
 import { entryBlockers } from '../scene/entry/placement';
 import { collisionRects, type Rect } from '../scene/layout';
 import { OFFICE_PROP_BLOCKERS } from '../scene/officePropsLayout';
@@ -116,11 +117,11 @@ const MAX_Y = 3.2;
 const BOUNDS: Bounds = { minX: OFFICE_BOX.minX, maxX: OFFICE_BOX.maxX, minZ: OFFICE_BOX.minZ, maxZ: OFFICE_BOX.maxZ, minY: MIN_Y, maxY: MAX_Y };
 
 /**
- * Vật cản của camera tự do: cùng nguồn với ITOffice (đồ nội thất, vật trang trí không cây, bàn lối vào, đạo cụ).
+ * Vật cản của camera tự do: cùng nguồn với ITOffice (đồ nội thất, vật trang trí không cây, bàn lối vào, chậu cây sảnh, đạo cụ).
  * Phần tĩnh dựng một lần từ it.json; vật người dùng tự sắp (đã lưu) được PhotoScene cộng thêm qua prop blockers.
  */
 function staticObstaclesOf(objects: ZoneDef['objects']): readonly Rect[] {
-  return [...collisionRects(objects), ...decorBlockersOf(objects, false), ...entryBlockers(objects), ...OFFICE_PROP_BLOCKERS];
+  return [...collisionRects(objects), ...decorBlockersOf(objects, false), ...entryBlockers(objects), ...lobbyBlockers(), ...OFFICE_PROP_BLOCKERS];
 }
 const STATIC_OBSTACLES: readonly Rect[] = staticObstaclesOf((itZone as unknown as ZoneDef).objects);
 

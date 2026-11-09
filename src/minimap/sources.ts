@@ -1,14 +1,15 @@
 // Nguồn dữ liệu của minimap: dựng từ CÙNG dữ liệu với cảnh 3D (it.json, officeBounds.ts, layout.ts,
-// entryBlockers, decorBlockersOf). Không có tọa độ vẽ tay ở đây.
+// entryBlockers, decorBlockersOf, lobbyBlockers). Không có tọa độ vẽ tay ở đây.
 //
 // Quy tắc lọc giống ITOffice.tsx: chỉ vật nằm trọn trong chữ L (isObjectInOffice); bàn kiểm duyệt chỉ hiện
-// với vai trò có trong roles của nó. Vật cản giống ITOffice.tsx: collisionRects + decorBlockersOf + entryBlockers,
+// với vai trò có trong roles của nó. Vật cản giống ITOffice.tsx: collisionRects + decorBlockersOf + entryBlockers + lobbyBlockers (chậu cây sảnh),
 // cộng tường ngoài theo đúng quy tắc của Floorplan.tsx (chỉ trên cạnh L trùng mép tòa nhà).
 
 import type { Role, ZoneDef, ZoneObject } from '../content/types';
 import { decorBlockersOf } from '../env';
 import { isMovable } from '../layout/movable';
 import type { Pose } from '../layout/types';
+import { lobbyBlockers } from '../scene/entry/lobbyLayout';
 import { MOD_DESK_ID, entryBlockers } from '../scene/entry/placement';
 import { FLOOR, OUTER_WALL, PLAYER_RADIUS, collisionRects, footprint, toWorldX, toWorldZ, type Rect } from '../scene/layout';
 import { OFFICE_L_PLAN, OFFICE_L_POLYGON, OFFICE_L_RECTS, isObjectInOffice } from '../scene/officeBounds';
@@ -75,6 +76,7 @@ export function buildMinimapSources({ zone, role, plants, poseOf }: SourceOption
     ...collisionRects(objects),
     ...decorBlockersOf(objects, plants),
     ...entryBlockers(objects),
+    ...lobbyBlockers(),
     ...walls,
   ];
   const items: MapItem[] = objects
