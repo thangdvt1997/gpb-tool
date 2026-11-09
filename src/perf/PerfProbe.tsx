@@ -115,7 +115,7 @@ export function PerfProbe({
         for (const g of gpuMs) r.recordGpu(g);
         store.setBench({ running: true, progress: r.progress(el) });
       } else {
-        const res = r.result({ jsHeapMB: heapMB(), warnings: store.snapshot().warnings.map((w) => w.message), gpuDiscarded: gpuTimer.current?.discarded ?? 0 });
+        const res = r.result({ jsHeapMB: heapMB(), warnings: store.snapshot().warnings.map((w) => w.message), gpuSupported: gpuTimer.current?.supported ?? false, gpuDiscarded: gpuTimer.current?.discarded ?? 0 });
         rec.current = null;
         store.setBench({ running: false, progress: 1 });
         console.info('[perf] bench', res);

@@ -197,6 +197,8 @@ describe('gpuTimer (EXT_disjoint_timer_query_webgl2)', () => {
   it('bench và store ghi thời gian GPU; không có mẫu thì gpu=null', () => {
     const r = createBenchRecorder(1);
     expect(r.result().gpu).toBeNull();
+    expect(r.result({ gpuSupported: false }).gpu).toBeNull();
+    expect(r.result({ gpuSupported: true, gpuDiscarded: 3 }).gpu).toMatchObject({ samples: 0, discarded: 3 });
     r.record(16); r.recordGpu(2); r.recordGpu(4);
     const g = r.result({ gpuDiscarded: 1 }).gpu!;
     expect(g.samples).toBe(2); expect(g.avgMs).toBe(3); expect(g.discarded).toBe(1);

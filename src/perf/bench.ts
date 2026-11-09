@@ -41,7 +41,7 @@ export interface BenchResult {
   renderer: { drawCallsMax: number; drawCallsAvg: number; trianglesMax: number; geometries: number; textures: number; programs: number };
   jsHeapMB: number | null;
   warnings: string[];
-  /** Thời gian GPU đo bằng EXT_disjoint_timer_query_webgl2; null khi trình duyệt không hỗ trợ hoặc chưa có mẫu. */
+  /** Thời gian GPU đo bằng EXT_disjoint_timer_query_webgl2; null khi trình duyệt không hỗ trợ. Chưa có mẫu thì số đo là null (NaN trong JSON). */
   gpu: { samples: number; avgMs: number; p50Ms: number; p95Ms: number; p99Ms: number; maxMs: number; discarded: number } | null;
 }
 
@@ -59,7 +59,7 @@ export function createBenchRecorder(durationSec: number, env: BenchEnv = {}) {
     progress: (elapsedSec: number) => Math.min(1, Math.max(0, elapsedSec / durationSec)),
     record(frameMs: number, snap?: RendererSnap) { ms.push(frameMs); if (snap) snaps.push(snap); },
     recordGpu(v: number) { gpuMs.push(v); },
-    result(extra: { jsHeapMB?: number | null; warnings?: string[]; gpuDiscarded?: number } = {}): BenchResult {
+    result(extra: { jsHeapMB?: number | null; warnings?: string[]; gpuSupported?: boolean; gpuDiscarded?: number } = {}): BenchResult {
       const n = snaps.length || 1;
       const g = summarize(gpuMs);
       const last = snaps[snaps.length - 1];
@@ -73,7 +73,7 @@ export function createBenchRecorder(durationSec: number, env: BenchEnv = {}) {
         },
         jsHeapMB: extra.jsHeapMB ?? null,
         warnings: extra.warnings ?? [],
-        gpu: g.frames === 0 ? null : {
+        gpu: !(extra.gpuSupported ?? g.frames > 0) ? null : {
           samples: g.frames, avgMs: g.avgMs, p50Ms: g.p50Ms, p95Ms: g.p95Ms, p99Ms: g.p99Ms, maxMs: g.maxMs,
           discarded: extra.gpuDiscarded ?? 0,
         },
