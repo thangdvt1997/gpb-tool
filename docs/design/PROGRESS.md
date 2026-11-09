@@ -546,3 +546,19 @@ Kiểm chứng: tsc, vitest 1236/1236, build, scene-qa 0 lỗi. Ảnh trước, 
 | Test production | --workers=4 **58/58 PASS** (18,2 phút) |
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03 (thêm: xem chibi đầu mới khi ngồi ghế cao), 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần thiết bị thật; 12 chờ NVDA. Sảnh mở: quầy Service Desk chưa dời (xem trên). gpu_request.md thuộc root nên chưa thêm mục xem sảnh mở trên GPU. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 24
+
+Đầu lần lặp (16:20 UTC): main trùng origin/main (decae5d); deployed.sha decae5d; acceptance cuối PASS. Smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không có mục mới từ 07:18 UTC (đã đọc ở lần lặp 22).
+
+Rà lại spec Sảnh mở chibi, hai mục còn mở:
+| Mục | Kết luận |
+|---|---|
+| Quầy Service Desk trong sảnh | Vẫn cần root. Vị trí mặc định của quầy nằm trong zone.json đóng trong image layout (services/layout/src/movable.js đọc khi khởi động, image 06/11). Chỉ dời ở client thì server kiểm va chạm theo chỗ cũ, và "đặt lại vật" lệch giữa client và server. Làm khi deploy layout được (xem lần lặp 23). |
+| Ánh sáng ấm | Sảnh không có đèn riêng; ánh sáng do ambient và đèn khu office (6500 K trung tính theo room.txt mục 6 và REAL_OFFICE_STYLE.md mục 4). Làm ấm ambient thì cả tầng ám vàng, trái room.txt; thêm đèn riêng thì đổi shader mọi vật liệu. Giữ phần đã làm: viền đèn ấm và cửa sổ sáng (mảnh màu, không phải đèn). |
+
+Đã ghi yêu cầu kiểm sảnh mở trên GPU vào /home/cc/handoff-20261107/design/gpu_request_sanh_mo.md (gpu_request.md thuộc root nên không sửa được): màu sảnh, đi qua chậu cây, FPS sảnh, đầu chibi x1,22.
+
+Không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
