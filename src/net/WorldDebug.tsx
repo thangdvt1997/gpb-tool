@@ -33,6 +33,8 @@ export interface WorldDebug {
   standViaAction(): boolean;
   /** Đóng WebSocket hiện tại (giả lập rớt mạng); client tự kết nối lại và resume. */
   dropSocket(): void;
+  /** Các trạng thái client đi qua từ lần dropSocket gần nhất. Kết nối lại có thể xong trước khi e2e kịp đọc state. */
+  readonly statesSinceDrop: string[];
 }
 
 export function debugWorldEnabled(search: string): boolean {
@@ -47,6 +49,8 @@ export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'cli
   useEffect(() => {
     if (typeof window === 'undefined' || !debugWorldEnabled(window.location.search)) return undefined;
     const w = window as unknown as { __gpbWorld?: WorldDebug };
+    let dropLog: string[] = [];
+    let unsubDrop: (() => void) | null = null;
     const d: WorldDebug = {
       get state() { return ref.current.state; },
       get selfId() { return ref.current.client.current?.selfId ?? null; },
@@ -103,12 +107,17 @@ export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'cli
         return false;
       },
       dropSocket() {
-        const c = ref.current.client.current as unknown as { sock?: { close(code?: number, reason?: string): void } | null } | null;
+        const client = ref.current.client.current;
+        unsubDrop?.();
+        dropLog = [];
+        unsubDrop = client ? client.onState((s) => { dropLog.push(s); }) : null;
+        const c = client as unknown as { sock?: { close(code?: number, reason?: string): void } | null } | null;
         c?.sock?.close(4000, 'e2e drop');
       },
+      get statesSinceDrop() { return [...dropLog]; },
     };
     w.__gpbWorld = d;
-    return () => { delete w.__gpbWorld; };
+    return () => { unsubDrop?.(); delete w.__gpbWorld; };
   }, []);
   return null;
 }
