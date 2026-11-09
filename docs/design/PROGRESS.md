@@ -403,3 +403,25 @@ Việc tự làm được trên VPS:
 GPU_REQUEST.md (và /home/cc/gpu-handoff/gpu_request.md) trỏ a07a857; mục 08 ghi thêm minFps1s, mục 14 ghi vị trí máy in.
 
 Việc còn lại (không đổi): 25 và 17 production cần root (`sudo bash scripts/enable-turn-prod.sh`, `sudo bash scripts/deploy-layout.sh a07a857`); GPU cho 03, 04, 07 (bản build), 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 15
+
+Đầu lần lặp (08/11 23:49 UTC): gpu_result.md không đổi từ 08:15 UTC; world production vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11; user cc không có sudo. Các mục cần root, GPU, NVDA, thiết bị thật giữ nguyên như lần lặp 14.
+
+Việc tự làm được trên VPS (điều phối viên, main, không mở subagent vì chỉ có một việc độc lập):
+
+| Việc | Commit | Kết quả |
+|---|---|---|
+| 08: thời gian GPU (EXT_disjoint_timer_query_webgl2) bọc gl.render, chỉ đo lần render ngoài cùng, tối đa 4 truy vấn chờ, bỏ mẫu disjoint; overlay `?perf=1` dòng GPU; bench JSON khóa `gpu` | 02bc5e1, 1b18bec | vitest src/perf 30/30; e2e 52-gpu-timer |
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance 02bc5e1 | FAIL: chỉ 52-gpu-timer (spec dò extension bằng canvas riêng; dưới tải bench 4 s chưa có mẫu và bench trả gpu=null). Sửa bench giữ khóa gpu khi hỗ trợ, spec đọc trạng thái từ overlay |
+| Acceptance 1b18bec | **PASS** 00:27–00:55 UTC (e2e 122 + đăng nhập thật 1) |
+| Push | origin/main 1c0342a..1b18bec (fast-forward) |
+| Deploy | watcher root, deployed.sha 1b18bec, bundle index-0roBI1Vk.js; smoke 200/200/401 |
+| Test production | playwright.prod.config.ts --workers=4 **58/58 PASS** |
+
+GPU_REQUEST.md (và /home/cc/gpu-handoff/gpu_request.md) trỏ 1b18bec; mục 08 xin thêm thời gian GPU.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`), 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 01, 03, 04, 07 (bản build), 08 (bản build, thời gian GPU), 13, 14, 15, 16, 19, user.txt; 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.

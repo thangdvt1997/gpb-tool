@@ -319,3 +319,11 @@ Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính 
 - Acceptance a07a857 PASS (e2e 121 + đăng nhập thật 1 trên auth test 127.0.0.1:3902).
 - Production sau deploy: smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401; playwright.prod.config.ts --workers=4: 57/57 PASS (16,3 phút).
 - Thay đổi: model máy in phòng In ấn (nguồn âm máy in có hướng thật), FPS thấp nhất/1 s trong bench. Chưa xem máy in bằng mắt và chưa nghe hướng âm trên GPU thật (GPU_REQUEST.md mục 14).
+
+## Production 1b18bec — lần lặp 15 (09/11/2026, 01:20 UTC)
+
+- Acceptance 1b18bec **PASS** 00:27–00:55 UTC (e2e 122 stub 3901 + đăng nhập thật 1 trên auth test 127.0.0.1:3902).
+- Deploy: watcher root, deployed.sha = 1b18bec, bundle `index-0roBI1Vk.js`; smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401.
+- `playwright.prod.config.ts --workers=4`: **58/58 PASS** (16,7 phút), thêm 52-gpu-timer (08).
+- 52-gpu-timer: overlay `?perf=1` có dòng "GPU … ms p50 … p95 … (N mẫu)" khi context WebGL2 của ứng dụng có EXT_disjoint_timer_query_webgl2, hoặc "GPU: trình duyệt không hỗ trợ đo"; bench JSON có khóa `gpu` (null khi không hỗ trợ). Trên swiftshader extension có mặt; truy vấn đầu tiên ~5,4 s (biên dịch shader trên CPU), nên số này không dùng làm ngưỡng. Lần chạy acceptance đầu (02bc5e1) FAIL vì spec dò extension bằng canvas riêng và đòi có mẫu trong bench 4 s; spec nay đọc trạng thái từ overlay, chờ overlay có ≥ 1 mẫu, và chạy 6/6 khi song song.
+- Chưa kiểm: thời gian GPU trên GPU thật (GPU_REQUEST.md mục 08).
