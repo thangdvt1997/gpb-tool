@@ -27,9 +27,11 @@ export interface BoneShape {
   footR: number;
   /** Tổng góc gù (rad) chia đều cho spine_01..03. */
   backRad: number;
+  /** Cỡ đầu (scale đều quanh khớp head; 1 = nguyên bản). Chỉ đặt theo kiểu tạo hình (CHIBI_HEAD_SCALE), không có slider. */
+  head: number;
 }
 
-export const IDENTITY_BONE_SHAPE: Readonly<BoneShape> = { armL: 1, armR: 1, legL: 1, legR: 1, neck: 1, handL: 1, handR: 1, footL: 1, footR: 1, backRad: 0 };
+export const IDENTITY_BONE_SHAPE: Readonly<BoneShape> = { armL: 1, armR: 1, legL: 1, legR: 1, neck: 1, handL: 1, handR: 1, footL: 1, footR: 1, backRad: 0, head: 1 };
 
 export const BONE_SHAPE_LIMITS = {
   limb: { min: 0.85, max: 1.15 },
@@ -67,11 +69,25 @@ export function boneShapeOf(look: CharacterLook | null | undefined): BoneShape {
     footR: ext(b.legs?.right?.foot),
     neck: clampTo(1 + L.neckGain * neck, L.neck.min, L.neck.max),
     backRad: Math.min(1, Math.max(-1, back)) * L.backRad,
+    head: 1,
   };
 }
 
+/**
+ * Sảnh mở chibi (concept D, 09/11/2026): đầu to, thân gọn. Tệp chibi.glb giữ nguyên; chỉ phóng đầu khi hiển thị.
+ * Đỉnh đầu cao thêm vài cm (chưa tính vào shapedHeightM: camera và va chạm theo thân, không theo đỉnh đầu).
+ */
+export const CHIBI_HEAD_SCALE = 1.22;
+
+/** Hệ số xương theo look và tệp mô hình: chibi phóng đầu theo CHIBI_HEAD_SCALE. */
+export function boneShapeForModel(look: CharacterLook | null | undefined, model: string): BoneShape {
+  const s = boneShapeOf(look);
+  if (model === 'chibi') s.head = CHIBI_HEAD_SCALE;
+  return s;
+}
+
 export function isIdentityBoneShape(s: BoneShape): boolean {
-  return s.armL === 1 && s.armR === 1 && s.legL === 1 && s.legR === 1 && s.neck === 1 && s.handL === 1 && s.handR === 1 && s.footL === 1 && s.footR === 1 && s.backRad === 0;
+  return s.armL === 1 && s.armR === 1 && s.legL === 1 && s.legR === 1 && s.neck === 1 && s.handL === 1 && s.handR === 1 && s.footL === 1 && s.footR === 1 && s.backRad === 0 && s.head === 1;
 }
 
 /** Xương bắt buộc để hỗ trợ hình thể bằng xương. */
@@ -159,7 +175,7 @@ export function applyBoneShape(root: THREE.Object3D, s: BoneShape): void {
   scaleY(get('thigh_r'), s.legR);
   compensate(get('foot_r'), s.legR, cache.dir.foot_r, s.footR);
   scaleY(get('neck_01'), s.neck);
-  compensate(get('head'), s.neck, cache.dir.head);
+  compensate(get('head'), s.neck, cache.dir.head, s.head);
 
   const each = s.backRad / SPINE.length;
   for (const n of SPINE) {

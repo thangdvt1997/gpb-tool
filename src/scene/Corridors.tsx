@@ -3,7 +3,7 @@
 // nên không chặn đi lại và không đè vật thể.
 //
 // Đoạn (tọa độ bản vẽ, mét):
-//   lobby     Sảnh kính thang máy        x 20.5–30.5, y 15.5–18.9  sàn bóng sáng, viền đèn hắt màu nhấn
+//   lobby     Sảnh mở (concept D)        x 20.5–30.5, y 15.5–18.9  sàn gỗ sáng pastel (entry/lobbyLayout.ts), viền đèn hắt
 //   central   Hành lang giữa (đá)        x 18.6–29.9, y 12.9–13.9  đường ghi danh: cổng an ninh → điểm thả
 //   link      Lối nối hành lang giữa → sảnh x 25.6–27.0, y 13.9–15.5
 //   security  Khu an ninh (đá tối)       x 29.9–35.9, y  5.2–15.1  vạch dẫn từ cửa thang Đông tới cổng
@@ -38,6 +38,7 @@ import { buildNorthCorridor } from './corridors/NorthCorridor';
 import { LOUNGE_LINK_RECT } from './corridors/LoungeLink';
 import { NORTH_CORRIDOR_RECT } from './corridors/NorthCorridor';
 import { mix } from './entry/colors';
+import { LOBBY_PALETTE } from './entry/lobbyLayout';
 import { Batch } from './entry/merge';
 import { STONE_FLOOR_GLOSS } from './Floorplan';
 import { toWorldX, toWorldZ } from './layout';
@@ -120,8 +121,9 @@ function corridorColors(theme: ThemeName): CorridorColors {
   const security = mix(t.sceneFloor, THEME_TOKENS['office-day'].text, 0.55);
   const oak = mix(p.wood, t.panel, 0.45);
   return {
-    lobby: mix(t.sceneFloor, t.panel, 0.4),
-    lobbyBorder: mix(t.sceneAccent, t.panel, 0.3),
+    // Sảnh mở chibi: gỗ sáng theo bảng màu concept D ở mọi theme, viền đèn ấm.
+    lobby: LOBBY_PALETTE.floor,
+    lobbyBorder: mix(LOBBY_PALETTE.sun, t.panel, 0.3),
     stone,
     stoneJoint: real ? OFFICE_DAY_SCENE.floorGrout : mix(stone, t.text, 0.22),
     wood: p.wood,
@@ -211,7 +213,7 @@ function build(theme: ThemeName) {
     switch (style) {
       case 'lobby': {
         slab(floor, r, c.lobby);
-        joints(floor, r, 1.2, mix(c.lobby, c.stoneJoint, 0.35));
+        planks(floor, r, LOBBY_PALETTE.floorGrain);
         // Viền đèn hắt sát mép sảnh kính.
         const y = TOP + 0.002;
         glow.add(UNIT_BOX, null, [r.cx, y, r.z0 + 0.06], [r.w - 0.1, 0.002, 0.03], c.lobbyBorder);

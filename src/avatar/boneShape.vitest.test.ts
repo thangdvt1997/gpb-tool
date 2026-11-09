@@ -6,12 +6,15 @@ import { BODY_LIMITS_BY_STYLE, validate } from '../fashion/rules';
 import { setSliderValue } from '../wardrobe/shapeSliders';
 import {
   BONE_SHAPE_LIMITS,
+  CHIBI_HEAD_SCALE,
   IDENTITY_BONE_SHAPE,
   REST_SPANS,
   applyBoneShape,
+  boneShapeForModel,
   boneShapeOf,
   footDrop,
   heightDelta,
+  isIdentityBoneShape,
   measureRestSpans,
   rigSupportsBoneShape,
   shapedHeightM,
@@ -287,5 +290,31 @@ describe('tầm mắt camera và mặt sàn theo chiều dài chân mới', () =
     const sp = REST_SPANS.male_real;
     expect(footDrop(sp, shape({ legL: 1.1, legR: 1.0 }))).toBeCloseTo(0.1 * sp.legSpan, 9);
     expect(footDrop(sp, shape({ legL: 0.9, legR: 0.95 }))).toBeCloseTo(-0.05 * sp.legSpan, 9);
+  });
+});
+
+describe('chibi đầu to (sảnh mở chibi)', () => {
+  it('chibi phóng đầu theo CHIBI_HEAD_SCALE, người thật giữ nguyên', () => {
+    expect(boneShapeForModel(null, 'chibi').head).toBe(CHIBI_HEAD_SCALE);
+    expect(CHIBI_HEAD_SCALE).toBeGreaterThan(1.1);
+    expect(CHIBI_HEAD_SCALE).toBeLessThan(1.4);
+    expect(boneShapeForModel(null, 'male_real')).toEqual(IDENTITY_BONE_SHAPE);
+    expect(boneShapeForModel(null, 'female_real').head).toBe(1);
+    expect(isIdentityBoneShape(boneShapeForModel(null, 'chibi'))).toBe(false);
+  });
+
+  it('xương head nhận scale đều khi cổ không đổi', () => {
+    const root = new THREE.Group();
+    const neck = new THREE.Bone();
+    neck.name = 'neck_01';
+    const head = new THREE.Bone();
+    head.name = 'head';
+    head.position.y = 0.1;
+    neck.add(head);
+    root.add(neck);
+    applyBoneShape(root, { ...IDENTITY_BONE_SHAPE, head: CHIBI_HEAD_SCALE });
+    expect(head.scale.x).toBeCloseTo(CHIBI_HEAD_SCALE, 6);
+    expect(head.scale.y).toBeCloseTo(CHIBI_HEAD_SCALE, 6);
+    expect(head.scale.z).toBeCloseTo(CHIBI_HEAD_SCALE, 6);
   });
 });

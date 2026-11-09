@@ -20,7 +20,7 @@ import type { EmoteId } from '../emotes/types';
 import type { BodyFrame, BodyStyle, CharacterLook } from '../fashion/types';
 import { BODY_LIMITS_BY_STYLE } from '../fashion/rules';
 import { DEFAULT_HEIGHT_CM } from '../fashion/defaults';
-import { applyBoneShape, boneShapeOf, footDrop, REST_SPANS } from './boneShape';
+import { applyBoneShape, boneShapeForModel, footDrop, REST_SPANS } from './boneShape';
 import { useAvatarGltf } from './glbLoad';
 import { FallbackAvatar } from './FallbackAvatar';
 import {
@@ -557,7 +557,8 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
   const heightM = targetHeightM(style, frame, look?.body.heightCm);
   const scale = heightM / rig.nativeHeight;
   // Hình thể bằng xương (tay, chân, cổ, lưng): áp lên skeleton dùng chung với vỏ trang phục.
-  const shape = useMemo(() => boneShapeOf(look), [look]);
+  const modelId = mpfbModelFor(style, frame);
+  const shape = useMemo(() => boneShapeForModel(look, modelId), [look, modelId]);
   useEffect(() => applyBoneShape(rig.root, shape), [rig, shape]);
   // Hook e2e (?debug=shape): window.__gpbShape.read() cho avatar mount sau cùng (sân khấu phòng thay đồ).
   useEffect(() => {
@@ -570,7 +571,7 @@ function MpfbModel({ url, style, frame, look, animation, emote }: MpfbModelProps
     };
   }, [rig]);
   // Chân dài/ngắn đổi vị trí bàn chân thấp nhất: tính lại mặt sàn và độ cao hông (IK chân và camera theo đó).
-  const drop = footDrop(REST_SPANS[mpfbModelFor(style, frame)], shape);
+  const drop = footDrop(REST_SPANS[modelId], shape);
   // Chân chạm y = 0: dịch lên bù đáy chân của mesh (khoảng 2,4 đến 2,7 cm ở tệp gốc).
   const groundY = -(rig.minY - drop) * scale;
   // rootY của AvatarPose tính theo hông 0,86 m của rig dự phòng: quy đổi theo độ cao hông thật.

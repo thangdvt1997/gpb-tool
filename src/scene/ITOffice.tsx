@@ -9,7 +9,9 @@ import {
   EntryFixtures,
   EntrySequence,
   MOD_DESK_ID,
+  OpenLobby,
   entryBlockers,
+  lobbyBlockers,
   prefersReducedMotion,
   rig,
   useArrivalChime,
@@ -300,7 +302,7 @@ export function ITOffice({
   const nocObjects = useMemo(() => zone.objects.filter((o) => o.action === 'noc'), [zone]);
   const interactBlockers = useInteractBlockers();
   const obstacles = useMemo(
-    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects), ...interactBlockers, ...extraBlockers],
+    () => [...collisionRects(zone.objects), ...decorBlockersOf(zone.objects, showPlants), ...entryBlockers(zone.objects), ...lobbyBlockers(), ...interactBlockers, ...extraBlockers],
     [zone, showPlants, interactBlockers, extraBlockers],
   );
   const audioRects = useMemo(() => audioZoneRects(zone.objects), [zone]);
@@ -543,6 +545,7 @@ export function ITOffice({
       </group>
 
       <EntryFixtures objects={zone.objects} theme={lightTheme} />
+      <OpenLobby />
       {entry.kind === 'sequence' && (
         <EntrySequence
           userName={userName}

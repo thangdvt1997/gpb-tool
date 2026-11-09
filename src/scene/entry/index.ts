@@ -4,3 +4,5 @@ export { EntryFixtures, type EntryFixturesProps } from './EntryFixtures';
 export { ENTRY_DROP, ENTRY_FIXTURE_IDS, MOD_DESK_ID, entryBlockers } from './placement';
 export { rig, ringWestLift } from './rig';
 export { useArrivalChime } from './useArrivalChime';
+export { OpenLobby } from './OpenLobby';
+export { lobbyBlockers } from './lobbyLayout';
