@@ -507,3 +507,18 @@ Acceptance a0dac70 (cùng mã với 019f2db, chỉ thêm tài liệu):
 Sửa spec /home/cc/gpb-e2e/tests/20-controls.spec.ts (ngoài repo): vòng chờ mỗi phím tối đa 30 s thay vì 12 s; ngưỡng góc 20° và điều kiện thoát sớm giữ nguyên. Lượt 4: W đạt -95,3° sau 36,3 s. Tải máy chủ yếu do tiến trình root ngoài dự án (wineserver, main).
 
 Push origin/main 019f2db..a0dac70 (fast-forward).
+
+Acceptance 2cee7ba (tài liệu): FAIL 29-multiplayer presence lần thứ hai (B không thấy A). Lỗi lặp lại nên tìm nguyên nhân thật:
+- Nguyên nhân: nhịp giữ presence 2 s (POSE_KEEPALIVE_MS) chỉ gửi trong `useFrame` của PoseSender. Khi vòng render đứng, nhịp này không được gửi, và sau 15 s server cho presence hết hạn: người vào sau không thấy người đứng yên. Vòng render đứng khi tab ẩn (rAF dừng) hoặc khi GPU bận (trên VPS: hai trang chung một tiến trình GPU swiftshader, B đang tải cảnh). Người dùng thật cũng gặp khi chuyển sang tab khác.
+- Sửa 222065e (src/net/worldClient.ts): WorldClient nhớ pose cuối đã gửi và có timer riêng (`poseKeepaliveMs`, mặc định 2 s) gửi lại pose đó khi quá nhịp. seq luôn tăng so với mọi lần gửi (cả PoseSender lẫn nhịp), nên server không bỏ gói vì stale_seq. Timer dừng khi mất kết nối và chạy lại sau snapshot. 4 vitest mới (khung hình đứng 15 s vẫn gửi ≥ 6 gói seq tăng; không gửi thêm khi PoseSender gửi đều; nâng seq; dừng/chạy lại theo kết nối); src/net 101/101.
+- Giới hạn: tab ẩn quá ~5 phút thì Chrome giới hạn timer chuỗi còn ~1 lần/phút, presence vẫn có thể hết hạn. Muốn giữ lâu hơn thì server phải coi ping là nhịp presence (cần deploy world, cần root).
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance 222065e lần 1 (10:37) | FAIL 29-multiplayer chat A -> B (tin không tới B trong 15 s); presence PASS. Chạy riêng --repeat-each=2 trên bản build 222065e: 18/18 PASS, nên coi là lỗi tạm do tải |
+| Acceptance 222065e lần 2 (11:23) | **PASS** e2e 122 + đăng nhập thật 1 |
+| Push | origin/main a0dac70..222065e (fast-forward) |
+| Deploy | watcher 11:57 UTC, deployed.sha 222065e, bundle index-Dr8xunuO.js; smoke 200/200/401 |
+| Test production | --workers=4 **58/58 PASS** (17,6 phút) |
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.

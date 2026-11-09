@@ -327,3 +327,9 @@ Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính 
 - `playwright.prod.config.ts --workers=4`: **58/58 PASS** (16,7 phút), thêm 52-gpu-timer (08).
 - 52-gpu-timer: overlay `?perf=1` có dòng "GPU … ms p50 … p95 … (N mẫu)" khi context WebGL2 của ứng dụng có EXT_disjoint_timer_query_webgl2, hoặc "GPU: trình duyệt không hỗ trợ đo"; bench JSON có khóa `gpu` (null khi không hỗ trợ). Trên swiftshader extension có mặt; truy vấn đầu tiên ~5,4 s (biên dịch shader trên CPU), nên số này không dùng làm ngưỡng. Lần chạy acceptance đầu (02bc5e1) FAIL vì spec dò extension bằng canvas riêng và đòi có mẫu trong bench 4 s; spec nay đọc trạng thái từ overlay, chờ overlay có ≥ 1 mẫu, và chạy 6/6 khi song song.
 - Chưa kiểm: thời gian GPU trên GPU thật (GPU_REQUEST.md mục 08).
+
+## Production 222065e — lần lặp 22 (09/11/2026, 11:57 UTC)
+- Sửa: nhịp giữ presence nhiều người gửi bằng timer của WorldClient (không phụ thuộc khung hình), để người đứng yên không biến mất với người khác khi tab ẩn ngắn hoặc GPU bận. Bằng chứng trên môi trường test VPS (auth 3902, world 3903): 29-multiplayer chạy riêng 18/18 PASS hai lượt, acceptance đầy đủ PASS (e2e 122 + đăng nhập thật 1).
+- Deploy: watcher root, deployed.sha = 222065e, bundle `index-Dr8xunuO.js` (có `poseKeepaliveMs`); smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401.
+- `playwright.prod.config.ts --workers=4`: **58/58 PASS** (17,6 phút).
+- Chưa kiểm: tab ẩn lâu hơn ~5 phút (Chrome giới hạn timer còn ~1 lần/phút, presence vẫn có thể hết hạn); nhiều người trên production (không tạo tài khoản test production, theo quyết định chủ dự án).
