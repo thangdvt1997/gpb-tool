@@ -425,3 +425,11 @@ Việc tự làm được trên VPS (điều phối viên, main, không mở sub
 GPU_REQUEST.md (và /home/cc/gpu-handoff/gpu_request.md) trỏ 1b18bec; mục 08 xin thêm thời gian GPU.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`), 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 01, 03, 04, 07 (bản build), 08 (bản build, thời gian GPU), 13, 14, 15, 16, 19, user.txt; 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 16
+
+Đầu lần lặp (01:47 UTC): acceptance 09268bd **PASS** (01:15–01:46 UTC); production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md (máy Windows 192.168.1.2) không đổi từ 08/11 08:15 UTC: 07 đạt, 08 có số đo dev server; 03, 11, 13, 14, 15, 16, 19 vẫn "chưa kiểm". gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11; user cc không có sudo (/opt/gpb-tool/.env thuộc root, quyền 600). Hai lỗi acceptance của ff21ea7 (26-autowalk, voice-suite) đã hết từ các lần lặp trước (1b18bec, 09268bd PASS).
+
+Rà cột "Còn thiếu" của TASK_STATUS.csv: không còn mục nào làm được trên VPS mà không cần root, GPU, NVDA hay thiết bị thật (11: chiều trục Y cần phải cần tay cầm thật; mã đảo trục và map axes[2]/axes[3] đã có test). Không mở subagent, không đổi mã.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec, mã không đổi từ đó); 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
