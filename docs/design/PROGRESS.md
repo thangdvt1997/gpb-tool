@@ -459,3 +459,20 @@ Acceptance 8c8c612 lần 1: FAIL chỉ 26-autowalk ("đứng yên sau khi bị t
 Đầu lần lặp (05:51 UTC): acceptance 07b631d **PASS** (05:22–05:50 UTC, gồm 26-autowalk sau khi sửa spec đo đứng yên bằng hai mẫu liên tiếp); main trùng origin/main; watcher smoke OK, bundle production index-0roBI1Vk.js (mã web không đổi từ 1b18bec); production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md vẫn bản 08/11 08:15 UTC. gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 21
+
+Đầu lần lặp (06:35 UTC): lượt acceptance f0ebf5c bắt đầu lúc 05:52 bị hỏng vì môi trường, không phải lỗi mã. Có hai lượt ghi chồng vào /home/cc/gpb-acceptance.txt (các dòng bị lặp, tải máy lên ~91). Ngoài ra auth stub 3901 không khởi động: e2e_with_stub.sh ghi log stub vào /home/cc/handoff-20261107/auth-stub-3901.log, tệp này thuộc root nên user cc không ghi được. Kết quả là 18 test mock timeout (log đầy ECONNREFUSED 127.0.0.1:3901). Đã dừng lượt hỏng, bật stub chạy nền với log ở /tmp/auth-stub-3901.log, rồi chạy lại.
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance f0ebf5c (chạy lại) | **PASS** 06:36–07:06 UTC (e2e 122 + đăng nhập thật 1) |
+| Production | bundle index-0roBI1Vk.js (mã web không đổi từ 1b18bec); smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401 |
+| gpu_result.md | không đổi từ 08/11 08:15 UTC |
+| Root | gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC; user cc không có sudo |
+
+Đề nghị chủ dự án: đổi e2e_with_stub.sh để ghi log stub ra /tmp (hoặc trả quyền ghi /home/cc/handoff-20261107 cho cc). Nếu không, mỗi acceptance của cc phải bật stub 3901 trước bằng tay.
+
+Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
