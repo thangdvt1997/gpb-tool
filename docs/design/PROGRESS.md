@@ -433,3 +433,9 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Rà cột "Còn thiếu" của TASK_STATUS.csv: không còn mục nào làm được trên VPS mà không cần root, GPU, NVDA hay thiết bị thật (11: chiều trục Y cần phải cần tay cầm thật; mã đảo trục và map axes[2]/axes[3] đã có test). Không mở subagent, không đổi mã.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec, mã không đổi từ đó); 10, 11 cần điện thoại, cảm ứng, tay cầm thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 17
+
+Đầu lần lặp (02:47 UTC): acceptance a4c8872 **PASS** (02:17 UTC); watcher đã deploy a4c8872; production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md không đổi từ 08/11 08:15 UTC (07 đạt; 08 số đo dev server; 03, 11, 13, 14, 15, 16, 19 chưa kiểm). gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 (17:57 UTC). Rà lại TASK_STATUS.csv: không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi so với lần lặp 16): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
