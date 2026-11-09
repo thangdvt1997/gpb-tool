@@ -596,3 +596,19 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 29
+
+Đầu lần lặp (20:24 UTC): main trùng origin/main (5dddc1c). Acceptance 5dddc1c (19:52) RESULT=FAIL: e2e 121/122, lỗi ở 29-multiplayer "rớt kết nối rồi resume" (lần 25 đến 28 đều PASS, nên là lỗi chập chờn). Watcher không deploy 5dddc1c (chỉ đổi tài liệu). Smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11. gpu_result.md không có mục mới từ 07:18 UTC; gpu_request_sanh_mo.md chưa có kết quả.
+
+Nguyên nhân: sau `dropSocket` lần hai (kèm `setOffline(true)`), test lấy mẫu `state` và chờ khác `connected` trong 15 s. Chromium `setOffline` không chặn WebSocket tới 127.0.0.1 và backoff có jitter (có thể vài ms), nên client kết nối lại trước lần lấy mẫu đầu; test không thấy trạng thái trung gian.
+
+Sửa (d9a85b5): `__gpbWorld.dropSocket` đăng ký `WorldClient.onState` và ghi các trạng thái đi qua vào `statesSinceDrop`; spec /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts (ngoài repo) kiểm nhật ký này có trạng thái khác `connected`, rồi vẫn chờ `connected`, thấy B, cùng selfId, chat chạy như cũ. Không đổi hành vi app (hook chỉ mount khi ?world=1 và debug=world/controls).
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance d9a85b5 (20:25 đến 20:56 UTC) | RESULT=PASS: tsc, build, 10 bộ test node/vitest, e2e 122/122 + 03-login-real 1/1 |
+| Push | origin/main = d9a85b5 (fast-forward) |
+| Deploy | watcher deploy d9a85b5 lúc 20:57 UTC, web healthy, bundle index-BcWvN3CP.js, smoke watcher OK, smoke production 200/200/401 (backup /root/backup-gpb-web-20261109T205614Z-d9a85b5, image gpb-tool/web:backup-20261109T205614Z-d9a85b5) |
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
