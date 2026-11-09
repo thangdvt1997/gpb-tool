@@ -453,3 +453,9 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
 
 Acceptance 8c8c612 lần 1: FAIL chỉ 26-autowalk ("đứng yên sau khi bị tắt tự đi": 0,327 m so với ngưỡng 0,3 m, load ~54; 121 test khác PASS, đăng nhập thật PASS). Nguyên nhân: máy tải nặng làm khung chậm (bước cố định tối đa 5 bước mỗi khung) nên quán tính dừng kéo dài quá một lần đo cố định. Sửa spec /home/cc/gpb-e2e/tests/26-autowalk.spec.ts (ngoài repo): kiểm `__gpbNav.autoWalk` tắt, rồi chờ tới khi hai mẫu cách 1,5 s lệch < 0,3 m (tối đa 20 s; tự đi còn chạy thì không bao giờ đạt). Chạy riêng --repeat-each=2: 4/4 PASS. Chạy lại acceptance đầy đủ.
+
+## 2026-11-09 — Lần lặp 20
+
+Đầu lần lặp (05:51 UTC): acceptance 07b631d **PASS** (05:22–05:50 UTC, gồm 26-autowalk sau khi sửa spec đo đứng yên bằng hai mẫu liên tiếp); main trùng origin/main; watcher smoke OK, bundle production index-0roBI1Vk.js (mã web không đổi từ 1b18bec); production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md vẫn bản 08/11 08:15 UTC. gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
