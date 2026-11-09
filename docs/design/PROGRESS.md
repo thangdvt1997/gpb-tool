@@ -445,3 +445,9 @@ Việc còn lại (không đổi so với lần lặp 16): 25 thoại production
 Đầu lần lặp (03:49 UTC): acceptance ead7039 **PASS** (03:18 UTC); main trùng origin/main; production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md vẫn bản 08/11 08:15 UTC (07 đạt; 08 số đo dev server; 03, 11, 13, 14, 15, 16, 19 chưa kiểm). gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11. Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 19
+
+Đầu lần lặp (04:20 UTC): acceptance 169123a **PASS** (xong 04:19 UTC); main trùng origin/main; production smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. gpu_result.md vẫn là bản 08/11 08:15 UTC (07 đạt; 08 số đo dev server; 03, 11, 13, 14, 15, 16, 19 chưa kiểm). gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 (17:57 UTC); user cc không có sudo. Rà lại cột "Còn thiếu" của TASK_STATUS.csv: mọi mục còn lại đều cần root, GPU, NVDA hoặc thiết bị thật. Không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
