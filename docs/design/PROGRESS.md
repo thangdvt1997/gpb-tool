@@ -572,3 +572,11 @@ Rà spec Sảnh mở chibi lần cuối: bảng màu (tường #EAF6FF, sàn, th
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 26
+
+Đầu lần lặp (18:48 UTC): main trùng origin/main (6e7d05a); acceptance 6e7d05a RESULT=PASS (18:17); watcher deploy 6e7d05a lúc 18:07 UTC (chỉ đổi tài liệu); smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không có mục mới từ 07:18 UTC; gpu_request_sanh_mo.md chưa có kết quả.
+
+Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA (kết luận như lần lặp 24, 25); không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
