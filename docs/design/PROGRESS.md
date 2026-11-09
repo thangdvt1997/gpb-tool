@@ -522,3 +522,27 @@ Acceptance 2cee7ba (tài liệu): FAIL 29-multiplayer presence lần thứ hai (
 | Test production | --workers=4 **58/58 PASS** (17,6 phút) |
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 23: Sảnh mở chibi (concept D)
+
+Theo ưu tiên mới của chủ dự án (spec /home/cc/handoff-20261107/design/SPEC_sanh_mo_chibi.md). Worktree /home/cc/wt/sanh-mo (nhánh local wt/sanh-mo) từ main 041356b; không worktree nào khác đang sửa scene (chỉ a11y7 có thay đổi chưa commit, ở panel UI).
+
+Đã làm:
+- effde72: sàn sảnh gỗ sáng #F9E0BF vân #EFCFA6, viền đèn ấm; OpenLobby (src/scene/entry/OpenLobby.tsx, lobbyLayout.ts): thảm tròn #BDEBDD/#D9F4EA giữa sảnh, hai cây lớn (chậu #FF8A7A, tán #7ED6B8/#5CC6A0) ở hai góc Nam sát hai lõi thang, dải cửa sổ trời (#CFEFFF, đồi, mây, mặt trời, thanh dọc trắng) trên mặt lõi thang nhìn vào sảnh, trên cửa thang Tây và bảng ghi danh. Thêm 2 draw call, không bắt raycast. Chibi: xương head x1,22 (CHIBI_HEAD_SCALE), GLB giữ nguyên, người thật không đổi.
+- b9606ab: acceptance effde72 FAIL 26-autowalk (nhân vật kẹt ở góc Tây-Nam sảnh): lưới tìm đường của minimap và camera chụp ảnh dựng vật cản riêng, chưa có chậu cây. Thêm lobbyBlockers vào cả hai, vitest lobbyRoute (FAIL khi thiếu bản sửa). Chạy riêng 26-autowalk: 2/2 PASS.
+
+Số bàn, ghế trong sảnh và hành lang chính (trước → sau): quầy Service Desk 1 → 1, bàn 0 → 0, ghế 0 → 0; máy in đầu Tây hành lang giữa 1 → 1 (ngoài lối đi); thêm 2 chậu cây ở góc. Toàn tầng không đổi số bàn, ghế (không đụng it.json).
+- Quầy Service Desk giữ nguyên chỗ, trái với ý "không có quầy trong sảnh" của spec. Lý do: vị trí gốc của quầy còn nằm trong service layout (defaults, deploy service cần root), tính năng tương tác và sắp xếp nội thất dùng quầy (spec yêu cầu giữ), 7 e2e bấm, kéo quầy theo vị trí hiện tại. Người dùng vẫn dời quầy được bằng Sắp xếp nội thất. Cách đổi: dời service_desk trong src/content/zones/it.json và services/layout cùng lúc, deploy layout bằng root, cập nhật e2e 02, 12, 37, 45, 48, 50, 51.
+- Chưa làm: đèn ấm thật (thêm đèn sẽ đổi shader mọi vật liệu, tốn GPU; hiện chỉ đổi màu viền đèn và cửa sổ sáng); kiểu Chibi chưa thành mặc định (mặc định vẫn Người thật, chibi chọn trong Phòng thay đồ).
+
+Kiểm chứng: tsc, vitest 1236/1236, build, scene-qa 0 lỗi. Ảnh trước, sau và FPS: BROWSER_QA.md mục "Sảnh mở chibi", ảnh ở docs/design/screens/sanh-mo/.
+
+| Bước | Kết quả |
+|---|---|
+| Acceptance effde72 (13:47) | FAIL 26-autowalk (kẹt ở chậu cây Tây, đã sửa ở b9606ab); còn lại e2e 121 PASS |
+| Acceptance b9606ab (14:26) | **PASS** e2e 122 + đăng nhập thật 1 |
+| Push | origin/main 041356b..b9606ab (fast-forward) |
+| Deploy | watcher, deployed.sha b9606ab, bundle index-BB0LGeOo.js (có màu sàn #F9E0BF); smoke 200/200/401 |
+| Test production | --workers=4 **58/58 PASS** (18,2 phút) |
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03 (thêm: xem chibi đầu mới khi ngồi ghế cao), 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần thiết bị thật; 12 chờ NVDA. Sảnh mở: quầy Service Desk chưa dời (xem trên). gpu_request.md thuộc root nên chưa thêm mục xem sảnh mở trên GPU. Không tạo PROJECT_COMPLETE.txt.

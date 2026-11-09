@@ -333,3 +333,20 @@ Các spec mới tự bỏ qua khi bản build đang phục vụ chưa có tính 
 - Deploy: watcher root, deployed.sha = 222065e, bundle `index-Dr8xunuO.js` (có `poseKeepaliveMs`); smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401.
 - `playwright.prod.config.ts --workers=4`: **58/58 PASS** (17,6 phút).
 - Chưa kiểm: tab ẩn lâu hơn ~5 phút (Chrome giới hạn timer còn ~1 lần/phút, presence vẫn có thể hết hạn); nhiều người trên production (không tạo tài khoản test production, theo quyết định chủ dự án).
+
+## Sảnh mở chibi effde72 + b9606ab — lần lặp 23 (09/11/2026)
+Spec: /home/cc/handoff-20261107/design/SPEC_sanh_mo_chibi.md (concept D). Ảnh chụp trên VPS (swiftshader, 1280 x 720) bằng bản build preview với auth stub 127.0.0.1:3901, phiên giả lập. Trước = main 041356b, sau = effde72. Ảnh: `docs/design/screens/sanh-mo/`.
+
+| Góc | Trước | Sau |
+|---|---|---|
+| Điểm xuất hiện (25,0; 18,0), mặt Bắc vào quầy | truoc-sanh.png | sau-sanh.png |
+| Từ hành lang Nam nhìn lên sảnh | truoc-sanh-tunam.png | sau-sanh-tunam.png: sàn gỗ sáng, thảm tròn, hai cây góc, dải cửa sổ trời trên hai lõi |
+| Từ lối link nhìn xuống sảnh | truoc-sanh-bac.png | sau-sanh-bac.png |
+| Hành lang giữa nhìn về Tây | truoc-hanhlang.png | sau-hanhlang.png |
+| Phòng thay đồ, kiểu Chibi | truoc-chibi.png | sau-chibi.png: đầu to hơn (xương head x1,22) |
+
+- FPS (HUD ?perf=1, swiftshader, chỉ để so tương đối; GPU thật cần máy Windows): điểm xuất hiện trước 1,4–1,5, sau 1,2–1,4; hành lang Nam trước 1,3–1,5, sau 1,1–1,3. Hai lượt chạy song song trên máy đang tải nên sai số lớn. Draw call góc hành lang Nam: 82 trước, 84 sau (thêm đúng 2 mesh của OpenLobby).
+- Lỗi console: trước và sau chỉ có "Failed to load resource 404" (API không có trong stub 3901); không có lỗi mới.
+- Lối đi: vitest `src/scene/entry/lobbyLayout.vitest.test.ts` kiểm dải Nam sảnh (x 21,3–29,7, y 17,25–18,15), lối link và hành lang giữa không giao vật đặc nào (it.json, decor, cổng an ninh, đạo cụ, cây), điểm xuất hiện cách mọi vật đặc ít nhất bán kính nhân vật. Nhân vật đi qua sảnh: e2e điều khiển và tương tác trong acceptance (xem PROGRESS.md).
+- Chưa kiểm: nhìn trên GPU thật; chibi ngồi ghế cao với đầu mới (task 03, máy Windows).
+- Production b9606ab (09/11/2026, deploy bằng watcher, bundle index-BB0LGeOo.js): smoke `/` 200, `/api/auth/providers` 200, `/api/world/health` 401; `playwright.prod.config.ts --workers=4` **58/58 PASS** (có canvas 3D, không lỗi console nghiêm trọng).
