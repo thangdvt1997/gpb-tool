@@ -476,3 +476,22 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 theo GPU_REQUEST.md (trỏ 1b18bec); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 22
+
+Đầu lần lặp (07:38 UTC): acceptance 019f2db **PASS** (07:06 UTC); main trùng origin/main. Hai lỗi acceptance của ff21ea7 (26-autowalk, voice-suite WebRTC) đã sửa ở các lần lặp trước: ff21ea7 nằm trong lịch sử main và mọi acceptance từ 07b631d đều PASS. Production: bundle index-0roBI1Vk.js; smoke trang chủ 200, /api/auth/providers 200, /api/world/health 401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC.
+
+gpu_result.md có mục mới "Kiểm trên production ngày 09/11/2026" (trình duyệt đã đăng nhập, f0ebf5c):
+| Task | Kết quả ghi nhận | Còn chưa kiểm |
+|---|---|---|
+| 13 | đổi Thấp/Cao trong Cài đặt đổi đúng nhãn "Đồ họa đang chạy" | tự hạ mức khi tải nặng, không nhấp nháy |
+| 15 | 5 hành động xã hội bấm được, không lỗi hiển thị | animation bằng ảnh phóng to, hai trình duyệt trên GPU |
+| 16 | bảng chế độ chụp mở được (camera, tỷ lệ, FOV) | bấm chụp và kiểm file |
+| 19 | bảng vẽ xăm mở được | vẽ thử, xem mép trên GPU |
+| 03, 11, 14 | chưa kiểm | chibi ghế cao; thiết bị thật; nghe thật |
+
+Không có mục nào đổi trạng thái: các mục còn chưa kiểm vẫn nằm trong gpu_request.md. Tệp đó thuộc root nên cc không sửa được, nhưng nội dung vẫn đúng.
+
+Không có mục mới làm được trên VPS; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production cần root (`sudo bash scripts/deploy-layout.sh 1b18bec`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
