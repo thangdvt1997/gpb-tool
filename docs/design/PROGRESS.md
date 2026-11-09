@@ -612,3 +612,11 @@ Sửa (d9a85b5): `__gpbWorld.dropSocket` đăng ký `WorldClient.onState` và gh
 | Deploy | watcher deploy d9a85b5 lúc 20:57 UTC, web healthy, bundle index-BcWvN3CP.js, smoke watcher OK, smoke production 200/200/401 (backup /root/backup-gpb-web-20261109T205614Z-d9a85b5, image gpb-tool/web:backup-20261109T205614Z-d9a85b5) |
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 30
+
+Đầu lần lặp (21:30 UTC): main trùng origin/main (ec532fb); acceptance ec532fb (20:59) RESULT=PASS; production chạy bundle index-BcWvN3CP.js (d9a85b5, ec532fb chỉ đổi tài liệu), web healthy; smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:55 UTC. gpu_result.md không có mục mới từ 07:18 UTC; gpu_request_sanh_mo.md chưa có kết quả. task_assign.txt có mtime 20:42 nhưng nội dung vẫn là giao việc V1 đến V6 ngày 07/11 (đã xong ở các lần lặp trước). Worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main, không có thay đổi chưa commit.
+
+Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA (kết luận như lần lặp 24 đến 28); không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
