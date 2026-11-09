@@ -588,3 +588,11 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA (kết luận như lần lặp 24 đến 26); không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-09 — Lần lặp 28
+
+Đầu lần lặp (19:52 UTC): main trùng origin/main (125a1fb); acceptance 125a1fb RESULT=PASS (19:20); watcher đã deploy 80787f4 lúc 19:20 UTC, 125a1fb (chỉ đổi tài liệu) chờ lượt watcher kế tiếp; smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:55 UTC. gpu_result.md không có mục mới từ 07:18 UTC; gpu_request_sanh_mo.md chưa có kết quả; task_assign.txt không đổi từ 07/11. Spec Sảnh mở chibi đọc lại: không có mục mới ngoài hai mục đã kết luận ở lần lặp 24.
+
+Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
