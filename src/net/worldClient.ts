@@ -3,6 +3,7 @@
 // Không phụ thuộc React hay DOM; WebSocket, đồng hồ, timer, random đều tiêm được để test.
 
 import { CLOSE_CODES, type LeaseView, type ServerMessage, type Snapshot } from './protocol';
+import { POSE_KEEPALIVE_MS } from './poseThrottle';
 
 export type ConnState =
   | 'idle'
@@ -53,6 +54,8 @@ export interface WorldClientOptions {
   /** Quá thời gian này không nhận gì từ server thì coi là mất kết nối. */
   deadAfterMs?: number;
   leaseHeartbeatMs?: number;
+  /** Nhịp gửi lại pose cuối khi vòng render không gửi (tab ẩn, khung hình đứng), để server không cho presence hết hạn. */
+  poseKeepaliveMs?: number;
 }
 
 const OPEN = 1;
@@ -92,6 +95,10 @@ export class WorldClient {
   private retryTimer: unknown = null;
   private pingTimer: unknown = null;
   private hbTimer: unknown = null;
+  private poseTimer: unknown = null;
+  private lastPose: { x: number; z: number; yaw: number; anim?: string } | null = null;
+  private lastPoseAt = -Infinity;
+  private poseSeq = 0;
   private lastRx = 0;
   private lostAt: number | null = null;
   private stopped = true;
@@ -117,6 +124,7 @@ export class WorldClient {
       pingMs: o.pingMs ?? 10_000,
       deadAfterMs: o.deadAfterMs ?? 25_000,
       leaseHeartbeatMs: o.leaseHeartbeatMs ?? 5_000,
+      poseKeepaliveMs: o.poseKeepaliveMs ?? POSE_KEEPALIVE_MS,
     };
     this.backoffOpt = { baseMs: 500, maxMs: 15_000, maxAttempts: 12, ...o.backoff };
     try {
@@ -415,8 +423,14 @@ export class WorldClient {
   }
 
   // ----- API tiện cho gameplay -----
+  /** Gửi pose. seq luôn tăng so với mọi lần gửi trước (kể cả nhịp giữ presence), server bỏ seq không tăng. */
   sendPose(p: { seq: number; x: number; z: number; yaw: number; anim?: string }): boolean {
-    return this.send({ type: 'pose', v: 1, ...p });
+    const seq = Math.max(p.seq, this.poseSeq + 1);
+    if (!this.send({ type: 'pose', v: 1, ...p, seq })) return false;
+    this.poseSeq = seq;
+    this.lastPose = { x: p.x, z: p.z, yaw: p.yaw, ...(p.anim ? { anim: p.anim } : {}) };
+    this.lastPoseAt = this.opt.now();
+    return true;
   }
 
   /** Gửi chat; trả clientMsgId để UI theo dõi pending/sent/failed. Có thể xếp hàng khi mất mạng. */
@@ -462,10 +476,20 @@ export class WorldClient {
       }
     };
     this.hbTimer = this.opt.setTimer(beat, this.opt.leaseHeartbeatMs);
+    // PoseSender gửi theo khung hình; khi khung hình đứng (tab ẩn, GPU bận) thì nhịp này giữ presence.
+    const keep = () => {
+      this.poseTimer = this.opt.setTimer(keep, this.opt.poseKeepaliveMs);
+      if (this.lastPose && this.opt.now() - this.lastPoseAt >= this.opt.poseKeepaliveMs) {
+        this.sendPose({ seq: this.poseSeq + 1, ...this.lastPose });
+      }
+    };
+    this.poseTimer = this.opt.setTimer(keep, this.opt.poseKeepaliveMs);
   }
   private stopHeartbeat(): void {
     if (this.hbTimer !== null) this.opt.clearTimer(this.hbTimer);
     this.hbTimer = null;
+    if (this.poseTimer !== null) this.opt.clearTimer(this.poseTimer);
+    this.poseTimer = null;
   }
 
   private clearAllTimers(): void {

@@ -345,3 +345,66 @@ describe('sự kiện, resume và lease', () => {
     expect(mem.has('world.resume')).toBe(false);
   });
 });
+
+describe('WorldClient nhịp giữ presence', () => {
+  const poses = (s: { sent: Record<string, unknown>[] }) => s.sent.filter((m) => m.type === 'pose');
+  const connected = () => {
+    const h = harness();
+    h.client.connect();
+    h.last().open();
+    h.last().push(h.snap());
+    return h;
+  };
+
+  it('khung hình đứng (không còn sendPose từ PoseSender) thì vẫn gửi lại pose cuối, seq tăng, đủ nhịp trước TTL 15 s', () => {
+    const h = connected();
+    expect(h.client.sendPose({ seq: 1, x: 2, z: 3, yaw: 0.5 })).toBe(true);
+    h.advance(15_000);
+    const sent = poses(h.last());
+    expect(sent.length).toBeGreaterThanOrEqual(6);
+    const seqs = sent.map((m) => m.seq as number);
+    for (let i = 1; i < seqs.length; i++) expect(seqs[i]).toBeGreaterThan(seqs[i - 1]!);
+    expect(sent.every((m) => m.x === 2 && m.z === 3 && m.yaw === 0.5)).toBe(true);
+  });
+
+  it('chưa từng có pose thì không gửi gì; PoseSender gửi đều thì nhịp không gửi thêm', () => {
+    const h = connected();
+    h.advance(5_000);
+    expect(poses(h.last())).toHaveLength(0);
+    for (let i = 0; i < 20; i++) {
+      h.client.sendPose({ seq: i + 1, x: i * 0.1, z: 0, yaw: 0 });
+      h.advance(500);
+    }
+    expect(poses(h.last())).toHaveLength(20);
+  });
+
+  it('seq của PoseSender thấp hơn seq đã gửi qua nhịp thì được nâng lên, không bị server bỏ vì stale_seq', () => {
+    const h = connected();
+    h.client.sendPose({ seq: 1, x: 0, z: 0, yaw: 0 });
+    h.advance(6_000);
+    const top = Math.max(...poses(h.last()).map((m) => m.seq as number));
+    expect(top).toBeGreaterThan(1);
+    h.client.sendPose({ seq: 2, x: 0.3, z: 0, yaw: 0 });
+    const all = poses(h.last());
+    expect(all[all.length - 1]!.seq).toBe(top + 1);
+  });
+
+  it('mất kết nối thì dừng nhịp, kết nối lại thì chạy tiếp với seq vẫn tăng', () => {
+    const h = connected();
+    h.client.sendPose({ seq: 1, x: 1, z: 1, yaw: 0 });
+    h.advance(4_000);
+    const before = Math.max(...poses(h.last()).map((m) => m.seq as number));
+    const old = h.last();
+    old.drop();
+    const n = old.sent.length;
+    h.advance(300);
+    expect(old.sent.length).toBe(n);
+    h.advance(20_000);
+    h.last().open();
+    h.last().push(h.snap());
+    h.advance(4_000);
+    const after = poses(h.last());
+    expect(after.length).toBeGreaterThan(0);
+    expect(after[0]!.seq as number).toBeGreaterThan(before);
+  });
+});
