@@ -896,3 +896,11 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-10 — Lần lặp 65
+
+Đầu lần lặp (23:53 UTC): main trùng origin/main (f565c4b). Acceptance f565c4b (bắt đầu 23:22) RESULT=PASS, mọi bước 0. Watcher đã xử lý 872f3ca (deployed.sha); production vẫn bundle index-BcWvN3CP.js của d9a85b5 (các commit sau chỉ đổi tài liệu); smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md (16:28 UTC 09/11) chưa có kết quả; spec Sảnh mở chibi không đổi (08:08 UTC 09/11), worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main.
+
+Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
