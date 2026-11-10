@@ -245,6 +245,9 @@ describe('co theo kích thước thân (chiều cao, chibi, morph)', () => {
     };
     const c1 = makeBuildContext(base, classifyBody(base), null);
     const c2 = makeBuildContext(scaled, classifyBody(scaled), null);
+    // Lỗi chập chờn 10/11: tỉ lệ ra đúng 1. Kiểm số đỉnh đầu trước để biết nhánh dự phòng (count 0) hay số đo sai.
+    expect(c1.head.count, `đỉnh đầu thân gốc (${base.positions.length / 3} đỉnh)`).toBeGreaterThan(0);
+    expect(c2.head.count, `đỉnh đầu thân x${k} (h1=${c1.head.height}, h2=${c2.head.height})`).toBe(c1.head.count);
     expect(c2.head.height / c1.head.height).toBeCloseTo(k, 3);
     const f1 = fitHat('cap', c1.head, base, c1.cls);
     const f2 = fitHat('cap', c2.head, scaled, c2.cls);
