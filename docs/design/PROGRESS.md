@@ -870,3 +870,13 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-10 — Lần lặp 62
+
+Đầu lần lặp (20:51 UTC): main trùng origin/main (524af9b). Acceptance 524af9b (20:20) RESULT=FAIL, chỉ e2e=1: ca `29-multiplayer.spec.ts:103` "chat chữ A -> B" (B không thấy tin của A trong 15 s), 118 ca khác PASS, 3 ca sau trong cùng nhóm serial không chạy. 524af9b chỉ đổi tài liệu, mã giống d9a85b5 đã PASS nhiều lượt, nên watcher không deploy 524af9b; production vẫn bundle index-BcWvN3CP.js của d9a85b5; smoke production 200/200/401.
+
+Điều tra: chạy riêng `tests/29-multiplayer.spec.ts --workers=1` lúc máy rảnh: lượt 1 FAIL cùng chỗ; ba lượt sau PASS (2/2 khi bỏ voice-suite, 9/9 có voice-suite và in trạng thái, 9/9 bản gốc). Ở các lượt PASS, `__gpbWorld.chat` của B có tin của A trong 4 s. Kết luận: chập chờn, chưa rõ tin mất ở server world 3903 hay ở UI. Đã thêm chẩn đoán vào spec (ngoài repo, /home/cc/gpb-e2e/tests; bản trước ở /tmp/29-multiplayer.spec.ts.bak-iter62): khi ca chat lỗi, in `CHAT-DIAG A/B` gồm trạng thái kết nối, selfId, 3 tin cuối và danh sách người chơi. Nếu lỗi lại, đọc dòng CHAT-DIAG trong /home/cc/gpb-acc-e2e.log: B có tin trong state mà không hiện trên DOM thì lỗi UI; A có tin `pending` hoặc `failed` thì lỗi gửi.
+
+Không đổi mã sản phẩm. Chạy lại acceptance trên commit này.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
