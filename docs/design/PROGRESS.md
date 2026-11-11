@@ -1081,3 +1081,5 @@ Tái hiện: 12 lượt `npx vitest run` đầy đủ chạy song song trên mai
 Smoke production 200/200/401 (15:40 UTC), bundle index-D3Gp4MyY.js (bf7a5ca). Root vẫn chưa làm (TURN_SECRET rỗng, layout image 06/11 17:57 UTC). gpu_result.md, gpu_request_sanh_mo.md, task_assign.txt, spec Sảnh mở chibi không đổi.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+Kết quả: acceptance 443f21b (15:38 UTC) RESULT=PASS, mọi bước 0, vitest 1238/1238, e2e 0. Ca phụ kiện không lặp lại nên chẩn đoán mới chưa ghi được dữ liệu; nếu lỗi lại, đọc thông báo của ca trong /home/cc/gpb-acc-t_vitest.log. Đã push origin main (fast-forward). 443f21b chỉ đổi tệp test và tài liệu nên bundle production không đổi.
