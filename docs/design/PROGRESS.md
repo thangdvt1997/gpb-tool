@@ -1045,3 +1045,7 @@ Sửa:
 - `WorldDebug`: thêm `__gpbWorld.stateLog` (20 trạng thái kết nối gần nhất kèm giờ). Spec ngoài repo /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts in thêm `CHAT-DIAG stateLog A/B` khi lỗi (bản trước ở /tmp/29-multiplayer.spec.ts.bak-iter82). Nếu lỗi lại mà stateLog của B không có trạng thái khác `connected`, nguyên nhân nằm ở chỗ khác (server không phát), phải điều tra tiếp.
 
 Kiểm: tsc 0, vitest src/net 103/103. Acceptance chạy trên commit này.
+
+Kết quả: acceptance bf7a5ca (12:01–12:34 UTC) RESULT=PASS, mọi bước 0, e2e 122/122 và 03-login-real PASS (ca chat 29-multiplayer PASS). Đã push origin main (fast-forward). Watcher deploy bf7a5ca lúc 12:36 UTC (deployed.sha, smoke OK); production đổi bundle sang index-D3Gp4MyY.js, có chuỗi `stateLog` của bản sửa; smoke production 200/200/401. Một lượt PASS chưa chứng minh hết lỗi chập chờn; nếu ca chat lỗi lại, đọc `CHAT-DIAG stateLog` trong /home/cc/gpb-acc-e2e.log.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
