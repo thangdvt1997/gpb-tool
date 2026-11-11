@@ -248,7 +248,17 @@ describe('co theo kích thước thân (chiều cao, chibi, morph)', () => {
     // Lỗi chập chờn 10/11: tỉ lệ ra đúng 1. Kiểm số đỉnh đầu trước để biết nhánh dự phòng (count 0) hay số đo sai.
     expect(c1.head.count, `đỉnh đầu thân gốc (${base.positions.length / 3} đỉnh)`).toBeGreaterThan(0);
     expect(c2.head.count, `đỉnh đầu thân x${k} (h1=${c1.head.height}, h2=${c2.head.height})`).toBe(c1.head.count);
-    expect(c2.head.height / c1.head.height).toBeCloseTo(k, 3);
+    // Lần 3 (11/11): số đỉnh khớp, chiều cao vẫn bằng nhau. Kiểm mảng đỉnh đã nhân k chưa, rồi in số đo hai đầu.
+    let bad = -1;
+    for (let i = 0; i < base.positions.length; i++) {
+      if (Math.abs(scaled.positions[i] - Math.fround(base.positions[i] * k)) > 1e-6) {
+        bad = i;
+        break;
+      }
+    }
+    expect(bad, `đỉnh chưa nhân k tại chỉ số ${bad}`).toBe(-1);
+    const diag = `h1=${JSON.stringify(c1.head)} h2=${JSON.stringify(c2.head)}`;
+    expect(c2.head.height / c1.head.height, diag).toBeCloseTo(k, 3);
     const f1 = fitHat('cap', c1.head, base, c1.cls);
     const f2 = fitHat('cap', c2.head, scaled, c2.cls);
     expect(f2.apexY / f1.apexY).toBeCloseTo(k, 2);

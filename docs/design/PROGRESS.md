@@ -1071,3 +1071,13 @@ Deploy: đã push origin main (b2c96fe, fast-forward). Watcher đã xử lý a79
 Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-11 — Lần lặp 85
+
+Đầu lần lặp (15:36 UTC): main trùng origin/main (ec9d49a). Acceptance ec9d49a (15:02–15:35 UTC) RESULT=FAIL failures=1, chỉ t_vitest (1237/1238), e2e=0. Ca lỗi lần thứ ba là "mũ, kính, đồng hồ co tuyến tính theo thân" (src/avatar/outfit/accessory.vitest.test.ts). Lần này kiểm số đỉnh đầu (thêm ở 8558a45) đã qua: hai thân có cùng số đỉnh đầu, khác 0, nên giả thuyết nhánh dự phòng của measureHead bị loại. Chiều cao đầu hai thân vẫn bằng nhau (tỉ lệ 1), dù thân thứ hai có mảng đỉnh nhân 1,5.
+
+Tái hiện: 12 lượt `npx vitest run` đầy đủ chạy song song trên main đều PASS (1238/1238). Vitest dùng pool mặc định, mỗi tệp cô lập, nên không có rò trạng thái giữa các tệp; mã đo thuần. Giả thuyết còn lại: phép `Float32Array.from(..., v => v * k)` ra mảng chưa nhân (lỗi tối ưu của V8 khi máy tải nặng), chưa xác nhận. Thêm kiểm: so từng phần tử mảng đỉnh đã nhân với bản gốc nhân k trước khi so tỉ lệ, và in đủ khung đầu hai thân nếu tỉ lệ sai. Chỉ đổi tệp test. tsc 0, tệp test 58/58. Chạy lại acceptance.
+
+Smoke production 200/200/401 (15:40 UTC), bundle index-D3Gp4MyY.js (bf7a5ca). Root vẫn chưa làm (TURN_SECRET rỗng, layout image 06/11 17:57 UTC). gpu_result.md, gpu_request_sanh_mo.md, task_assign.txt, spec Sảnh mở chibi không đổi.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
