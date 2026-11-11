@@ -1061,3 +1061,5 @@ Sửa test (ngoài repo, /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts; bản tr
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
 
 Kết quả: acceptance a79202a (13:46–14:20 UTC) RESULT=PASS, mọi bước 0, e2e 122/122 và 03-login-real PASS; ca chat 29-multiplayer PASS (2.7 s), ba ca sau trong nhóm serial cũng PASS. Một lượt PASS chưa chứng minh hết lỗi chập chờn; nếu lỗi lại, đọc `CHAT-DIAG` trong /home/cc/gpb-acc-e2e.log.
+
+Deploy: đã push origin main (b2c96fe, fast-forward). Watcher đã xử lý a79202a (deployed.sha, autodeploy.log smoke OK; lỗi console duy nhất là 401 /api/auth/me khi chưa đăng nhập, bình thường). Production vẫn bundle index-D3Gp4MyY.js của bf7a5ca vì các commit sau chỉ đổi tài liệu; smoke production 200/200/401 (14:27 UTC).
