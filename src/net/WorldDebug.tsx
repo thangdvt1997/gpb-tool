@@ -35,6 +35,8 @@ export interface WorldDebug {
   dropSocket(): void;
   /** Các trạng thái client đi qua từ lần dropSocket gần nhất. Kết nối lại có thể xong trước khi e2e kịp đọc state. */
   readonly statesSinceDrop: string[];
+  /** 20 lần đổi trạng thái kết nối gần nhất kèm giờ (ms), để e2e chẩn đoán tin bị lỡ khi rớt kết nối. */
+  readonly stateLog: string[];
 }
 
 export function debugWorldEnabled(search: string): boolean {
@@ -46,11 +48,19 @@ export function debugWorldEnabled(search: string): boolean {
 export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'client' | 'remote' | 'players' | 'leases' | 'chat' | 'role'> }) {
   const ref = useRef(world);
   ref.current = world;
+  // Ghi theo state đã render (hook client có thể chưa tạo khi effect dưới chạy); rớt rồi nối lại nhanh vẫn thấy ít nhất một trạng thái khác.
+  const stateLogRef = useRef<string[]>([]);
+  useEffect(() => {
+    const log = stateLogRef.current;
+    log.push(`${Date.now()} ${world.state}`);
+    if (log.length > 20) log.shift();
+  }, [world.state]);
   useEffect(() => {
     if (typeof window === 'undefined' || !debugWorldEnabled(window.location.search)) return undefined;
     const w = window as unknown as { __gpbWorld?: WorldDebug };
     let dropLog: string[] = [];
     let unsubDrop: (() => void) | null = null;
+
     const d: WorldDebug = {
       get state() { return ref.current.state; },
       get selfId() { return ref.current.client.current?.selfId ?? null; },
@@ -115,6 +125,7 @@ export function WorldDebugHook({ world }: { world: Pick<WorldApi, 'state' | 'cli
         c?.sock?.close(4000, 'e2e drop');
       },
       get statesSinceDrop() { return [...dropLog]; },
+      get stateLog() { return [...stateLogRef.current]; },
     };
     w.__gpbWorld = d;
     return () => { unsubDrop?.(); delete w.__gpbWorld; };

@@ -1032,3 +1032,16 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-11 — Lần lặp 82
+
+Đầu lần lặp (11:59 UTC): main trùng origin/main (58384d5). Acceptance 58384d5 (11:25–11:58) RESULT=FAIL, chỉ e2e=1: lại là ca `29-multiplayer.spec.ts:103` "chat chữ A -> B" (118 PASS, 3 ca sau trong nhóm serial không chạy). Smoke production 200/200/401, bundle index-BcWvN3CP.js (d9a85b5). gpu_result.md, gpu_request_sanh_mo.md, task_assign.txt, spec Sảnh mở chibi không đổi; root vẫn chưa làm (TURN_SECRET rỗng, layout image 06/11).
+
+Chẩn đoán lần này có dòng CHAT-DIAG: A có tin trạng thái `sent` (server đã ack), B `connected`, thấy A trong danh sách người chơi, nhưng `chat` của B rỗng. Vậy tin mất giữa server và state của B, không phải ở UI. Mã server không đổi từ 08/11 và phát chat phòng cho mọi kết nối trong tenant. Lỗ hổng tìm được ở client: khi kết nối lại mà server không bù được sự kiện (phiên mới không có resume token, `resumed.full`, resume hết hạn), `useWorld` không tải lại lịch sử, nên tin chat phòng phát trong lúc rớt sẽ mất hẳn. Dưới tải cao, heartbeat của B có thể đóng socket rồi nối lại.
+
+Sửa:
+- `src/net/chatResync.ts` (mới): `needsChatHistory` (từ snapshot thứ hai, nếu không phát lại được thì cần lịch sử) và `mergeChatHistory` (bỏ trùng id, xếp theo `at`, giữ 200 tin cuối). Test `chatResync.vitest.test.ts`.
+- `useWorld`: đếm snapshot theo client; kết nối lại không bù được thì gửi `chat.history` (limit 30) sau microtask; gộp lịch sử bằng `mergeChatHistory` (trước đây tin bị lỡ bị đặt lên đầu danh sách).
+- `WorldDebug`: thêm `__gpbWorld.stateLog` (20 trạng thái kết nối gần nhất kèm giờ). Spec ngoài repo /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts in thêm `CHAT-DIAG stateLog A/B` khi lỗi (bản trước ở /tmp/29-multiplayer.spec.ts.bak-iter82). Nếu lỗi lại mà stateLog của B không có trạng thái khác `connected`, nguyên nhân nằm ở chỗ khác (server không phát), phải điều tra tiếp.
+
+Kiểm: tsc 0, vitest src/net 103/103. Acceptance chạy trên commit này.

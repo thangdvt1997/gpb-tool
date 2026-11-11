@@ -6,6 +6,7 @@ import type { ChatChannel, ChatMessage, LeaseView, ServerMessage } from './proto
 import { pushServerReposition } from '../scene/controls/serverReposition';
 import { RemoteStore } from './remoteState';
 import { WorldClient, type ConnState } from './worldClient';
+import { mergeChatHistory, needsChatHistory } from './chatResync';
 
 export type ChatStatus = 'pending' | 'sent' | 'failed';
 export interface ChatItem extends ChatMessage {
@@ -40,6 +41,8 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
   const clientRef = useRef<WorldClient | null>(null);
   // Bus tin server ổn định qua các lần tạo lại client: cho tính năng ngoài hook (ví dụ hành động xã hội) nghe.
   const tapRef = useRef(new Set<(m: ServerMessage) => void>());
+  // Số snapshot của client hiện tại: từ cái thứ hai là kết nối lại.
+  const snapshotsRef = useRef(0);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -48,6 +51,7 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
       storage: typeof sessionStorage !== 'undefined' ? sessionStorage : null,
     });
     clientRef.current = client;
+    snapshotsRef.current = 0;
     const offState = client.onState(setState);
     const offMsg = client.onMessage((m: ServerMessage) => {
       for (const fn of [...tapRef.current]) fn(m);
@@ -60,6 +64,11 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
           setRole(m.role);
           // Nối lại phiên: server trả vị trí đã lưu thì nhân vật theo đó.
           if (m.resumed?.ok && m.resumed.spawn) pushServerReposition(m.resumed.spawn);
+          // Kết nối lại mà server không bù được sự kiện (phiên mới, khoảng trống lớn): tin chat phòng bị lỡ
+          // chỉ còn trong lịch sử, nên tải lại. Gửi sau microtask để client đã ở trạng thái connected.
+          if (needsChatHistory(snapshotsRef.current++, m.resumed)) {
+            queueMicrotask(() => client.send({ type: 'chat.history', limit: 30 }));
+          }
           break;
         case 'ack':
           // Server sửa vị trí của mình: nhân vật và camera phải theo (useCameraSafety lấy ở khung kế tiếp).
@@ -94,11 +103,8 @@ export function useWorld({ url, enabled = true }: UseWorldOptions = {}) {
           setChat((prev) => prev.map((c) => (c.clientMsgId === m.clientMsgId ? { ...c, id: m.id, at: m.at, status: 'sent' as const } : c)));
           break;
         case 'chat.history':
-          setChat((prev) => {
-            const have = new Set(prev.map((c) => c.id));
-            const older = m.messages.filter((x) => !have.has(x.id)).map((x) => ({ ...x, status: 'sent' as const }));
-            return [...older, ...prev].slice(-MAX_CHAT);
-          });
+          // Tin bị lỡ có thể mới hơn tin đang hiện nên gộp rồi xếp theo thời điểm.
+          setChat((prev) => mergeChatHistory(prev, m.messages.map((x) => ({ ...x, status: 'sent' as const })), MAX_CHAT));
           break;
         case 'chat.block':
           if (m.ok && m.blocked) setBlocked(m.blocked);
