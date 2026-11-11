@@ -960,3 +960,11 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-11 — Lần lặp 73
+
+Đầu lần lặp (05:23 UTC): main trùng origin/main (2ac50c1). Acceptance 2ac50c1 lượt đầu (04:34–05:23) RESULT=FAIL do e2e: 18 lỗi, đều là timeout chờ canvas render hoặc page.evaluate (240 s), 97 passed trong 45,9 phút. Tệp kết quả có dòng trùng (hai lượt acceptance chạy cùng lúc) và tải máy 15 phút là 72, nên đây là lỗi do tranh tài nguyên, không phải lỗi mã (2ac50c1 chỉ đổi tài liệu, mã giống d9a85b5). Chạy lại một lượt duy nhất (05:24–05:54, tải đã giảm): RESULT=PASS, mọi bước 0, e2e 122 passed (28,1 phút) và 03-login-real PASS. Production vẫn bundle index-BcWvN3CP.js của d9a85b5; smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:55 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md (16:28 UTC 09/11) chưa có kết quả; spec Sảnh mở chibi không đổi (08:08 UTC 09/11), worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main.
+
+Không có mục làm được trên VPS mà không cần root, GPU, thiết bị thật hoặc NVDA; không đổi mã, không mở subagent.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
