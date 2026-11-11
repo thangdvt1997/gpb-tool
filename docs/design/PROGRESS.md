@@ -1063,3 +1063,11 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Kết quả: acceptance a79202a (13:46–14:20 UTC) RESULT=PASS, mọi bước 0, e2e 122/122 và 03-login-real PASS; ca chat 29-multiplayer PASS (2.7 s), ba ca sau trong nhóm serial cũng PASS. Một lượt PASS chưa chứng minh hết lỗi chập chờn; nếu lỗi lại, đọc `CHAT-DIAG` trong /home/cc/gpb-acc-e2e.log.
 
 Deploy: đã push origin main (b2c96fe, fast-forward). Watcher đã xử lý a79202a (deployed.sha, autodeploy.log smoke OK; lỗi console duy nhất là 401 /api/auth/me khi chưa đăng nhập, bình thường). Production vẫn bundle index-D3Gp4MyY.js của bf7a5ca vì các commit sau chỉ đổi tài liệu; smoke production 200/200/401 (14:27 UTC).
+
+## 2026-11-11 — Lần lặp 84
+
+Đầu lần lặp (15:01 UTC): main trùng origin/main (8dca4ec). Acceptance 8dca4ec (14:27–15:00 UTC) RESULT=PASS, mọi bước 0, e2e=0 (ca chat 29-multiplayer PASS lượt thứ hai liên tiếp sau bản sửa test lần 83). Watcher bắt đầu build 8dca4ec lúc 15:01 UTC (compose-build-20261111T150125Z-8dca4ec.log); production vẫn bundle index-D3Gp4MyY.js của bf7a5ca (các commit sau chỉ đổi tài liệu); smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:55 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md (16:28 UTC 09/11) chưa có kết quả; task_assign.txt không đổi từ 07/11; spec Sảnh mở chibi không đổi (08:08 UTC 09/11), worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main.
+
+Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
