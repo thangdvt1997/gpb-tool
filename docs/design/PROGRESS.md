@@ -1205,3 +1205,13 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-12 — Lần lặp 101
+
+Đầu lần lặp (03:44 UTC): main trùng origin/main (f31ea49). Acceptance f31ea49 lượt đầu (03:13 UTC) RESULT=FAIL, chỉ e2e=1: ca `29-multiplayer.spec.ts:87` "presence: A và B thấy nhau" hết 30 s ở bước B thấy A (A đã thấy B); 117 PASS, 4 ca sau trong nhóm serial không chạy; 03-login-real PASS. Lúc đó tải máy trung bình 15 phút khoảng 53. f31ea49 chỉ đổi tài liệu, nên đây là lỗi chập chờn do tải, cùng kiểu ca chat ở lần lặp 83.
+
+Sửa test (ngoài repo, /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts; bản trước ở /tmp/29-multiplayer.spec.ts.bak-iter101): hai bước chờ "A thấy B" và "B thấy A" ở đầu ca presence nâng từ 30 s mặc định lên 120 s, có thông báo riêng. Không đổi mã sản phẩm.
+
+Kết quả: acceptance f31ea49 lượt hai (03:44–04:17 UTC) RESULT=PASS, mọi bước 0, e2e 122 passed (ca presence PASS 18.7 s), 03-login-real 1 passed. Smoke production 200/200/401, bundle index-D3Gp4MyY.js của bf7a5ca. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md chưa có kết quả; spec Sảnh mở chibi không đổi, worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
