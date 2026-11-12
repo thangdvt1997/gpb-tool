@@ -1231,3 +1231,15 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-12 — Lần lặp 104
+
+Đầu lần lặp (05:59 UTC): main trùng origin/main (6e86d47). Acceptance 6e86d47 lượt đầu (05:28 UTC) RESULT=FAIL, chỉ e2e=1: `49-body-morph.spec.ts:73` đáy chân sau khi chỉnh hình thể lệch 0,0172 m (ngưỡng 0,012 m); 121 PASS. Tải máy trung bình 15 phút khoảng 53. 6e86d47 chỉ đổi tài liệu, nên đây là lỗi chập chờn do tải.
+
+Sửa test (ngoài repo, /home/cc/gpb-e2e/tests; bản trước ở /tmp/*.bak-iter104), không đổi mã sản phẩm:
+- `49-body-morph.spec.ts`: bước đo đáy chân sau khi kéo thanh trượt đổi từ chờ cố định 1,5 s sang `expect.poll` 30 s (lấy mẫu lại), giống hai bước đo sau trong cùng ca.
+- `29-multiplayer.spec.ts` ca "rớt kết nối rồi resume" (lượt hai 06:00 UTC hỏng ở dòng 172, 121 PASS): khi `setOffline(true)` làm trình duyệt tự đóng socket trước `dropSocket()`, client đã ở `reconnecting` với `sock` null, `setState` không phát lại trạng thái trùng nên `statesSinceDrop` rỗng mãi. Điều kiện chờ nay là `state !== 'connected'` hoặc nhật ký có trạng thái khác `connected` (cả hai lần ngắt).
+
+Kết quả: acceptance 6e86d47 lượt ba (06:30–07:00 UTC) RESULT=PASS, mọi bước 0, e2e 122 passed, 03-login-real 1 passed. Smoke production 200/200/401, bundle index-D3Gp4MyY.js của bf7a5ca; deployed.sha của watcher 2b85909. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:55 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md chưa có kết quả; task_assign.txt không đổi từ 07/11; spec Sảnh mở chibi không đổi, worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. TASK_STATUS.csv chỉ còn 12 và 25 ở MỘT PHẦN, cả hai bị chặn (NVDA, root). Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
