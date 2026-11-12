@@ -1215,3 +1215,11 @@ Sửa test (ngoài repo, /home/cc/gpb-e2e/tests/29-multiplayer.spec.ts; bản tr
 Kết quả: acceptance f31ea49 lượt hai (03:44–04:17 UTC) RESULT=PASS, mọi bước 0, e2e 122 passed (ca presence PASS 18.7 s), 03-login-real 1 passed. Smoke production 200/200/401, bundle index-D3Gp4MyY.js của bf7a5ca. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng; gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md chưa có kết quả; spec Sảnh mở chibi không đổi, worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-12 — Lần lặp 102
+
+Đầu lần lặp (04:56 UTC): main trùng origin/main (c68b359). Acceptance c68b359 (04:25 UTC) RESULT=PASS, mọi bước 0. Watcher đã deploy c68b359 lúc 04:56 UTC 12/11 (deployed.sha). Production vẫn bundle index-D3Gp4MyY.js của bf7a5ca (các commit sau chỉ đổi tệp test và tài liệu); smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng (container 08/11 04:44 UTC); gpb-tool-layout-1 vẫn image 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md (16:28 UTC 09/11) chưa có kết quả; task_assign.txt không đổi từ 07/11; spec Sảnh mở chibi không đổi (08:08 UTC 09/11), worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. TASK_STATUS.csv chỉ còn 12 và 25 ở MỘT PHẦN, cả hai bị chặn (NVDA, root).
+
+Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở; 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
