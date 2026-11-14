@@ -1965,3 +1965,11 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-14 — Lần lặp 195
+
+Đầu lần lặp (08:52 UTC): main trùng origin/main (f603c78). Acceptance f603c78 (bắt đầu 08:21 UTC) RESULT=PASS, mọi bước 0, t_auth=0, e2e=0. Watcher đã deploy f603c78 (deployed.sha 08:52 UTC); f603c78 chỉ đổi tài liệu, production vẫn bundle index-D3Gp4MyY.js của bf7a5ca; smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng (container 08/11 04:44 UTC); gpb-tool-layout-1 vẫn container 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md (16:28 UTC 09/11) chưa có kết quả; task_assign.txt không đổi từ 07/11; spec Sảnh mở chibi không đổi (08:08 UTC 09/11), worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. TASK_STATUS.csv chỉ còn 12 và 25 ở MỘT PHẦN, cả hai bị chặn (NVDA, root).
+
+Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
