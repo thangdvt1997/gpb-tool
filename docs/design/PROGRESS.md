@@ -1973,3 +1973,15 @@ Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash 
 Không có việc mới làm được trên VPS ở lần lặp này. Commit này chỉ đổi tài liệu nên không chạy lại acceptance đầy đủ.
 
 Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
+
+## 2026-11-14 — Lần lặp 196
+
+Đầu lần lặp (09:23 UTC): main trùng origin/main (8605acb). Acceptance 8605acb (bắt đầu 08:52 UTC) RESULT=FAIL: mọi bước 0 trừ e2e=1. Lượt stub 121/122 đạt, chỉ hỏng 20-controls (bước "sau khi thả": đầu lệch 12,08°, ngưỡng 12°); 03-login-real đạt. 8605acb chỉ đổi tài liệu, mã giống hệt f603c78 (PASS), lúc chạy load average ~50 nên đây là lỗi chập chờn do khung hình chậm. Chạy lại riêng 20-controls: 3/3 đạt (đầu sau khi thả -0,1°).
+
+Sửa test (ngoài repo, /home/cc/gpb-e2e/tests/20-controls.spec.ts, bản cũ ở /tmp/20-controls.spec.ts.bak196): sau 2 s chờ cố định, chờ có điều kiện thêm tới 6 s cho đầu về dưới 12° rồi mới kiểm; ngưỡng 12° giữ nguyên. Chạy lại 2/2 đạt. Ghi chú: test-results/ của gpb-e2e thuộc root, chạy tay phải dùng --output riêng.
+
+Watcher đã deploy f603c78 (deployed.sha 08:52 UTC); production vẫn bundle index-D3Gp4MyY.js của bf7a5ca; smoke production 200/200/401. Root: gpb-tool-world-1 vẫn TURN_SECRET rỗng (container 08/11 04:44 UTC); gpb-tool-layout-1 vẫn container 06/11 17:57 UTC. gpu_result.md không đổi từ 07:18 UTC 09/11; gpu_request_sanh_mo.md chưa có kết quả; task_assign.txt không đổi từ 07/11; spec Sảnh mở chibi không đổi, worktree /home/cc/wt/sanh-mo (decae5d) đã nằm trong main. TASK_STATUS.csv chỉ còn 12 và 25 ở MỘT PHẦN, cả hai bị chặn (NVDA, root).
+
+Commit này chỉ đổi tài liệu; acceptance đầy đủ của nó sẽ kiểm lại 20-controls với test đã sửa.
+
+Việc còn lại (không đổi): 25 thoại production cần root (`sudo bash scripts/enable-turn-prod.sh`); 17 POST /api/layout/batch production và dời quầy Service Desk của sảnh mở cần root (`sudo bash scripts/deploy-layout.sh <sha>`); GPU cho 03, 08 (bản build), 13, 14, 15, 16, 19 và sảnh mở (/home/cc/handoff-20261107/design/gpu_request_sanh_mo.md); 10, 11 cần thiết bị thật; 12 chờ NVDA. Không tạo PROJECT_COMPLETE.txt.
