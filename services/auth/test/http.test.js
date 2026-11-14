@@ -104,8 +104,10 @@ async function startServer() {
       }
     };
     proc.stdout.on('data', check);
-    proc.once('exit', () => {
+    // 'close' (không phải 'exit'): chờ stdout/stderr đọc hết để giữ thông báo lỗi thật trước assert native.
+    proc.once('close', (code, signal) => {
       clearTimeout(timer);
+      logs += `\n[thoát code=${code} signal=${signal}]`;
       resolve(false);
     });
   });
@@ -119,8 +121,12 @@ async function startServer() {
 before(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gpb-auth-http-'));
   let started = null;
-  for (let i = 0; i < 4 && !started; i++) started = await startServer();
-  if (!started) throw new Error(`auth không khởi động được: ${logs}`);
+  const tries = [];
+  for (let i = 0; i < 4 && !started; i++) {
+    started = await startServer();
+    if (!started) tries.push(`--- lần ${i + 1} ---\n${logs}`);
+  }
+  if (!started) throw new Error(`auth không khởi động được:\n${tries.join('\n')}`);
   child = started.proc;
   base = `http://127.0.0.1:${started.port}`;
   dbh = new DatabaseSync(path.join(tmp, 'app.db'));
